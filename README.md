@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InterviewReady
 
-## Getting Started
+AI-powered interview prep SaaS. Turns any CV + job description into a personalized, interactive interview prep guide with company intel, ATS gap analysis, and mock interview chat.
 
-First, run the development server:
+See `ARCHITECTURE.md` for the product vision and full stack design. See `docs/superpowers/specs/` and `docs/superpowers/plans/` for sub-project specs and implementation plans.
+
+## Current status
+
+**Sub-project #1 (Foundation):** auth, protected dashboard, Railway deploy.
+
+## Local development
+
+### Prerequisites
+
+- Node.js 20 LTS
+- pnpm 9.12+ (`corepack enable && corepack prepare pnpm@9.12.0 --activate`)
+- Docker Desktop (for local Supabase stack)
+
+### Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local
+
+# Start local Supabase (Postgres + Auth + Storage in Docker)
+pnpm exec supabase start
+
+# Copy the `anon key` and `service_role key` printed by `supabase start` into .env.local.
+# Also set:
+#   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+#   NEXT_PUBLIC_APP_URL=http://localhost:3000
+
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Running tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm test          # Unit tests (Vitest)
+pnpm test:e2e      # E2E smoke test (Playwright, requires Supabase running)
+pnpm lint
+pnpm typecheck
+```
 
-## Learn More
+### Stopping local Supabase
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm exec supabase stop
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Auto-deployed to Railway on push to `main`. See `docs/superpowers/specs/2026-04-20-foundation-design.md` §8 for deploy architecture.
