@@ -10,7 +10,17 @@ const schema = z.object({
   fullName: z.string().min(1, "Name is required"),
 });
 
-export type SignupState = { error?: string };
+export type SignupState = {
+  error?: string;
+  pendingConfirmation?: boolean;
+};
+
+function mapSupabaseError(message: string): string {
+  if (/already registered|already exists/i.test(message)) {
+    return "An account with this email already exists.";
+  }
+  return "We couldn't create your account. Please try again.";
+}
 
 export async function signup(
   _prev: SignupState,
@@ -27,14 +37,19 @@ export async function signup(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: { data: { full_name: parsed.data.fullName } },
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: mapSupabaseError(error.message) };
+  }
+
+  // If email confirmation is required, Supabase returns user but no session.
+  if (!data.session) {
+    return { pendingConfirmation: true };
   }
 
   redirect("/dashboard");

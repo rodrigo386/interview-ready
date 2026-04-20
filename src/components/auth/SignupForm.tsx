@@ -11,6 +11,17 @@ export function SignupForm() {
     {},
   );
 
+  if (state.pendingConfirmation) {
+    return (
+      <div className="rounded-md border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-300">
+        <p className="font-medium">Check your email.</p>
+        <p className="mt-1 text-zinc-400">
+          We sent you a confirmation link. Click it, then come back and sign in.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form action={formAction} className="space-y-4">
       <div>
