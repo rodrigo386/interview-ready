@@ -58,3 +58,6 @@ enabled = false
 client_id = ""
 secret = ""
 redirect_uri = ""
+
+[analytics]
+enabled = false
