@@ -1,0 +1,23 @@
+import Link from "next/link";
+import { SignupForm } from "@/components/auth/SignupForm";
+// TODO(Task 11): import { GoogleButton } from "@/components/auth/GoogleButton";
+
+export default function SignupPage() {
+  return (
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-sm">
+        <h1 className="text-center text-2xl font-semibold">Create your account</h1>
+        <p className="mt-2 text-center text-sm text-zinc-400">
+          Already have one?{" "}
+          <Link href="/login" className="text-brand hover:underline">
+            Sign in
+          </Link>
+        </p>
+        <div className="mt-8 space-y-6">
+          <SignupForm />
+          {/* TODO(Task 11): OR divider + <GoogleButton label="Sign up with Google" /> */}
+        </div>
+      </div>
+    </main>
+  );
+}
