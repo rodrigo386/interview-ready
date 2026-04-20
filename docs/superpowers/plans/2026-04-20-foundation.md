@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the InterviewReady Foundation — a deployed Next.js 14 app with Supabase-backed email/password + Google OAuth authentication, protected dashboard, dark theme, CI, and Railway deploy.
+**Goal:** Build the InterviewReady Foundation — a deployed Next.js 15 app with Supabase-backed email/password + Google OAuth authentication, protected dashboard, dark theme, CI, and Railway deploy.
 
-**Architecture:** Next.js 14 App Router + `@supabase/ssr` (cookie sessions) + Tailwind (dark zinc + violet accent) + Supabase Postgres (profiles + RLS + trigger) + Railway (Docker) + GitHub Actions CI.
+**Architecture:** Next.js 15 App Router + React 19 + `@supabase/ssr` (cookie sessions) + Tailwind v4 (dark zinc + violet accent) + Supabase Postgres (profiles + RLS + trigger) + Railway (Docker) + GitHub Actions CI.
 
-**Tech Stack:** Next.js 14, TypeScript (strict), pnpm, Tailwind CSS, Supabase (@supabase/ssr, @supabase/supabase-js), Zod, Vitest, Playwright, next-intl, Docker, GitHub Actions.
+**Tech Stack:** Next.js 15, React 19, TypeScript (strict), pnpm, Tailwind CSS v4, Supabase (@supabase/ssr, @supabase/supabase-js), Zod, Vitest, Playwright, next-intl, Docker, GitHub Actions.
+
+**Tailwind v4 note:** Next.js 15's create-next-app installs Tailwind v4 which uses CSS-first config by default. We keep the legacy `tailwind.config.ts` as a single source of truth for design tokens, bridged via `@config "../../tailwind.config.ts"` in `globals.css`. Do not add `@theme` blocks to `globals.css` — all tokens live in `tailwind.config.ts`.
 
 **Working directory:** `C:/Users/rgoal/Desktop/IAgentics/InterviewGuide` (Windows, bash/git bash). Project will be scaffolded in-place.
 
@@ -16,7 +18,7 @@
 
 ---
 
-## Task 1: Scaffold Next.js 14 project in-place
+## Task 1: Scaffold Next.js 15 project in-place
 
 **Files:**
 - Create: `package.json`, `tsconfig.json`, `next.config.ts`, `tailwind.config.ts`, `postcss.config.mjs`, `.eslintrc.json`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `public/`
@@ -122,7 +124,7 @@ Expected: no type errors, build succeeds.
 ```bash
 git add -A
 git -c user.email="dev@interviewready.local" -c user.name="InterviewReady Dev" \
-  commit -m "chore: scaffold Next.js 14 app with Tailwind dark theme"
+  commit -m "chore: scaffold Next.js 15 app with Tailwind dark theme"
 ```
 
 ---
