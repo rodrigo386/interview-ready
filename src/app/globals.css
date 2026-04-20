@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #09090b; /* zinc-950 */
+  color: #fafafa;
+  min-height: 100vh;
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
