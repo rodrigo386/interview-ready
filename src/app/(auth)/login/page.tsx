@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
-// TODO(Task 11): import { GoogleButton } from "@/components/auth/GoogleButton";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 
 function OAuthErrorBanner({ error }: { error?: string }) {
   if (error !== "oauth_failed") return null;
@@ -30,7 +30,12 @@ export default async function LoginPage({
         <div className="mt-8 space-y-6">
           <OAuthErrorBanner error={params.error} />
           <LoginForm />
-          {/* TODO(Task 11): OR divider + <GoogleButton label="Sign in with Google" /> */}
+          <div className="flex items-center gap-3">
+            <hr className="flex-1 border-zinc-800" />
+            <span className="text-xs text-zinc-500">OR</span>
+            <hr className="flex-1 border-zinc-800" />
+          </div>
+          <GoogleButton label="Sign in with Google" />
         </div>
       </div>
     </main>

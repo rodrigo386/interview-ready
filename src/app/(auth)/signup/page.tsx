@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SignupForm } from "@/components/auth/SignupForm";
-// TODO(Task 11): import { GoogleButton } from "@/components/auth/GoogleButton";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export default function SignupPage() {
   return (
@@ -15,7 +15,12 @@ export default function SignupPage() {
         </p>
         <div className="mt-8 space-y-6">
           <SignupForm />
-          {/* TODO(Task 11): OR divider + <GoogleButton label="Sign up with Google" /> */}
+          <div className="flex items-center gap-3">
+            <hr className="flex-1 border-zinc-800" />
+            <span className="text-xs text-zinc-500">OR</span>
+            <hr className="flex-1 border-zinc-800" />
+          </div>
+          <GoogleButton label="Sign up with Google" />
         </div>
       </div>
     </main>
