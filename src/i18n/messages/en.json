@@ -1,0 +1,23 @@
+{
+  "landing": {
+    "tagline": "Walk into every interview like you already work there.",
+    "cta_get_started": "Get started",
+    "cta_sign_in": "Sign in"
+  },
+  "auth": {
+    "create_account": "Create your account",
+    "sign_in": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "full_name": "Full name",
+    "sign_up_google": "Sign up with Google",
+    "sign_in_google": "Sign in with Google",
+    "or": "OR"
+  },
+  "dashboard": {
+    "greeting": "Create your first prep",
+    "empty_hint": "Upload your CV and paste a job description — we'll research the company, analyze the role, and build your interview playbook.",
+    "new_prep": "New prep (coming soon)",
+    "sign_out": "Sign out"
+  }
+}
