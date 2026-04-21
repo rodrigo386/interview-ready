@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createPrepInputSchema } from "./actions";
+import { createPrepInputSchema } from "./schema";
 
 const base = {
   jobTitle: "Senior Director",
