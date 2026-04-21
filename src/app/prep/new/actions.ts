@@ -70,12 +70,28 @@ export async function createPrep(
 
     const rawText = await createPrepGuide({ system, user: userMsg });
 
-    const jsonText = rawText
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```\s*$/i, "")
-      .trim();
+    // Extract the JSON object from the response. Even with instructions,
+    // models sometimes add preamble, fences, or trailing text. Slice on
+    // first `{` and last `}` rather than trusting the whole string.
+    const firstBrace = rawText.indexOf("{");
+    const lastBrace = rawText.lastIndexOf("}");
+    const jsonText =
+      firstBrace >= 0 && lastBrace > firstBrace
+        ? rawText.slice(firstBrace, lastBrace + 1)
+        : rawText;
 
-    const parsedJson = JSON.parse(jsonText);
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(jsonText);
+    } catch (parseErr) {
+      // Save raw response snippet so we can diagnose in prod
+      const snippet = rawText.slice(0, 1000);
+      console.error("[createPrep] JSON parse failed. Raw prefix:", snippet);
+      throw new Error(
+        `JSON parse failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}. Raw: ${snippet}`,
+      );
+    }
+
     const validated = prepGuideSchema.parse(parsedJson);
 
     await supabase
@@ -88,7 +104,7 @@ export async function createPrep(
   } catch (err) {
     console.error("[createPrep] generation failed:", err);
     const message =
-      err instanceof Error ? err.message.slice(0, 500) : "Unknown error";
+      err instanceof Error ? err.message.slice(0, 1500) : "Unknown error";
     await supabase
       .from("prep_sessions")
       .update({

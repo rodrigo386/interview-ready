@@ -245,7 +245,7 @@ export async function createPrepGuide(params: {
     const response = await anthropic.messages.create(
       {
         model: "claude-sonnet-4-6",
-        max_tokens: 8000,
+        max_tokens: 4000,
         system: params.system,
         messages: [{ role: "user", content: params.user }],
       },
