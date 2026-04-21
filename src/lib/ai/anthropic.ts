@@ -239,19 +239,27 @@ export async function createPrepGuide(params: {
   }
 
   const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-  const response = await anthropic.messages.create(
-    {
-      model: "claude-sonnet-4-6",
-      max_tokens: 8000,
-      system: params.system,
-      messages: [{ role: "user", content: params.user }],
-    },
-    { timeout: 90_000 },
-  );
+  const start = Date.now();
+  console.log("[anthropic] messages.create starting");
+  try {
+    const response = await anthropic.messages.create(
+      {
+        model: "claude-sonnet-4-6",
+        max_tokens: 8000,
+        system: params.system,
+        messages: [{ role: "user", content: params.user }],
+      },
+      { timeout: 180_000 },
+    );
+    console.log(`[anthropic] messages.create completed in ${Date.now() - start}ms`);
 
-  return response.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b.type === "text" ? b.text : ""))
-    .join("")
-    .trim();
+    return response.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b.type === "text" ? b.text : ""))
+      .join("")
+      .trim();
+  } catch (err) {
+    console.error(`[anthropic] messages.create failed after ${Date.now() - start}ms:`, err);
+    throw err;
+  }
 }
