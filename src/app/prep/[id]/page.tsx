@@ -40,10 +40,10 @@ export default async function PrepViewPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ section?: string }>;
+  searchParams: Promise<{ section?: string; card?: string }>;
 }) {
   const { id } = await params;
-  const { section } = await searchParams;
+  const { section, card } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -83,6 +83,7 @@ export default async function PrepViewPage({
         guide={parsed.data}
         sessionId={session.id}
         activeSectionId={section}
+        activeCardId={card}
       />
     </>
   );

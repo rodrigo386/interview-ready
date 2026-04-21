@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PrepCard as PrepCardType } from "@/lib/ai/schemas";
 
 const CONFIDENCE_STYLES: Record<PrepCardType["confidence_level"], string> = {
@@ -9,11 +9,28 @@ const CONFIDENCE_STYLES: Record<PrepCardType["confidence_level"], string> = {
   low: "bg-red-950/40 text-red-300 border-red-900",
 };
 
-export function PrepCard({ card }: { card: PrepCardType }) {
-  const [open, setOpen] = useState(false);
+export function PrepCard({
+  card,
+  defaultOpen = false,
+}: {
+  card: PrepCardType;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (defaultOpen && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [defaultOpen]);
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/40">
+    <div
+      ref={ref}
+      id={`card-${card.id}`}
+      className="rounded-lg border border-zinc-800 bg-zinc-900/40 scroll-mt-24"
+    >
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

@@ -13,7 +13,7 @@ export const prepCardSchema = z.object({
 export const prepSectionSchema = z.object({
   id: z.string(),
   title: z.string().min(1),
-  icon: z.string().min(1).max(4),
+  icon: z.string().min(1),
   summary: z.string(),
   cards: z.array(prepCardSchema).min(1).max(10),
 });

@@ -27,6 +27,7 @@ export default async function DashboardPage() {
   const { data: sessions } = await supabase
     .from("prep_sessions")
     .select("id, company_name, job_title, generation_status, created_at")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(20);
 

@@ -10,6 +10,33 @@ import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
 const MODEL_ID = "claude-sonnet-4-5";
 
+export class ClaudeResponseError extends Error {
+  rawResponse: string;
+  stopReason: string | null;
+  constructor(message: string, rawResponse: string, stopReason: string | null) {
+    super(message);
+    this.name = "ClaudeResponseError";
+    this.rawResponse = rawResponse;
+    this.stopReason = stopReason;
+  }
+}
+
+function dumpResponse(response: Anthropic.Messages.Message): string {
+  try {
+    return JSON.stringify(
+      {
+        stop_reason: response.stop_reason,
+        content: response.content,
+        usage: response.usage,
+      },
+      null,
+      2,
+    );
+  } catch {
+    return String(response);
+  }
+}
+
 /** Full PrepSection fixtures used when MOCK_ANTHROPIC=1. */
 const MOCK_SECTIONS: Record<SectionKind, PrepSection> = {
   likely: {
@@ -213,7 +240,7 @@ const sectionToolSchema = {
   properties: {
     id: { type: "string" as const },
     title: { type: "string" as const, minLength: 1 },
-    icon: { type: "string" as const, minLength: 1, maxLength: 4 },
+    icon: { type: "string" as const, minLength: 1 },
     summary: { type: "string" as const },
     cards: {
       type: "array" as const,
@@ -299,14 +326,22 @@ export async function generateSection(params: {
 
   const toolUse = response.content.find((b) => b.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") {
-    throw new Error(
+    throw new ClaudeResponseError(
       `Claude did not call submit_section tool. stop_reason=${response.stop_reason}`,
+      dumpResponse(response),
+      response.stop_reason,
     );
   }
 
-  // tool_use.input is already parsed JSON matching our schema.
-  // Validate with Zod as defense-in-depth.
-  return prepSectionSchema.parse(toolUse.input);
+  const parsed = prepSectionSchema.safeParse(toolUse.input);
+  if (!parsed.success) {
+    throw new ClaudeResponseError(
+      `Section failed schema validation: ${parsed.error.message}`,
+      dumpResponse(response),
+      response.stop_reason,
+    );
+  }
+  return parsed.data;
 }
 
 // JSON Schema mirror of atsAnalysisSchema for Anthropic tool_use
@@ -465,7 +500,19 @@ export async function generateAtsAnalysis(params: {
   );
   const toolUse = response.content.find((b) => b.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") {
-    throw new Error(`Claude did not call submit_ats_analysis. stop_reason=${response.stop_reason}`);
+    throw new ClaudeResponseError(
+      `Claude did not call submit_ats_analysis. stop_reason=${response.stop_reason}`,
+      dumpResponse(response),
+      response.stop_reason,
+    );
   }
-  return atsAnalysisSchema.parse(toolUse.input);
+  const parsed = atsAnalysisSchema.safeParse(toolUse.input);
+  if (!parsed.success) {
+    throw new ClaudeResponseError(
+      `ATS analysis failed schema validation: ${parsed.error.message}`,
+      dumpResponse(response),
+      response.stop_reason,
+    );
+  }
+  return parsed.data;
 }
