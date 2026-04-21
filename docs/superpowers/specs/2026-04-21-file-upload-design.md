@@ -163,7 +163,7 @@ export async function uploadCv(
 3. Read buffer: `const buffer = Buffer.from(await file.arrayBuffer())`
 4. Parse → `{ text }`. `ParseError` → return `{ error: err.message }`.
 5. `const cvId = crypto.randomUUID()`; `const ext = extFromMime(file.type)`; `const path = \`${user.id}/${cvId}.${ext}\``
-6. Upload to Storage via authenticated Supabase client (RLS enforces user folder). On failure → return `{ error }`.
+6. Upload to Storage via the existing cookie-authenticated server client from `@/lib/supabase/server` (NOT service role — storage RLS uses the user JWT to enforce the folder convention). On failure → return `{ error }`.
 7. Insert into `cvs` with `id: cvId, user_id, file_name: file.name, file_path: path, file_size_bytes: file.size, mime_type: file.type, parsed_text: text`.
 8. If insert fails, delete the storage object (best-effort rollback), return `{ error }`.
 9. Return `{ cv: { id: cvId, file_name: file.name } }`.
