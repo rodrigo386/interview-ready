@@ -51,3 +51,6 @@ playwright/.cache/
 # supabase CLI local state (do not commit)
 supabase/.branches/
 supabase/.temp/
+
+# claude code local settings (per-machine)
+.claude/settings.local.json

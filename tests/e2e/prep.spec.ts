@@ -37,8 +37,8 @@ test("signup + create prep + view prep guide", async ({ page }) => {
 
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
 
-  // "Prep for Mock Co" comes from the MOCK_ANTHROPIC fixture.
-  await expect(page.getByRole("heading", { name: /Prep for Mock Co/i })).toBeVisible({
+  // "Prep for Hexion" comes from meta.company written by runGeneration (session.company_name).
+  await expect(page.getByRole("heading", { name: /Prep for Hexion/i })).toBeVisible({
     timeout: 10_000,
   });
   await expect(page.getByText("Likely Questions").first()).toBeVisible();

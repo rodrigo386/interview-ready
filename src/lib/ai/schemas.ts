@@ -24,7 +24,7 @@ export const prepGuideSchema = z.object({
     company: z.string().min(1),
     estimated_prep_time_minutes: z.number().int().min(10).max(180),
   }),
-  sections: z.array(prepSectionSchema).min(3).max(7),
+  sections: z.array(prepSectionSchema).min(0).max(7),
 });
 
 export type PrepGuide = z.infer<typeof prepGuideSchema>;
