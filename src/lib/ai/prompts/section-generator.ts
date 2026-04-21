@@ -2,7 +2,12 @@ import { prepSectionSchema } from "@/lib/ai/schemas";
 import { z } from "zod";
 
 // Runtime type of a PrepSection (import to reuse)
-export type SectionKind = "likely" | "deep-dive" | "questions-to-ask";
+export type SectionKind =
+  | "likely"
+  | "deep-dive"
+  | "tricky"
+  | "questions-to-ask"
+  | "mindset";
 
 type SectionBrief = {
   id: string;
@@ -35,6 +40,22 @@ const SECTION_BRIEFS: Record<SectionKind, SectionBrief> = {
     icon: "❓",
     focus:
       "Strategic questions the candidate should ask that signal research and judgement. Each card's 'question' is the candidate's question; sample_answer is coaching on WHY to ask it and what signal to listen for.",
+    num_cards: 3,
+  },
+  "tricky": {
+    id: "tricky-questions",
+    title: "Tricky Questions",
+    icon: "🎯",
+    focus:
+      "Difficult, unexpected, or stress-test questions. Examples: why leaving current role, what would you do differently from the previous person in this role, weakness with real mitigation, 'sell me this pen'-style curveballs, handling bad news or pushback. Each card must feel realistic and grounded in the candidate's actual risk areas given their CV.",
+    num_cards: 3,
+  },
+  "mindset": {
+    id: "mindset-tips",
+    title: "Mindset & Tips",
+    icon: "🧠",
+    focus:
+      "Framing, soft skills, and delivery advice specific to this candidate and role. Examples: how to frame their value vs. lower-cost candidates, pacing for a 45-minute interview, what to emphasize vs. downplay given the CV, video-call setup tips, recovery from a wobble mid-interview. Each card's 'question' is a situation/topic, 'sample_answer' is the coaching they need.",
     num_cards: 3,
   },
 };
@@ -86,5 +107,7 @@ TARGET COMPANY: ${params.companyName}`;
 export const SECTION_KINDS: SectionKind[] = [
   "likely",
   "deep-dive",
+  "tricky",
   "questions-to-ask",
+  "mindset",
 ];
