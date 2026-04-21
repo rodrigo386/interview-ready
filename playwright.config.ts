@@ -19,5 +19,8 @@ export default defineConfig({
     port: 3000,
     timeout: 120_000,
     reuseExistingServer: !process.env.CI,
+    env: {
+      MOCK_ANTHROPIC: "1",
+    },
   },
 });
