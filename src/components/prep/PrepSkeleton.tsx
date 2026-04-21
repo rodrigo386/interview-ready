@@ -1,3 +1,5 @@
+import { SECTION_KINDS } from "@/lib/ai/prompts/section-generator";
+
 export function PrepSkeleton() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
@@ -12,7 +14,7 @@ export function PrepSkeleton() {
       </div>
 
       <div className="mt-10 space-y-6">
-        {[0, 1, 2].map((i) => (
+        {SECTION_KINDS.map((_, i) => (
           <div
             key={i}
             className="h-24 animate-pulse rounded-lg border border-zinc-800 bg-zinc-900/40"
