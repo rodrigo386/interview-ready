@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { deleteFailedPrep } from "@/app/prep/new/actions";
+import { deleteFailedPrep, retryPrep } from "@/app/prep/new/actions";
 
 export function PrepFailed({
   id,
@@ -9,6 +9,7 @@ export function PrepFailed({
   id: string;
   errorMessage: string | null;
 }) {
+  const retryAction = retryPrep.bind(null, id);
   const deleteAction = deleteFailedPrep.bind(null, id);
 
   return (
@@ -18,7 +19,8 @@ export function PrepFailed({
           We couldn&apos;t generate your prep.
         </h1>
         <p className="mt-2 text-sm text-red-300">
-          Something went wrong while calling the AI. Try again in a moment.
+          Something went wrong while calling the AI. Retry uses the same CV and
+          job description — no need to re-paste.
         </p>
         {errorMessage && (
           <pre className="mt-4 overflow-x-auto rounded bg-black/40 p-3 font-mono text-xs text-red-300">
@@ -27,12 +29,17 @@ export function PrepFailed({
         )}
       </div>
 
-      <div className="mt-6 flex gap-3">
+      <div className="mt-6 flex flex-wrap gap-3">
+        <form action={retryAction}>
+          <Button type="submit">Retry</Button>
+        </form>
         <form action={deleteAction}>
-          <Button type="submit">Delete and try again</Button>
+          <Button type="submit" variant="secondary">
+            Delete and start over
+          </Button>
         </form>
         <Link href="/dashboard">
-          <Button variant="secondary">Back to dashboard</Button>
+          <Button variant="ghost">Back to dashboard</Button>
         </Link>
       </div>
     </main>

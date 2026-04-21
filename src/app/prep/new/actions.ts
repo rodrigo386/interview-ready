@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { buildPrepPrompt } from "@/lib/ai/prompts/prep-generator";
 import { prepGuideSchema } from "@/lib/ai/schemas";
@@ -19,6 +20,70 @@ const formSchema = z.object({
 });
 
 export type CreatePrepState = { error?: string };
+
+type GenerationInput = {
+  cvText: string;
+  jdText: string;
+  jobTitle: string;
+  companyName: string;
+};
+
+/**
+ * Run the full generate → validate → persist pipeline for an existing
+ * prep_sessions row. Sets status to complete/failed as appropriate.
+ * Never throws — always writes a terminal status to the row.
+ */
+async function runGeneration(
+  supabase: SupabaseClient,
+  sessionId: string,
+  input: GenerationInput,
+): Promise<void> {
+  try {
+    const { system, user: userMsg } = buildPrepPrompt(input);
+    const rawText = await createPrepGuide({ system, user: userMsg });
+
+    // Slice on first `{` and last `}` to tolerate preamble/fences.
+    const firstBrace = rawText.indexOf("{");
+    const lastBrace = rawText.lastIndexOf("}");
+    const jsonText =
+      firstBrace >= 0 && lastBrace > firstBrace
+        ? rawText.slice(firstBrace, lastBrace + 1)
+        : rawText;
+
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(jsonText);
+    } catch (parseErr) {
+      const snippet = rawText.slice(0, 1000);
+      console.error("[prep] JSON parse failed. Raw prefix:", snippet);
+      throw new Error(
+        `JSON parse failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}. Raw: ${snippet}`,
+      );
+    }
+
+    const validated = prepGuideSchema.parse(parsedJson);
+
+    await supabase
+      .from("prep_sessions")
+      .update({
+        prep_guide: validated,
+        generation_status: "complete",
+        error_message: null,
+      })
+      .eq("id", sessionId);
+  } catch (err) {
+    console.error("[prep] generation failed:", err);
+    const message =
+      err instanceof Error ? err.message.slice(0, 1500) : "Unknown error";
+    await supabase
+      .from("prep_sessions")
+      .update({
+        generation_status: "failed",
+        error_message: message,
+      })
+      .eq("id", sessionId);
+  }
+}
 
 export async function createPrep(
   _prev: CreatePrepState,
@@ -60,61 +125,52 @@ export async function createPrep(
     };
   }
 
-  try {
-    const { system, user: userMsg } = buildPrepPrompt({
-      cvText: parsed.data.cvText,
-      jdText: parsed.data.jobDescription,
-      jobTitle: parsed.data.jobTitle,
-      companyName: parsed.data.companyName,
-    });
-
-    const rawText = await createPrepGuide({ system, user: userMsg });
-
-    // Extract the JSON object from the response. Even with instructions,
-    // models sometimes add preamble, fences, or trailing text. Slice on
-    // first `{` and last `}` rather than trusting the whole string.
-    const firstBrace = rawText.indexOf("{");
-    const lastBrace = rawText.lastIndexOf("}");
-    const jsonText =
-      firstBrace >= 0 && lastBrace > firstBrace
-        ? rawText.slice(firstBrace, lastBrace + 1)
-        : rawText;
-
-    let parsedJson: unknown;
-    try {
-      parsedJson = JSON.parse(jsonText);
-    } catch (parseErr) {
-      // Save raw response snippet so we can diagnose in prod
-      const snippet = rawText.slice(0, 1000);
-      console.error("[createPrep] JSON parse failed. Raw prefix:", snippet);
-      throw new Error(
-        `JSON parse failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}. Raw: ${snippet}`,
-      );
-    }
-
-    const validated = prepGuideSchema.parse(parsedJson);
-
-    await supabase
-      .from("prep_sessions")
-      .update({
-        prep_guide: validated,
-        generation_status: "complete",
-      })
-      .eq("id", session.id);
-  } catch (err) {
-    console.error("[createPrep] generation failed:", err);
-    const message =
-      err instanceof Error ? err.message.slice(0, 1500) : "Unknown error";
-    await supabase
-      .from("prep_sessions")
-      .update({
-        generation_status: "failed",
-        error_message: message,
-      })
-      .eq("id", session.id);
-  }
+  await runGeneration(supabase, session.id, {
+    cvText: parsed.data.cvText,
+    jdText: parsed.data.jobDescription,
+    jobTitle: parsed.data.jobTitle,
+    companyName: parsed.data.companyName,
+  });
 
   redirect(`/prep/${session.id}`);
+}
+
+/**
+ * Re-run generation for an existing failed session using the stored CV/JD.
+ * User clicks "Retry" from the PrepFailed UI.
+ */
+export async function retryPrep(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: session, error } = await supabase
+    .from("prep_sessions")
+    .select(
+      "id, user_id, cv_text, job_description, job_title, company_name, generation_status",
+    )
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (error || !session) redirect("/dashboard");
+  if (session.generation_status === "complete") redirect(`/prep/${id}`);
+
+  await supabase
+    .from("prep_sessions")
+    .update({ generation_status: "generating", error_message: null })
+    .eq("id", id);
+
+  await runGeneration(supabase, id, {
+    cvText: session.cv_text,
+    jdText: session.job_description,
+    jobTitle: session.job_title,
+    companyName: session.company_name,
+  });
+
+  redirect(`/prep/${id}`);
 }
 
 export async function deleteFailedPrep(id: string) {
