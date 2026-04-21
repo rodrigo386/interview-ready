@@ -9,13 +9,13 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
   let user = null;
   try {
+    const supabase = await createClient();
     const { data } = await supabase.auth.getUser();
     user = data.user;
   } catch (err) {
-    console.error("[dashboard/layout] supabase.auth.getUser() failed:", err);
+    console.error("[dashboard/layout] auth check failed:", err);
   }
 
   if (!user) {
