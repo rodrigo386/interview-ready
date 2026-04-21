@@ -6,6 +6,10 @@ const schema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   // Optional — callers should fall back to x-forwarded-host if absent.
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  ANTHROPIC_API_KEY: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
 });
 
 type Env = z.infer<typeof schema>;
@@ -18,6 +22,7 @@ function parseOrThrow(): Env {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   });
   if (!result.success) {
     console.error("Invalid environment variables:", result.error.flatten().fieldErrors);
