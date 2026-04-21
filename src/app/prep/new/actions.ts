@@ -15,26 +15,6 @@ const formSchema = z.object({
 
 export type CreatePrepState = { error?: string };
 
-async function kickoffGeneration(sessionId: string) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  // Fire-and-forget. We intentionally do NOT await — we just want the
-  // Route Handler request to initiate. Cookies are forwarded via the
-  // Next.js fetch integration in server actions.
-  try {
-    await fetch(`${baseUrl}/api/prep/${sessionId}/generate`, {
-      method: "POST",
-      // Cookies aren't auto-forwarded on server-to-server fetch. The
-      // route handler needs its own auth check, so we can't kick this
-      // off from the action safely. Instead, run the generation inline
-      // via an internal helper. See runGenerationInline below.
-    });
-  } catch (err) {
-    // Swallow — inline path handles errors via DB status.
-    console.error("[kickoff] fetch failed:", err);
-  }
-}
-
 export async function createPrep(
   _prev: CreatePrepState,
   formData: FormData,
