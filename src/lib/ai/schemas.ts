@@ -30,3 +30,37 @@ export const prepGuideSchema = z.object({
 export type PrepGuide = z.infer<typeof prepGuideSchema>;
 export type PrepSection = z.infer<typeof prepSectionSchema>;
 export type PrepCard = z.infer<typeof prepCardSchema>;
+
+export const atsKeywordSchema = z.object({
+  keyword: z.string().min(1),
+  found: z.boolean(),
+  context: z.string().optional(),
+});
+
+export const atsFixSchema = z.object({
+  priority: z.number().int().min(1).max(10),
+  gap: z.string().min(1),
+  original_cv_language: z.string(),
+  jd_language: z.string().min(1),
+  suggested_rewrite: z.string().min(20),
+});
+
+export const atsAnalysisSchema = z.object({
+  score: z.number().int().min(0).max(100),
+  title_match: z.object({
+    cv_title: z.string(),
+    jd_title: z.string(),
+    match_score: z.number().int().min(0).max(100),
+  }),
+  keyword_analysis: z.object({
+    critical: z.array(atsKeywordSchema).min(0).max(30),
+    high: z.array(atsKeywordSchema).min(0).max(40),
+    medium: z.array(atsKeywordSchema).min(0).max(40),
+  }),
+  top_fixes: z.array(atsFixSchema).min(1).max(7),
+  overall_assessment: z.string().min(30),
+});
+
+export type AtsAnalysis = z.infer<typeof atsAnalysisSchema>;
+export type AtsKeyword = z.infer<typeof atsKeywordSchema>;
+export type AtsFix = z.infer<typeof atsFixSchema>;
