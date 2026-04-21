@@ -245,13 +245,21 @@ export async function createPrepGuide(params: {
     const response = await anthropic.messages.create(
       {
         model: "claude-sonnet-4-6",
-        max_tokens: 4000,
+        max_tokens: 6000,
         system: params.system,
         messages: [{ role: "user", content: params.user }],
       },
       { timeout: 180_000 },
     );
-    console.log(`[anthropic] messages.create completed in ${Date.now() - start}ms`);
+    console.log(
+      `[anthropic] messages.create completed in ${Date.now() - start}ms — stop_reason=${response.stop_reason}, output_tokens=${response.usage?.output_tokens ?? "?"}`,
+    );
+
+    if (response.stop_reason === "max_tokens") {
+      throw new Error(
+        `Claude response truncated at max_tokens (${response.usage?.output_tokens ?? "?"}). The prompt is asking for too much — tighten the schema or raise max_tokens.`,
+      );
+    }
 
     return response.content
       .filter((b) => b.type === "text")

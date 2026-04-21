@@ -39,13 +39,19 @@ Your output MUST match this JSON schema exactly (no markdown fences, no preamble
 
 ${schemaInline}
 
-Generate exactly these 4 sections using these EXACT titles:
+Generate exactly 3 sections using these EXACT titles:
 - "Likely Questions" — core behavioral + role-fit questions
 - "Deep Dive Questions" — technical/domain questions specific to the role
-- "Tricky Questions" — difficult, unexpected, or stress-test questions
 - "Questions to Ask the Interviewer" — strategic, research-signaling questions
 
-Exactly 3 cards per section. Keep each sample_answer to 3-5 sentences (natural, conversational, specific — not a paragraph essay).
+Exactly 2 cards per section (6 cards total).
+
+BUDGET (strict — if you exceed these you risk truncation):
+- key_points: exactly 3 bullets, ≤ 15 words each
+- sample_answer: 3-4 sentences, ≤ 90 words total
+- tips: 1 sentence, ≤ 25 words
+- references_cv: 2-3 items, ≤ 10 words each
+- summary: 1 sentence, ≤ 20 words
 
 CRITICAL RULES:
 - NEVER generic advice. EVERY sample_answer must reference the candidate's SPECIFIC experience: company names, project titles, metrics, team sizes, dates.
