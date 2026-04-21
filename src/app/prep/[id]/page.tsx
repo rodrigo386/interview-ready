@@ -78,7 +78,7 @@ export default async function PrepViewPage({
   const ats = renderAtsBlock(session);
   return (
     <>
-      {ats}
+      <div className="mx-auto max-w-5xl px-6 pt-10">{ats}</div>
       <PrepGuide
         guide={parsed.data}
         sessionId={session.id}
