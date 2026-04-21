@@ -239,12 +239,15 @@ export async function createPrepGuide(params: {
   }
 
   const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 8000,
-    system: params.system,
-    messages: [{ role: "user", content: params.user }],
-  });
+  const response = await anthropic.messages.create(
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 8000,
+      system: params.system,
+      messages: [{ role: "user", content: params.user }],
+    },
+    { timeout: 90_000 },
+  );
 
   return response.content
     .filter((b) => b.type === "text")

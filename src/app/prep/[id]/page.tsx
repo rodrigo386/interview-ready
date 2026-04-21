@@ -1,9 +1,35 @@
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { prepGuideSchema } from "@/lib/ai/schemas";
 import { PrepGuide } from "@/components/prep/PrepGuide";
 import { PrepFailed } from "@/components/prep/PrepFailed";
 import { PrepSkeleton } from "@/components/prep/PrepSkeleton";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("prep_sessions")
+    .select("generation_status")
+    .eq("id", id)
+    .single();
+
+  const isGenerating =
+    data?.generation_status === "generating" ||
+    data?.generation_status === "pending";
+
+  return {
+    title: "Prep — InterviewReady",
+    other: isGenerating
+      ? { "http-equiv": "refresh", content: "3" }
+      : {},
+  };
+}
 
 export default async function PrepViewPage({
   params,

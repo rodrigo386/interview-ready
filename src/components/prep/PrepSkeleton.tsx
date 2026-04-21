@@ -1,29 +1,24 @@
 export function PrepSkeleton() {
   return (
-    <>
-      {/* Auto-refresh page every 3s until generation_status changes */}
-      <meta httpEquiv="refresh" content="3" />
-
-      <main className="mx-auto max-w-5xl px-6 py-12">
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-6">
-          <div className="flex items-center gap-3">
-            <div className="h-3 w-3 animate-pulse rounded-full bg-brand" />
-            <p className="text-sm text-zinc-300">Generating your prep guide…</p>
-          </div>
-          <p className="mt-2 text-xs text-zinc-500">
-            Takes about 30 seconds. You can close this tab and come back.
-          </p>
+    <main className="mx-auto max-w-5xl px-6 py-12">
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-6">
+        <div className="flex items-center gap-3">
+          <div className="h-3 w-3 animate-pulse rounded-full bg-brand" />
+          <p className="text-sm text-zinc-300">Generating your prep guide…</p>
         </div>
+        <p className="mt-2 text-xs text-zinc-500">
+          Takes about 30 seconds. You can close this tab and come back.
+        </p>
+      </div>
 
-        <div className="mt-10 space-y-6">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-24 animate-pulse rounded-lg border border-zinc-800 bg-zinc-900/40"
-            />
-          ))}
-        </div>
-      </main>
-    </>
+      <div className="mt-10 space-y-6">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="h-24 animate-pulse rounded-lg border border-zinc-800 bg-zinc-900/40"
+          />
+        ))}
+      </div>
+    </main>
   );
 }
