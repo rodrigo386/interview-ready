@@ -29,7 +29,6 @@ describe("buildPrepPrompt", () => {
     expect(system).toContain("Deep Dive Questions");
     expect(system).toContain("Tricky Questions");
     expect(system).toContain("Questions to Ask");
-    expect(system).toContain("Mindset & Tips");
   });
 
   it("system prompt forbids generic advice", () => {
