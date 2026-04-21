@@ -2,18 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { buildPrepPrompt } from "@/lib/ai/prompts/prep-generator";
-import { prepGuideSchema } from "@/lib/ai/schemas";
-import { createPrepGuide } from "@/lib/ai/anthropic";
 
 const formSchema = z.object({
   jobTitle: z.string().min(2, "Job title is required").max(120),
   companyName: z.string().min(2, "Company name is required").max(120),
-  cvText: z
-    .string()
-    .min(200, "Paste a longer CV — at least 200 characters"),
+  cvText: z.string().min(200, "Paste a longer CV — at least 200 characters"),
   jobDescription: z
     .string()
     .min(200, "Paste a longer job description — at least 200 characters"),
@@ -21,67 +15,23 @@ const formSchema = z.object({
 
 export type CreatePrepState = { error?: string };
 
-type GenerationInput = {
-  cvText: string;
-  jdText: string;
-  jobTitle: string;
-  companyName: string;
-};
-
-/**
- * Run the full generate → validate → persist pipeline for an existing
- * prep_sessions row. Sets status to complete/failed as appropriate.
- * Never throws — always writes a terminal status to the row.
- */
-async function runGeneration(
-  supabase: SupabaseClient,
-  sessionId: string,
-  input: GenerationInput,
-): Promise<void> {
+async function kickoffGeneration(sessionId: string) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  // Fire-and-forget. We intentionally do NOT await — we just want the
+  // Route Handler request to initiate. Cookies are forwarded via the
+  // Next.js fetch integration in server actions.
   try {
-    const { system, user: userMsg } = buildPrepPrompt(input);
-    const rawText = await createPrepGuide({ system, user: userMsg });
-
-    // Slice on first `{` and last `}` to tolerate preamble/fences.
-    const firstBrace = rawText.indexOf("{");
-    const lastBrace = rawText.lastIndexOf("}");
-    const jsonText =
-      firstBrace >= 0 && lastBrace > firstBrace
-        ? rawText.slice(firstBrace, lastBrace + 1)
-        : rawText;
-
-    let parsedJson: unknown;
-    try {
-      parsedJson = JSON.parse(jsonText);
-    } catch (parseErr) {
-      const snippet = rawText.slice(0, 1000);
-      console.error("[prep] JSON parse failed. Raw prefix:", snippet);
-      throw new Error(
-        `JSON parse failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}. Raw: ${snippet}`,
-      );
-    }
-
-    const validated = prepGuideSchema.parse(parsedJson);
-
-    await supabase
-      .from("prep_sessions")
-      .update({
-        prep_guide: validated,
-        generation_status: "complete",
-        error_message: null,
-      })
-      .eq("id", sessionId);
+    await fetch(`${baseUrl}/api/prep/${sessionId}/generate`, {
+      method: "POST",
+      // Cookies aren't auto-forwarded on server-to-server fetch. The
+      // route handler needs its own auth check, so we can't kick this
+      // off from the action safely. Instead, run the generation inline
+      // via an internal helper. See runGenerationInline below.
+    });
   } catch (err) {
-    console.error("[prep] generation failed:", err);
-    const message =
-      err instanceof Error ? err.message.slice(0, 1500) : "Unknown error";
-    await supabase
-      .from("prep_sessions")
-      .update({
-        generation_status: "failed",
-        error_message: message,
-      })
-      .eq("id", sessionId);
+    // Swallow — inline path handles errors via DB status.
+    console.error("[kickoff] fetch failed:", err);
   }
 }
 
@@ -113,7 +63,7 @@ export async function createPrep(
       company_name: parsed.data.companyName,
       cv_text: parsed.data.cvText,
       job_description: parsed.data.jobDescription,
-      generation_status: "generating",
+      generation_status: "pending",
     })
     .select("id")
     .single();
@@ -125,20 +75,21 @@ export async function createPrep(
     };
   }
 
-  await runGeneration(supabase, session.id, {
-    cvText: parsed.data.cvText,
-    jdText: parsed.data.jobDescription,
-    jobTitle: parsed.data.jobTitle,
-    companyName: parsed.data.companyName,
-  });
+  // Run generation inline in the action. Railway has no serverless
+  // timeout; the action will take ~20-40s with parallel tool calls.
+  // This is simpler and more reliable than fire-and-forget fetch.
+  await runGenerationInline(session.id);
 
   redirect(`/prep/${session.id}`);
 }
 
-/**
- * Re-run generation for an existing failed session using the stored CV/JD.
- * User clicks "Retry" from the PrepFailed UI.
- */
+/** Import-deferred to avoid circular types. Runs the same flow as the
+ *  Route Handler's logic, invoked from the Server Action. */
+async function runGenerationInline(sessionId: string) {
+  const { runGeneration } = await import("./generation");
+  await runGeneration(sessionId);
+}
+
 export async function retryPrep(id: string) {
   const supabase = await createClient();
   const {
@@ -148,9 +99,7 @@ export async function retryPrep(id: string) {
 
   const { data: session, error } = await supabase
     .from("prep_sessions")
-    .select(
-      "id, user_id, cv_text, job_description, job_title, company_name, generation_status",
-    )
+    .select("id, user_id, generation_status")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -158,17 +107,17 @@ export async function retryPrep(id: string) {
   if (error || !session) redirect("/dashboard");
   if (session.generation_status === "complete") redirect(`/prep/${id}`);
 
+  // Flip to pending so runGeneration's guard re-allows kickoff.
   await supabase
     .from("prep_sessions")
-    .update({ generation_status: "generating", error_message: null })
+    .update({
+      generation_status: "pending",
+      error_message: null,
+      prep_guide: null,
+    })
     .eq("id", id);
 
-  await runGeneration(supabase, id, {
-    cvText: session.cv_text,
-    jdText: session.job_description,
-    jobTitle: session.job_title,
-    companyName: session.company_name,
-  });
+  await runGenerationInline(id);
 
   redirect(`/prep/${id}`);
 }
