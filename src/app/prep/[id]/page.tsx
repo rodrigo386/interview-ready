@@ -1,10 +1,14 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { prepGuideSchema } from "@/lib/ai/schemas";
+import { prepGuideSchema, atsAnalysisSchema } from "@/lib/ai/schemas";
 import { PrepGuide } from "@/components/prep/PrepGuide";
 import { PrepFailed } from "@/components/prep/PrepFailed";
 import { PrepSkeleton } from "@/components/prep/PrepSkeleton";
+import { AtsCtaCard } from "@/components/prep/AtsCtaCard";
+import { AtsScoreCard } from "@/components/prep/AtsScoreCard";
+import { AtsFailed } from "@/components/prep/AtsFailed";
+import { AtsSkeleton } from "@/components/prep/AtsSkeleton";
 
 export async function generateMetadata({
   params,
@@ -49,7 +53,7 @@ export default async function PrepViewPage({
 
   const { data: session, error } = await supabase
     .from("prep_sessions")
-    .select("id, generation_status, prep_guide, error_message")
+    .select("id, generation_status, prep_guide, error_message, ats_status, ats_analysis, ats_error_message")
     .eq("id", id)
     .single();
 
@@ -71,11 +75,35 @@ export default async function PrepViewPage({
     return <PrepFailed id={session.id} errorMessage="Stored guide is malformed." />;
   }
 
+  const ats = renderAtsBlock(session);
   return (
-    <PrepGuide
-      guide={parsed.data}
-      sessionId={session.id}
-      activeSectionId={section}
-    />
+    <>
+      {ats}
+      <PrepGuide
+        guide={parsed.data}
+        sessionId={session.id}
+        activeSectionId={section}
+      />
+    </>
   );
+}
+
+function renderAtsBlock(session: {
+  id: string;
+  ats_status: string | null;
+  ats_analysis: unknown;
+  ats_error_message: string | null;
+}) {
+  if (session.ats_status === "generating") return <AtsSkeleton />;
+  if (session.ats_status === "failed") {
+    return <AtsFailed sessionId={session.id} errorMessage={session.ats_error_message} />;
+  }
+  if (session.ats_status === "complete") {
+    const parsed = atsAnalysisSchema.safeParse(session.ats_analysis);
+    if (!parsed.success) {
+      return <AtsFailed sessionId={session.id} errorMessage="Stored analysis is malformed." />;
+    }
+    return <AtsScoreCard analysis={parsed.data} />;
+  }
+  return <AtsCtaCard sessionId={session.id} />;
 }
