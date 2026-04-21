@@ -30,9 +30,22 @@ describe("prepGuideSchema", () => {
     expect(() => prepGuideSchema.parse(validGuide)).not.toThrow();
   });
 
-  it("rejects guide with fewer than 3 sections", () => {
+  it("accepts guide with fewer than 3 sections (partial during generation)", () => {
     expect(() =>
       prepGuideSchema.parse({ ...validGuide, sections: [validSection] }),
+    ).not.toThrow();
+  });
+
+  it("accepts guide with zero sections (initial state)", () => {
+    expect(() =>
+      prepGuideSchema.parse({ ...validGuide, sections: [] }),
+    ).not.toThrow();
+  });
+
+  it("rejects guide with more than 7 sections", () => {
+    const tooMany = Array.from({ length: 8 }, () => validSection);
+    expect(() =>
+      prepGuideSchema.parse({ ...validGuide, sections: tooMany }),
     ).toThrow();
   });
 
