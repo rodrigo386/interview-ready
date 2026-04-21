@@ -6,13 +6,20 @@ export function PrepGuide({
   guide,
   sessionId,
   activeSectionId,
+  activeCardId,
 }: {
   guide: PrepGuideType;
   sessionId: string;
   activeSectionId?: string;
+  activeCardId?: string;
 }) {
+  const sectionContainingCard = activeCardId
+    ? guide.sections.find((s) => s.cards.some((c) => c.id === activeCardId))
+    : undefined;
   const active =
-    guide.sections.find((s) => s.id === activeSectionId) ?? guide.sections[0];
+    guide.sections.find((s) => s.id === activeSectionId) ??
+    sectionContainingCard ??
+    guide.sections[0];
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
@@ -64,7 +71,11 @@ export function PrepGuide({
 
         <div className="mt-6 space-y-3">
           {active.cards.map((card) => (
-            <PrepCard key={card.id} card={card} />
+            <PrepCard
+              key={card.id}
+              card={card}
+              defaultOpen={card.id === activeCardId}
+            />
           ))}
         </div>
       </section>

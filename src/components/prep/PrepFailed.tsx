@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { deleteFailedPrep, retryPrep } from "@/app/prep/new/actions";
 import { PendingButton } from "./PendingButton";
+import { ErrorDetails } from "./ErrorDetails";
 
 export function PrepFailed({
   id,
@@ -23,11 +24,7 @@ export function PrepFailed({
           Something went wrong while calling the AI. Retry uses the same CV and
           job description — no need to re-paste.
         </p>
-        {errorMessage && (
-          <pre className="mt-4 overflow-x-auto rounded bg-black/40 p-3 font-mono text-xs text-red-300">
-            {errorMessage}
-          </pre>
-        )}
+        {errorMessage && <ErrorDetails raw={errorMessage} />}
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">

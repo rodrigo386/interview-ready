@@ -78,6 +78,12 @@ describe("prepGuideSchema", () => {
     g.sections[0].cards[0].sample_answer = "Too short.";
     expect(() => prepGuideSchema.parse(g)).toThrow();
   });
+
+  it("accepts multi-codepoint ZWJ emoji in icon", () => {
+    const g = JSON.parse(JSON.stringify(validGuide));
+    g.sections[0].icon = "\uD83D\uDC68\u200D\uD83D\uDCBB"; // 👨‍💻 (man technologist, 5 UTF-16 code units)
+    expect(() => prepGuideSchema.parse(g)).not.toThrow();
+  });
 });
 
 const validAts = {

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { generateSection } from "@/lib/ai/anthropic";
+import { generateSection, ClaudeResponseError } from "@/lib/ai/anthropic";
 import {
   buildSectionPrompt,
   SECTION_KINDS,
@@ -62,9 +62,7 @@ export async function runGeneration(sessionId: string): Promise<void> {
     if (r.status === "fulfilled") {
       sections.push(r.value);
     } else {
-      errors.push(
-        r.reason instanceof Error ? r.reason.message : String(r.reason),
-      );
+      errors.push(formatReason(r.reason));
     }
   }
 
@@ -74,7 +72,7 @@ export async function runGeneration(sessionId: string): Promise<void> {
       .from("prep_sessions")
       .update({
         generation_status: "failed",
-        error_message: errors.join(" | ").slice(0, 1500),
+        error_message: errors.join("\n\n---\n\n").slice(0, 8000),
       })
       .eq("id", sessionId);
     return;
@@ -88,6 +86,16 @@ export async function runGeneration(sessionId: string): Promise<void> {
       error_message: null,
     })
     .eq("id", sessionId);
+}
+
+function formatReason(reason: unknown): string {
+  if (reason instanceof ClaudeResponseError) {
+    return `${reason.message}\n\nRAW RESPONSE:\n${reason.rawResponse}`;
+  }
+  if (reason instanceof Error) {
+    return reason.stack ?? reason.message;
+  }
+  return String(reason);
 }
 
 async function generateOne(

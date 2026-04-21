@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { buildAtsAnalyzerPrompt } from "@/lib/ai/prompts/ats-analyzer";
-import { generateAtsAnalysis } from "@/lib/ai/anthropic";
+import { generateAtsAnalysis, ClaudeResponseError } from "@/lib/ai/anthropic";
 
 export async function runAtsAnalysis(sessionId: string) {
   const supabase = await createClient();
@@ -49,7 +49,7 @@ export async function runAtsAnalysis(sessionId: string) {
       .eq("id", sessionId);
   } catch (err) {
     console.error(`[ats ${sessionId}] failed:`, err);
-    const message = err instanceof Error ? err.message.slice(0, 1500) : "Unknown error";
+    const message = formatAtsError(err).slice(0, 8000);
     await supabase
       .from("prep_sessions")
       .update({ ats_status: "failed", ats_error_message: message })
@@ -57,4 +57,14 @@ export async function runAtsAnalysis(sessionId: string) {
   }
 
   revalidatePath(`/prep/${sessionId}`);
+}
+
+function formatAtsError(err: unknown): string {
+  if (err instanceof ClaudeResponseError) {
+    return `${err.message}\n\nRAW RESPONSE:\n${err.rawResponse}`;
+  }
+  if (err instanceof Error) {
+    return err.stack ?? err.message;
+  }
+  return String(err);
 }
