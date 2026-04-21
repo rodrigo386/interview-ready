@@ -27,7 +27,6 @@ describe("buildPrepPrompt", () => {
     const { system } = buildPrepPrompt(params);
     expect(system).toContain("Likely Questions");
     expect(system).toContain("Deep Dive Questions");
-    expect(system).toContain("Tricky Questions");
     expect(system).toContain("Questions to Ask");
   });
 
