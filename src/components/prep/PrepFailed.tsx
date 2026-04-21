@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { deleteFailedPrep, retryPrep } from "@/app/prep/new/actions";
+import { PendingButton } from "./PendingButton";
 
 export function PrepFailed({
   id,
@@ -31,12 +32,18 @@ export function PrepFailed({
 
       <div className="mt-6 flex flex-wrap gap-3">
         <form action={retryAction}>
-          <Button type="submit">Retry</Button>
+          <PendingButton
+            idleLabel="Retry"
+            pendingLabel="Retrying… about 30 seconds"
+            variant="primary"
+          />
         </form>
         <form action={deleteAction}>
-          <Button type="submit" variant="secondary">
-            Delete and start over
-          </Button>
+          <PendingButton
+            idleLabel="Delete and start over"
+            pendingLabel="Deleting…"
+            variant="secondary"
+          />
         </form>
         <Link href="/dashboard">
           <Button variant="ghost">Back to dashboard</Button>
