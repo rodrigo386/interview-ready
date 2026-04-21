@@ -19,6 +19,9 @@ function mapSupabaseError(message: string): string {
   if (/already registered|already exists/i.test(message)) {
     return "An account with this email already exists.";
   }
+  if (/confirmation email/i.test(message)) {
+    return "Signup succeeded but sending the confirmation email failed. Contact support.";
+  }
   return "We couldn't create your account. Please try again.";
 }
 
@@ -36,20 +39,36 @@ export async function signup(
     return { error: parsed.error.issues[0].message };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: { data: { full_name: parsed.data.fullName } },
-  });
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signUp({
+      email: parsed.data.email,
+      password: parsed.data.password,
+      options: { data: { full_name: parsed.data.fullName } },
+    });
 
-  if (error) {
-    return { error: mapSupabaseError(error.message) };
-  }
+    if (error) {
+      console.error("[signup] supabase signUp error:", error.message, error);
+      return { error: mapSupabaseError(error.message) };
+    }
 
-  // If email confirmation is required, Supabase returns user but no session.
-  if (!data.session) {
-    return { pendingConfirmation: true };
+    // If email confirmation is required, Supabase returns user but no session.
+    if (!data.session) {
+      return { pendingConfirmation: true };
+    }
+  } catch (err) {
+    // redirect() throws NEXT_REDIRECT which Next handles — let it propagate.
+    if (
+      err &&
+      typeof err === "object" &&
+      "digest" in err &&
+      typeof err.digest === "string" &&
+      err.digest.startsWith("NEXT_REDIRECT")
+    ) {
+      throw err;
+    }
+    console.error("[signup] unexpected error:", err);
+    return { error: "Unexpected error. Please try again in a moment." };
   }
 
   redirect("/dashboard");
