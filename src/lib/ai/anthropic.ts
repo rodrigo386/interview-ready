@@ -3,6 +3,8 @@ import { env } from "@/lib/env";
 import {
   prepSectionSchema,
   type PrepSection,
+  atsAnalysisSchema,
+  type AtsAnalysis,
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
@@ -305,4 +307,165 @@ export async function generateSection(params: {
   // tool_use.input is already parsed JSON matching our schema.
   // Validate with Zod as defense-in-depth.
   return prepSectionSchema.parse(toolUse.input);
+}
+
+// JSON Schema mirror of atsAnalysisSchema for Anthropic tool_use
+const atsToolSchema = {
+  type: "object" as const,
+  required: ["score", "title_match", "keyword_analysis", "top_fixes", "overall_assessment"],
+  properties: {
+    score: { type: "integer" as const, minimum: 0, maximum: 100 },
+    title_match: {
+      type: "object" as const,
+      required: ["cv_title", "jd_title", "match_score"],
+      properties: {
+        cv_title: { type: "string" as const },
+        jd_title: { type: "string" as const },
+        match_score: { type: "integer" as const, minimum: 0, maximum: 100 },
+      },
+    },
+    keyword_analysis: {
+      type: "object" as const,
+      required: ["critical", "high", "medium"],
+      properties: {
+        critical: { type: "array" as const, items: keywordItemSchema() },
+        high: { type: "array" as const, items: keywordItemSchema() },
+        medium: { type: "array" as const, items: keywordItemSchema() },
+      },
+    },
+    top_fixes: {
+      type: "array" as const,
+      minItems: 1,
+      maxItems: 7,
+      items: {
+        type: "object" as const,
+        required: ["priority", "gap", "original_cv_language", "jd_language", "suggested_rewrite"],
+        properties: {
+          priority: { type: "integer" as const, minimum: 1, maximum: 10 },
+          gap: { type: "string" as const, minLength: 1 },
+          original_cv_language: { type: "string" as const },
+          jd_language: { type: "string" as const, minLength: 1 },
+          suggested_rewrite: { type: "string" as const, minLength: 20 },
+        },
+      },
+    },
+    overall_assessment: { type: "string" as const, minLength: 30 },
+  },
+};
+
+function keywordItemSchema() {
+  return {
+    type: "object" as const,
+    required: ["keyword", "found"],
+    properties: {
+      keyword: { type: "string" as const, minLength: 1 },
+      found: { type: "boolean" as const },
+      context: { type: "string" as const },
+    },
+  };
+}
+
+const MOCK_ATS: AtsAnalysis = {
+  score: 73,
+  title_match: {
+    cv_title: "Head of Procurement LATAM",
+    jd_title: "Senior Director, AI Procurement",
+    match_score: 55,
+  },
+  keyword_analysis: {
+    critical: [
+      { keyword: "agentic AI", found: false },
+      { keyword: "AI Sourcing Agents", found: false },
+      { keyword: "procurement transformation", found: true, context: "led Bayer digital procurement transformation 2019-2022" },
+      { keyword: "$300M+ addressable spend", found: false },
+    ],
+    high: [
+      { keyword: "touchless P2P", found: false },
+      { keyword: "change management", found: true, context: "drove change across 12 LATAM countries" },
+      { keyword: "target operating model", found: false },
+    ],
+    medium: [
+      { keyword: "rapid prototyping", found: false },
+      { keyword: "stakeholder alignment", found: true },
+    ],
+  },
+  top_fixes: [
+    {
+      priority: 1,
+      gap: "Missing: agentic AI",
+      original_cv_language: "digital tools",
+      jd_language: "agentic AI",
+      suggested_rewrite: "Deployed agentic AI workflows for sourcing and category management, automating tail spend and reducing cycle time 40% at Prior Co 2022.",
+    },
+    {
+      priority: 2,
+      gap: "Missing: AI Sourcing Agents",
+      original_cv_language: "e-sourcing platform",
+      jd_language: "AI Sourcing Agents",
+      suggested_rewrite: "Stood up AI Sourcing Agents for autonomous negotiation on tail spend across LATAM, covering $150M of addressable spend.",
+    },
+    {
+      priority: 3,
+      gap: "Missing: touchless P2P",
+      original_cv_language: "automated 30% of purchase orders",
+      jd_language: "touchless P2P",
+      suggested_rewrite: "Delivered touchless P2P on 45% of transactions through exceptions-based processing and automated tail-spend routing.",
+    },
+    {
+      priority: 4,
+      gap: "Missing: target operating model",
+      original_cv_language: "built the org",
+      jd_language: "target operating model",
+      suggested_rewrite: "Designed and rolled out the target operating model (Agile Pods + central CoE + GCC Factory) across 12 LATAM markets.",
+    },
+    {
+      priority: 5,
+      gap: "Missing: $300M+ addressable spend",
+      original_cv_language: "$500 million",
+      jd_language: "$300M+ addressable spend",
+      suggested_rewrite: "Managed $500M in addressable spend across 12 LATAM countries, delivering 18% cost takeout.",
+    },
+  ],
+  overall_assessment:
+    "Strong domain experience but CV vocabulary lags JD by 2-3 years in AI-specific terms. Rewriting 5 key bullets will lift ATS score from 73 to ~92.",
+};
+
+export async function generateAtsAnalysis(params: {
+  system: string;
+  user: string;
+}): Promise<AtsAnalysis> {
+  if (process.env.MOCK_ANTHROPIC === "1") {
+    return MOCK_ATS;
+  }
+  if (!env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY is not set");
+  }
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+  const start = Date.now();
+  console.log("[anthropic] ats starting");
+  const response = await client.messages.create(
+    {
+      model: "claude-sonnet-4-5",
+      max_tokens: 3500,
+      system: params.system,
+      messages: [{ role: "user", content: params.user }],
+      tools: [
+        {
+          name: "submit_ats_analysis",
+          description: "Submit the completed ATS gap analysis matching the required schema.",
+          input_schema: atsToolSchema,
+        },
+      ],
+      tool_choice: { type: "tool", name: "submit_ats_analysis" },
+    },
+    { timeout: 120_000 },
+  );
+  console.log(
+    `[anthropic] ats completed in ${Date.now() - start}ms stop_reason=${response.stop_reason} output_tokens=${response.usage?.output_tokens ?? "?"}`,
+  );
+  const toolUse = response.content.find((b) => b.type === "tool_use");
+  if (!toolUse || toolUse.type !== "tool_use") {
+    throw new Error(`Claude did not call submit_ats_analysis. stop_reason=${response.stop_reason}`);
+  }
+  return atsAnalysisSchema.parse(toolUse.input);
 }
