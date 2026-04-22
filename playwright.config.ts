@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const PORT = Number(process.env.PORT ?? 3000);
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 30_000,
@@ -8,15 +10,15 @@ export default defineConfig({
   workers: 1,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
-    command: "pnpm start",
-    port: 3000,
+    command: `pnpm exec next start -p ${PORT}`,
+    port: PORT,
     timeout: 120_000,
     reuseExistingServer: !process.env.CI,
     env: {

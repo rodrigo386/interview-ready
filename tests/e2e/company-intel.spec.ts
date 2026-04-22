@@ -20,7 +20,7 @@ async function signup(page: import("@playwright/test").Page) {
   await page.getByLabel("Nome completo").fill("E2E Intel Tester");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill("testpassword123");
-  await page.getByRole("button", { name: /criar conta/i }).click();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await page.waitForURL("**/dashboard", { timeout: 15_000 });
   return email;
 }

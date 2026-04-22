@@ -21,10 +21,10 @@ test("signup + create prep + view prep guide", async ({ page }) => {
   await page.getByLabel("Nome completo").fill("E2E Prep Tester");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill("testpassword123");
-  await page.getByRole("button", { name: /criar conta/i }).click();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await page.waitForURL("**/dashboard", { timeout: 15_000 });
 
-  await page.getByRole("link", { name: /novo prep/i }).first().click();
+  await page.getByRole("link", { name: /primeiro prep|novo prep/i }).first().click();
   await page.waitForURL("**/prep/new");
   await expect(page.getByRole("heading", { name: /novo prep/i })).toBeVisible();
 

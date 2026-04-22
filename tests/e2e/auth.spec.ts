@@ -9,7 +9,7 @@ test("signup with email lands on dashboard empty state", async ({ page }) => {
   await page.getByLabel("Nome completo").fill("E2E Tester");
   await page.getByLabel("E-mail").fill(uniqueEmail);
   await page.getByLabel("Senha").fill("testpassword123");
-  await page.getByRole("button", { name: /criar conta/i }).click();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
 
   await page.waitForURL("**/dashboard", { timeout: 15_000 });
   await expect(page.getByRole("heading", { name: /Prepare sua primeira vaga/i })).toBeVisible();
