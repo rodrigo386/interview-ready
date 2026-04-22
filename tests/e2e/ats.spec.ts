@@ -34,42 +34,48 @@ test("run ATS match shows score and top fixes", async ({ page }) => {
   await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
 
-  // Espera o prep guide carregar totalmente (skeleton resolve quando a geração finaliza).
-  await expect(page.getByRole("heading", { name: /Prep para Hexion/i })).toBeVisible({ timeout: 30_000 });
+  // Landing cai na Visão geral
+  await expect(page.getByRole("heading", { level: 1, name: "Hexion" })).toBeVisible({
+    timeout: 30_000,
+  });
 
-  // CTA do ATS deve aparecer
-  await expect(page.getByRole("heading", { name: /Cheque sua compatibilidade com ATS/i })).toBeVisible();
+  // Navega para a seção ATS via sidebar
+  await page.getByRole("link", { name: /Compatibilidade ATS/i }).first().click();
 
-  // Clica em Rodar compatibilidade ATS
+  // CTA do ATS visível
+  await expect(
+    page.getByRole("heading", { name: /Cheque sua compatibilidade com ATS/i }),
+  ).toBeVisible();
+
+  // Rodar compatibilidade ATS
   await page.getByRole("button", { name: /rodar compatibilidade ats/i }).click();
 
-  // Após revalidação, o card de score aparece
-  await expect(page.getByText(/Compatibilidade ATS/i).first()).toBeVisible({ timeout: 20_000 });
-  // MOCK_ATS tem score 73
-  await expect(page.getByText(/73/).first()).toBeVisible();
-  // Top fix #1 é "Missing: agentic AI" (texto vem do mock, permanece EN)
+  // Score card renderiza (MOCK_ATS score = 73)
+  await expect(page.getByText(/73 \/ 100/i)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: /Principais ajustes/i })).toBeVisible();
   await expect(page.getByText(/Missing: agentic AI/i)).toBeVisible();
 
-  // Dashboard mostra badge ATS 73% agora que a análise completou
+  // Dashboard mostra badge ATS 73%
   await page.goto("/dashboard");
   await expect(page.getByText(/ATS 73%/i)).toBeVisible();
 
-  // Voltar ao prep, re-rodar produz nova análise completa (em modo MOCK o Server Action
-  // roda sincronamente, então o skeleton é rápido demais para observar; apenas garantimos
-  // que o botão funciona e o card re-renderiza).
+  // Voltar ao prep, ir direto pro ATS via deep-link
   await page.getByRole("link", { name: /Hexion/i }).first().click();
   await page.waitForURL("**/prep/**");
-  await expect(page.getByText(/Compatibilidade ATS/i).first()).toBeVisible();
+  await page.getByRole("link", { name: /Compatibilidade ATS/i }).first().click();
+  await expect(page.getByText(/73 \/ 100/i)).toBeVisible();
+
+  // Re-rodar
   await page.getByRole("button", { name: /Rerodar/i }).first().click();
-  await expect(page.getByText(/Compatibilidade ATS/i).first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/73 \/ 100/i)).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/Missing: agentic AI/i)).toBeVisible();
 
-  // CTA de reescrita aparece quando ATS completa
+  // CTA de reescrita aparece após ATS completar
   await expect(
     page.getByRole("button", { name: /Gerar CV otimizado para ATS/i }),
   ).toBeVisible();
 
-  // Click Gerar → view renderiza com dados do MOCK_CV_REWRITE
+  // Gerar reescrita → view renderiza com MOCK_CV_REWRITE
   await page.getByRole("button", { name: /Gerar CV otimizado para ATS/i }).click();
   await expect(page.getByText(/Resumo das mudanças/i)).toBeVisible({ timeout: 20_000 });
   await expect(
@@ -77,10 +83,10 @@ test("run ATS match shows score and top fixes", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText(/touchless P2P/i).first()).toBeVisible();
 
-  // Botão Copiar markdown visível
+  // Copiar markdown visível
   await expect(page.getByRole("button", { name: /Copiar markdown/i })).toBeVisible();
 
-  // Link de download aponta para rota .docx e responde 200 com mime correto
+  // Download .docx aponta para rota correta e responde 200
   const href = await page
     .getByRole("link", { name: /Baixar \.docx/i })
     .getAttribute("href");

@@ -25,7 +25,7 @@ async function signup(page: import("@playwright/test").Page) {
   return email;
 }
 
-test("Visão geral tab renders and deep-links", async ({ page }) => {
+test("Sobre a empresa tab renders and deep-links", async ({ page }) => {
   await signup(page);
 
   await page.goto("/prep/new");
@@ -37,17 +37,15 @@ test("Visão geral tab renders and deep-links", async ({ page }) => {
   await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
 
   await page.waitForURL("**/prep/**", { timeout: 30_000 });
-  await expect(page.getByRole("heading", { name: /Prep para Hexion/i })).toBeVisible({
+  await expect(page.getByRole("heading", { level: 1, name: "Hexion" })).toBeVisible({
     timeout: 15_000,
   });
 
-  // Aba "Visão geral" visível
-  const intelTab = page.getByRole("link", { name: /Visão geral/i });
-  await expect(intelTab).toBeVisible();
-
-  // Click nela
-  await intelTab.click();
-  await expect(page.getByRole("heading", { name: /Visão geral/i })).toBeVisible();
+  // Link "Sobre a empresa" na sidebar
+  const intelLink = page.getByRole("link", { name: /Sobre a empresa/i });
+  await expect(intelLink).toBeVisible();
+  await intelLink.click();
+  await expect(page.getByRole("heading", { name: /Sobre a empresa/i })).toBeVisible();
 
   // Fixture do mock renderiza os campos-chave
   await expect(page.getByText(/Mock Co is a \$3B specialty chemicals/i)).toBeVisible();
@@ -58,9 +56,9 @@ test("Visão geral tab renders and deep-links", async ({ page }) => {
     page.getByText(/How does the IPO timeline affect the procurement/i),
   ).toBeVisible();
 
-  // Deep-link funciona
+  // Deep-link ?section=company-intel continua válido (compat)
   const url = new URL(page.url());
   url.searchParams.set("section", "company-intel");
   await page.goto(url.toString());
-  await expect(page.getByRole("heading", { name: /Visão geral/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Sobre a empresa/i })).toBeVisible();
 });
