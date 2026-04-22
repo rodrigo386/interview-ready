@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
+import { Logo } from "@/components/Logo";
 
 type SessionRow = {
   id: string;
@@ -13,11 +14,34 @@ type SessionRow = {
   ats_score: string | null;
 };
 
-const STATUS_STYLE: Record<string, string> = {
-  complete: "bg-emerald-950/40 text-emerald-300 border-emerald-900",
-  generating: "bg-amber-950/40 text-amber-300 border-amber-900",
-  pending: "bg-amber-950/40 text-amber-300 border-amber-900",
-  failed: "bg-red-950/40 text-red-300 border-red-900",
+const STATUS: Record<
+  string,
+  { label: string; className: string; dot: string }
+> = {
+  complete: {
+    label: "pronto",
+    className:
+      "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900",
+    dot: "bg-emerald-500",
+  },
+  generating: {
+    label: "gerando",
+    className:
+      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900",
+    dot: "bg-amber-500 animate-pulse",
+  },
+  pending: {
+    label: "pendente",
+    className:
+      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900",
+    dot: "bg-amber-500 animate-pulse",
+  },
+  failed: {
+    label: "com erro",
+    className:
+      "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900",
+    dot: "bg-red-500",
+  },
 };
 
 export default async function DashboardPage() {
@@ -41,60 +65,92 @@ export default async function DashboardPage() {
   if (list.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="rounded-full bg-zinc-900 p-4 text-4xl">✨</div>
-        <h1 className="mt-6 text-2xl font-semibold">Create your first prep</h1>
-        <p className="mt-2 max-w-md text-sm text-zinc-400">
-          Upload your CV and paste a job description — we&apos;ll generate
-          a personalized interview playbook in about 30 seconds.
+        <Logo variant="symbol" size={120} className="opacity-80" />
+        <h1 className="mt-8 text-2xl font-semibold text-text-primary">
+          Prepare sua primeira vaga
+        </h1>
+        <p className="mt-3 max-w-md text-sm text-text-secondary">
+          Em 20 minutos, você recebe o dossiê completo da vaga: empresa, CV, roteiros.
         </p>
         <Link href="/prep/new" className="mt-8">
-          <Button>New prep</Button>
+          <Button size="lg">Criar meu primeiro prep</Button>
         </Link>
       </div>
     );
   }
 
+  const last30 = list.filter(
+    (s) =>
+      new Date(s.created_at).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000,
+  ).length;
+
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Your preps</h1>
+      <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-text-primary">
+            Seus preps
+          </h1>
+          <p className="mt-1 text-sm text-text-secondary">
+            {last30} {last30 === 1 ? "prep" : "preps"} nos últimos 30 dias
+          </p>
+        </div>
         <Link href="/prep/new">
-          <Button>New prep</Button>
+          <Button>+ Novo prep</Button>
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {list.map((s) => (
-          <Link
-            key={s.id}
-            href={`/prep/${s.id}`}
-            className="block rounded-lg border border-zinc-800 bg-zinc-900/40 p-5 transition-colors hover:bg-zinc-900"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="truncate text-base font-medium">{s.company_name}</h2>
-                <p className="mt-1 truncate text-sm text-zinc-400">{s.job_title}</p>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-1">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {list.map((s) => {
+          const status = STATUS[s.generation_status] ?? STATUS.pending;
+          return (
+            <Link
+              key={s.id}
+              href={`/prep/${s.id}`}
+              className="group block rounded-lg border border-border bg-bg p-6 transition-all hover:border-brand-400 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-lg font-semibold text-text-primary">
+                    {s.company_name}
+                  </h2>
+                  <p className="mt-1 truncate text-base text-text-secondary">
+                    {s.job_title}
+                  </p>
+                </div>
                 <span
-                  className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[s.generation_status] ?? ""}`}
+                  aria-hidden
+                  className="shrink-0 text-lg text-brand-600 opacity-0 transition-opacity group-hover:opacity-100"
                 >
-                  {s.generation_status}
+                  →
                 </span>
-                {s.ats_status === "complete" && atsScoreFromRow(s) !== null && (
-                  <AtsScoreBadge score={atsScoreFromRow(s) as number} />
-                )}
               </div>
-            </div>
-            <p className="mt-3 text-xs text-zinc-500">
-              {new Date(s.created_at).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
-          </Link>
-        ))}
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-text-tertiary">
+                <span>
+                  {new Date(s.created_at).toLocaleDateString("pt-BR", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+                <span aria-hidden>·</span>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${status.className}`}
+                >
+                  <span
+                    aria-hidden
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${status.dot}`}
+                  />
+                  {status.label}
+                </span>
+                {s.ats_status === "complete" &&
+                  atsScoreFromRow(s) !== null && (
+                    <AtsScoreBadge score={atsScoreFromRow(s) as number} />
+                  )}
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
