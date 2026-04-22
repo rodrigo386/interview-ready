@@ -64,3 +64,32 @@ export const atsAnalysisSchema = z.object({
 export type AtsAnalysis = z.infer<typeof atsAnalysisSchema>;
 export type AtsKeyword = z.infer<typeof atsKeywordSchema>;
 export type AtsFix = z.infer<typeof atsFixSchema>;
+
+export const companyIntelSchema = z.object({
+  overview: z.string().min(20).max(600),
+  recent_developments: z
+    .array(
+      z.object({
+        headline: z.string().min(1).max(200),
+        why_it_matters: z.string().min(10).max(400),
+        source_url: z.string().url().optional(),
+      }),
+    )
+    .min(0)
+    .max(6),
+  key_people: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(120),
+        role: z.string().min(1).max(120),
+        background_snippet: z.string().min(1).max(400),
+      }),
+    )
+    .min(0)
+    .max(5),
+  culture_signals: z.array(z.string().min(1).max(150)).min(0).max(6),
+  strategic_context: z.string().min(20).max(600),
+  questions_this_creates: z.array(z.string().min(5).max(200)).min(0).max(4),
+});
+
+export type CompanyIntel = z.infer<typeof companyIntelSchema>;

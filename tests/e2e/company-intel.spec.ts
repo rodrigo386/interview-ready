@@ -14,40 +14,53 @@ Responsibilities include: build the target operating model, stand up an AI Cente
 deploy AI Sourcing Agents for autonomous negotiation on tail spend, and drive touchless P2P.
 Qualifications: 10+ years procurement transformation, hands-on AI deployment, PE experience preferred.`;
 
-test("signup + create prep + view prep guide", async ({ page }) => {
-  const email = `e2e-prep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
-
+async function signup(page: import("@playwright/test").Page) {
+  const email = `e2e-intel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   await page.goto("/signup");
-  await page.getByLabel("Full name").fill("E2E Prep Tester");
+  await page.getByLabel("Full name").fill("E2E Intel Tester");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill("testpassword123");
   await page.getByRole("button", { name: /create account/i }).click();
   await page.waitForURL("**/dashboard", { timeout: 15_000 });
+  return email;
+}
 
-  await page.getByRole("link", { name: /new prep/i }).first().click();
-  await page.waitForURL("**/prep/new");
-  await expect(page.getByRole("heading", { name: /create a prep guide/i })).toBeVisible();
+test("Company Intel tab renders and deep-links", async ({ page }) => {
+  await signup(page);
 
+  await page.goto("/prep/new");
   await page.getByLabel("Company").fill("Hexion");
   await page.getByLabel("Role").fill("Senior Director, AI Procurement");
   await page.getByRole("button", { name: /paste text instead/i }).click();
   await page.getByLabel("Paste your CV text").fill(CV_TEXT);
   await page.getByLabel("Job Description (paste text)").fill(JD_TEXT);
-
   await page.getByRole("button", { name: /generate prep guide/i }).click();
 
-  await page.waitForURL("**/prep/**", { timeout: 20_000 });
-
-  // "Prep for Hexion" comes from meta.company written by runGeneration (session.company_name).
+  await page.waitForURL("**/prep/**", { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: /Prep for Hexion/i })).toBeVisible({
-    timeout: 10_000,
+    timeout: 15_000,
   });
-  // With Company Intel present, it's the default tab — click "Likely Questions" first.
-  await page.getByRole("link", { name: /Likely Questions/i }).click();
 
-  await page
-    .getByRole("button", { name: /why are you interested in this role/i })
-    .click();
-  await expect(page.getByText("Key points")).toBeVisible();
-  await expect(page.getByText("Sample answer")).toBeVisible();
+  // Company Intel tab visible
+  const intelTab = page.getByRole("link", { name: /Company Intel/i });
+  await expect(intelTab).toBeVisible();
+
+  // Click it
+  await intelTab.click();
+  await expect(page.getByRole("heading", { name: /Company Intel/i })).toBeVisible();
+
+  // Mock fixture renders the key fields
+  await expect(page.getByText(/Mock Co is a \$3B specialty chemicals/i)).toBeVisible();
+  await expect(page.getByText(/IPO filed March 2026/i)).toBeVisible();
+  await expect(page.getByText(/Jane Doe/i)).toBeVisible();
+  await expect(page.getByText(/sponsor-owned speed/i)).toBeVisible();
+  await expect(
+    page.getByText(/How does the IPO timeline affect the procurement/i),
+  ).toBeVisible();
+
+  // Deep-link works
+  const url = new URL(page.url());
+  url.searchParams.set("section", "company-intel");
+  await page.goto(url.toString());
+  await expect(page.getByRole("heading", { name: /Company Intel/i })).toBeVisible();
 });

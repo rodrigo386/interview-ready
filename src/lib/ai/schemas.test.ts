@@ -120,3 +120,61 @@ describe("atsAnalysisSchema", () => {
     expect(() => atsAnalysisSchema.parse(g)).toThrow();
   });
 });
+
+import { companyIntelSchema } from "./schemas";
+
+const validIntel = {
+  overview:
+    "Hexion is a $3B specialty chemicals company headquartered in Columbus, OH, sponsor-owned by Apollo Global Management.",
+  recent_developments: [
+    {
+      headline: "Filed for IPO March 2026",
+      why_it_matters:
+        "Signals a liquidity event; leadership is under shareholder pressure to accelerate AI and cost transformation.",
+    },
+  ],
+  key_people: [
+    {
+      name: "Jane Doe",
+      role: "Chief Procurement Officer",
+      background_snippet:
+        "Joined 2024 from Bayer to lead procurement transformation.",
+    },
+  ],
+  culture_signals: ["PE-owned speed", "hands-on leadership"],
+  strategic_context:
+    "Specialty chemicals is consolidating; the PE sponsor is targeting a 2027 exit and needs EBITDA expansion via operational efficiency.",
+  questions_this_creates: [
+    "How does the IPO timeline affect the procurement transformation roadmap?",
+  ],
+};
+
+describe("companyIntelSchema", () => {
+  it("accepts a valid intel", () => {
+    expect(() => companyIntelSchema.parse(validIntel)).not.toThrow();
+  });
+  it("accepts all-empty arrays", () => {
+    const empty = {
+      ...validIntel,
+      recent_developments: [],
+      key_people: [],
+      culture_signals: [],
+      questions_this_creates: [],
+    };
+    expect(() => companyIntelSchema.parse(empty)).not.toThrow();
+  });
+  it("rejects overview shorter than 20 chars", () => {
+    expect(() =>
+      companyIntelSchema.parse({ ...validIntel, overview: "too short" }),
+    ).toThrow();
+  });
+  it("rejects more than 6 recent_developments", () => {
+    const dev = validIntel.recent_developments[0];
+    expect(() =>
+      companyIntelSchema.parse({
+        ...validIntel,
+        recent_developments: [dev, dev, dev, dev, dev, dev, dev],
+      }),
+    ).toThrow();
+  });
+});

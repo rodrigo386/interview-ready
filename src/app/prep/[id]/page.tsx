@@ -1,7 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { prepGuideSchema, atsAnalysisSchema } from "@/lib/ai/schemas";
+import {
+  prepGuideSchema,
+  atsAnalysisSchema,
+  companyIntelSchema,
+} from "@/lib/ai/schemas";
 import { PrepGuide } from "@/components/prep/PrepGuide";
 import { PrepFailed } from "@/components/prep/PrepFailed";
 import { PrepSkeleton } from "@/components/prep/PrepSkeleton";
@@ -29,9 +33,7 @@ export async function generateMetadata({
 
   return {
     title: "Prep — InterviewReady",
-    other: isGenerating
-      ? { "http-equiv": "refresh", content: "3" }
-      : {},
+    other: isGenerating ? { "http-equiv": "refresh", content: "3" } : {},
   };
 }
 
@@ -53,7 +55,9 @@ export default async function PrepViewPage({
 
   const { data: session, error } = await supabase
     .from("prep_sessions")
-    .select("id, generation_status, prep_guide, error_message, ats_status, ats_analysis, ats_error_message")
+    .select(
+      "id, generation_status, prep_guide, error_message, ats_status, ats_analysis, ats_error_message, company_intel, company_intel_status",
+    )
     .eq("id", id)
     .single();
 
@@ -61,7 +65,10 @@ export default async function PrepViewPage({
     notFound();
   }
 
-  if (session.generation_status === "generating" || session.generation_status === "pending") {
+  if (
+    session.generation_status === "generating" ||
+    session.generation_status === "pending"
+  ) {
     return <PrepSkeleton />;
   }
 
@@ -75,6 +82,12 @@ export default async function PrepViewPage({
     return <PrepFailed id={session.id} errorMessage="Stored guide is malformed." />;
   }
 
+  const intel =
+    session.company_intel_status === "complete"
+      ? companyIntelSchema.safeParse(session.company_intel)
+      : null;
+  const validIntel = intel?.success ? intel.data : null;
+
   const ats = renderAtsBlock(session);
   return (
     <>
@@ -84,6 +97,7 @@ export default async function PrepViewPage({
         sessionId={session.id}
         activeSectionId={section}
         activeCardId={card}
+        companyIntel={validIntel}
       />
     </>
   );

@@ -9,11 +9,20 @@ export function PrepSkeleton() {
           <p className="text-sm text-zinc-300">Generating your prep guide…</p>
         </div>
         <p className="mt-2 text-xs text-zinc-500">
-          Takes about 30 seconds. You can close this tab and come back.
+          Researching the company, then writing your prep. About 60 seconds. You can close this tab and come back.
         </p>
       </div>
 
-      <div className="mt-10 space-y-6">
+      <div className="mt-10 -mx-2 flex gap-2 overflow-x-auto px-2 pb-2">
+        {Array.from({ length: SECTION_KINDS.length + 1 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-9 w-32 shrink-0 animate-pulse rounded-full border border-zinc-800 bg-zinc-900/40"
+          />
+        ))}
+      </div>
+
+      <div className="mt-6 space-y-6">
         {SECTION_KINDS.map((_, i) => (
           <div
             key={i}
