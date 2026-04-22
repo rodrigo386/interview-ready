@@ -93,3 +93,11 @@ export const companyIntelSchema = z.object({
 });
 
 export type CompanyIntel = z.infer<typeof companyIntelSchema>;
+
+export const cvRewriteSchema = z.object({
+  markdown: z.string().min(200).max(12000),
+  summary_of_changes: z.array(z.string().min(5).max(300)).min(1).max(10),
+  preserved_facts: z.array(z.string().min(3).max(300)).min(0).max(20),
+});
+
+export type CvRewrite = z.infer<typeof cvRewriteSchema>;

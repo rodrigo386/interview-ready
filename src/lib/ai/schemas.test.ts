@@ -178,3 +178,31 @@ describe("companyIntelSchema", () => {
     ).toThrow();
   });
 });
+
+import { cvRewriteSchema } from "./schemas";
+
+const validRewrite = {
+  markdown:
+    "## Professional Summary\n\nSenior procurement leader with 10+ years experience across LATAM.\n\n## Experience\n\n### Head of Digital Procurement — Bayer (2019-2022)\n- Led $500M addressable spend transformation\n- Delivered 18% cost takeout",
+  summary_of_changes: [
+    "Upgraded 'digital tools' to 'agentic AI'",
+    "Added exact phrase 'touchless P2P'",
+  ],
+  preserved_facts: ["$500M addressable spend at Bayer 2019-2022"],
+};
+
+describe("cvRewriteSchema", () => {
+  it("accepts a valid rewrite", () => {
+    expect(() => cvRewriteSchema.parse(validRewrite)).not.toThrow();
+  });
+  it("rejects markdown shorter than 200 chars", () => {
+    expect(() =>
+      cvRewriteSchema.parse({ ...validRewrite, markdown: "too short" }),
+    ).toThrow();
+  });
+  it("rejects empty summary_of_changes", () => {
+    expect(() =>
+      cvRewriteSchema.parse({ ...validRewrite, summary_of_changes: [] }),
+    ).toThrow();
+  });
+});
