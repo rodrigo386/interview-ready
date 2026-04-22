@@ -29,12 +29,12 @@ export function CvRewriteView({
   return (
     <div className="mt-8 rounded-md border border-zinc-800 bg-zinc-900/60 p-5">
       <h3 className="text-sm font-semibold text-zinc-100">
-        🎯 ATS-Optimized CV
+        🎯 CV otimizado para ATS
       </h3>
 
       <section className="mt-4">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-          Summary of changes
+          Resumo das mudanças
         </h4>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-200">
           {rewrite.summary_of_changes.map((c, i) => (
@@ -46,7 +46,7 @@ export function CvRewriteView({
       {rewrite.preserved_facts.length > 0 && (
         <section className="mt-4">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-            Preserved facts (kept verbatim)
+            Fatos preservados (mantidos literalmente)
           </h4>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-300">
             {rewrite.preserved_facts.map((f, i) => (
@@ -58,7 +58,7 @@ export function CvRewriteView({
 
       <section className="mt-6">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-          Preview
+          Prévia
         </h4>
         <div className="mt-2 max-h-96 overflow-y-auto rounded border border-zinc-800 bg-zinc-950 p-4">
           {renderMarkdown(rewrite.markdown)}
@@ -71,19 +71,19 @@ export function CvRewriteView({
           onClick={copy}
           className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-100 hover:bg-zinc-700"
         >
-          {copied ? "✓ Copied" : "📋 Copy markdown"}
+          {copied ? "✓ Copiado" : "📋 Copiar markdown"}
         </button>
         <a
           href={`/prep/${sessionId}/cv-rewrite.docx`}
           download
           className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-100 hover:bg-zinc-700"
         >
-          📄 Download .docx
+          📄 Baixar .docx
         </a>
         <form action={rerunAction}>
           <PendingButton
-            idleLabel="↻ Re-run"
-            pendingLabel="Re-running…"
+            idleLabel="↻ Refazer"
+            pendingLabel="Refazendo…"
             variant="secondary"
           />
         </form>

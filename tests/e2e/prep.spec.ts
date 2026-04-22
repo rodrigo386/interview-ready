@@ -18,36 +18,35 @@ test("signup + create prep + view prep guide", async ({ page }) => {
   const email = `e2e-prep-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
 
   await page.goto("/signup");
-  await page.getByLabel("Full name").fill("E2E Prep Tester");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("testpassword123");
-  await page.getByRole("button", { name: /create account/i }).click();
+  await page.getByLabel("Nome completo").fill("E2E Prep Tester");
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha").fill("testpassword123");
+  await page.getByRole("button", { name: /criar conta/i }).click();
   await page.waitForURL("**/dashboard", { timeout: 15_000 });
 
-  await page.getByRole("link", { name: /new prep/i }).first().click();
+  await page.getByRole("link", { name: /novo prep/i }).first().click();
   await page.waitForURL("**/prep/new");
-  await expect(page.getByRole("heading", { name: /create a prep guide/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /novo prep/i })).toBeVisible();
 
-  await page.getByLabel("Company").fill("Hexion");
-  await page.getByLabel("Role").fill("Senior Director, AI Procurement");
-  await page.getByRole("button", { name: /paste text instead/i }).click();
-  await page.getByLabel("Paste your CV text").fill(CV_TEXT);
-  await page.getByLabel("Job Description (paste text)").fill(JD_TEXT);
+  await page.getByLabel("Empresa").fill("Hexion");
+  await page.getByLabel("Cargo").fill("Senior Director, AI Procurement");
+  await page.getByRole("button", { name: /colar texto em vez disso/i }).click();
+  await page.getByLabel(/Cole o texto do seu CV/i).fill(CV_TEXT);
+  await page.getByLabel(/Descrição da vaga/i).fill(JD_TEXT);
 
-  await page.getByRole("button", { name: /generate prep guide/i }).click();
+  await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
 
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
 
-  // "Prep for Hexion" comes from meta.company written by runGeneration (session.company_name).
-  await expect(page.getByRole("heading", { name: /Prep for Hexion/i })).toBeVisible({
+  await expect(page.getByRole("heading", { name: /Prep para Hexion/i })).toBeVisible({
     timeout: 10_000,
   });
-  // With Company Intel present, it's the default tab — click "Likely Questions" first.
+  // Com Company Intel presente, "Visão geral" é a aba default — clica em "Likely Questions" (título vindo da IA).
   await page.getByRole("link", { name: /Likely Questions/i }).click();
 
   await page
     .getByRole("button", { name: /why are you interested in this role/i })
     .click();
-  await expect(page.getByText("Key points")).toBeVisible();
-  await expect(page.getByText("Sample answer")).toBeVisible();
+  await expect(page.getByText("Pontos-chave")).toBeVisible();
+  await expect(page.getByText("Resposta modelo")).toBeVisible();
 });
