@@ -49,4 +49,18 @@ test("run ATS match shows score and top fixes", async ({ page }) => {
   await expect(page.getByText(/73/).first()).toBeVisible();
   // Top fix #1 is "Missing: agentic AI"
   await expect(page.getByText(/Missing: agentic AI/i)).toBeVisible();
+
+  // Dashboard shows ATS 73% badge now that analysis is complete
+  await page.goto("/dashboard");
+  await expect(page.getByText(/ATS 73%/i)).toBeVisible();
+
+  // Back to prep, re-run should produce a fresh complete analysis (in MOCK mode
+  // the Server Action runs synchronously so the skeleton transition is too fast
+  // to reliably observe; we just assert the button works and the card re-renders).
+  await page.getByRole("link", { name: /Hexion/i }).first().click();
+  await page.waitForURL("**/prep/**");
+  await expect(page.getByText(/ATS Match Score/i)).toBeVisible();
+  await page.getByRole("button", { name: /Re-run/i }).click();
+  await expect(page.getByText(/ATS Match Score/i)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/Missing: agentic AI/i)).toBeVisible();
 });

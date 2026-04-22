@@ -1,4 +1,6 @@
 import type { AtsAnalysis } from "@/lib/ai/schemas";
+import { runAtsAnalysis } from "@/app/prep/[id]/ats-actions";
+import { PendingButton } from "./PendingButton";
 
 function ringColor(score: number): string {
   if (score < 40) return "text-red-500";
@@ -6,10 +8,17 @@ function ringColor(score: number): string {
   return "text-emerald-500";
 }
 
-export function AtsScoreCard({ analysis }: { analysis: AtsAnalysis }) {
+export function AtsScoreCard({
+  analysis,
+  sessionId,
+}: {
+  analysis: AtsAnalysis;
+  sessionId: string;
+}) {
   const r = 36;
   const c = 2 * Math.PI * r;
   const dash = (analysis.score / 100) * c;
+  const rerunAction = runAtsAnalysis.bind(null, sessionId);
   return (
     <section className="mb-8 rounded-lg border border-zinc-800 bg-zinc-900/40 p-6">
       <div className="flex flex-col gap-6 md:flex-row md:items-center">
@@ -35,6 +44,9 @@ export function AtsScoreCard({ analysis }: { analysis: AtsAnalysis }) {
           </div>
         </div>
         <p className="text-sm text-zinc-300 md:flex-1">{analysis.overall_assessment}</p>
+        <form action={rerunAction} className="shrink-0">
+          <PendingButton idleLabel="↻ Re-run" pendingLabel="Re-running…" variant="secondary" />
+        </form>
       </div>
 
       <div className="mt-8">
