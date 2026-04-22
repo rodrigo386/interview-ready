@@ -24,15 +24,19 @@ export async function runAtsAnalysis(sessionId: string) {
 
   if (error || !session) redirect("/dashboard");
 
-  // Guard against concurrent clicks
-  if (session.ats_status === "generating" || session.ats_status === "complete") {
+  // Guard against concurrent clicks only; allow re-run after complete/failed.
+  if (session.ats_status === "generating") {
     revalidatePath(`/prep/${sessionId}`);
     return;
   }
 
   await supabase
     .from("prep_sessions")
-    .update({ ats_status: "generating", ats_error_message: null })
+    .update({
+      ats_status: "generating",
+      ats_analysis: null,
+      ats_error_message: null,
+    })
     .eq("id", sessionId);
 
   try {

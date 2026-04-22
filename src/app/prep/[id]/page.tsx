@@ -118,7 +118,7 @@ function renderAtsBlock(session: {
     if (!parsed.success) {
       return <AtsFailed sessionId={session.id} errorMessage="Stored analysis is malformed." />;
     }
-    return <AtsScoreCard analysis={parsed.data} />;
+    return <AtsScoreCard analysis={parsed.data} sessionId={session.id} />;
   }
   return <AtsCtaCard sessionId={session.id} />;
 }

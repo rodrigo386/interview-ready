@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
+import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
 
 type SessionRow = {
   id: string;
@@ -8,6 +9,8 @@ type SessionRow = {
   job_title: string;
   generation_status: string;
   created_at: string;
+  ats_status: string | null;
+  ats_score: string | null;
 };
 
 const STATUS_STYLE: Record<string, string> = {
@@ -26,7 +29,9 @@ export default async function DashboardPage() {
 
   const { data: sessions } = await supabase
     .from("prep_sessions")
-    .select("id, company_name, job_title, generation_status, created_at")
+    .select(
+      "id, company_name, job_title, generation_status, created_at, ats_status, ats_score:ats_analysis->>score",
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(20);
@@ -70,11 +75,16 @@ export default async function DashboardPage() {
                 <h2 className="truncate text-base font-medium">{s.company_name}</h2>
                 <p className="mt-1 truncate text-sm text-zinc-400">{s.job_title}</p>
               </div>
-              <span
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[s.generation_status] ?? ""}`}
-              >
-                {s.generation_status}
-              </span>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[s.generation_status] ?? ""}`}
+                >
+                  {s.generation_status}
+                </span>
+                {s.ats_status === "complete" && atsScoreFromRow(s) !== null && (
+                  <AtsScoreBadge score={atsScoreFromRow(s) as number} />
+                )}
+              </div>
             </div>
             <p className="mt-3 text-xs text-zinc-500">
               {new Date(s.created_at).toLocaleDateString(undefined, {
@@ -88,4 +98,10 @@ export default async function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function atsScoreFromRow(row: SessionRow): number | null {
+  if (row.ats_score == null) return null;
+  const n = Number(row.ats_score);
+  return Number.isFinite(n) ? n : null;
 }
