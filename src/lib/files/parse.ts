@@ -1,5 +1,7 @@
 import mammoth from "mammoth";
-// pdf-parse v2.x exposes a PDFParse class (no debug harness issue like v1.x).
+// pdf-parse v2.x exposes a PDFParse class built on pdfjs-dist.
+// Marked as a server-external package in next.config.ts so the bundled
+// pdf.worker.mjs resolves correctly at runtime.
 import { PDFParse } from "pdf-parse";
 
 export type ParsedCV = { text: string; pageCount?: number };
@@ -33,6 +35,10 @@ export async function parseCvFile(
       const result = await parser.getText();
       raw = result.text;
       pageCount = result.total;
+    } catch (err) {
+      throw new ParseError(
+        `Couldn't read this PDF: ${err instanceof Error ? err.message : String(err)}. It may be a scanned image or corrupt. Try pasting the text instead.`,
+      );
     } finally {
       await parser.destroy();
     }
