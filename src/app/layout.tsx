@@ -1,20 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "InterviewReady",
-  description: "Walk into every interview like you already work there.",
+  title: "PrepaVaga — Seu coach de carreira com IA",
+  description:
+    "Dossiê completo para sua próxima entrevista em 20 minutos. Pesquisa da empresa, CV reescrito e roteiros personalizados. Por R$ 49.",
+  openGraph: {
+    title: "PrepaVaga — Seu coach de carreira com IA",
+    description:
+      "Dossiê completo para sua próxima entrevista em 20 minutos. Pesquisa da empresa, CV reescrito e roteiros personalizados. Por R$ 49.",
+    images: ["/brand/og-image.png"],
+  },
 };
 
 export default function RootLayout({
@@ -23,11 +27,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-zinc-950 text-zinc-50 antialiased`}
-      >
-        {children}
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body className={`${inter.variable} antialiased`}>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
