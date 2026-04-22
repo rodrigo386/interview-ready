@@ -42,7 +42,8 @@ test("signup + create prep + view prep guide", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /Prep for Hexion/i })).toBeVisible({
     timeout: 10_000,
   });
-  await expect(page.getByText("Likely Questions").first()).toBeVisible();
+  // With Company Intel present, it's the default tab — click "Likely Questions" first.
+  await page.getByRole("link", { name: /Likely Questions/i }).click();
 
   await page
     .getByRole("button", { name: /why are you interested in this role/i })
