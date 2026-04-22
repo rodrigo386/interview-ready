@@ -1,5 +1,6 @@
 import { prepSectionSchema } from "@/lib/ai/schemas";
 import { z } from "zod";
+import type { CompanyIntel } from "@/lib/ai/schemas";
 
 // Runtime type of a PrepSection (import to reuse)
 export type SectionKind =
@@ -66,8 +67,17 @@ export function buildSectionPrompt(params: {
   jdText: string;
   jobTitle: string;
   companyName: string;
+  companyIntel?: CompanyIntel | null;
 }) {
   const brief = SECTION_BRIEFS[params.kind];
+  const intelBlock = params.companyIntel
+    ? renderIntelBlock(params.companyIntel)
+    : "";
+
+  const intelGuidance = params.companyIntel
+    ? `\n\nIf COMPANY INTELLIGENCE is provided, weave specific facts (names, dates, strategic bets) into at least 2 of your sample_answers. Do not fabricate facts beyond what is provided.`
+    : "";
+
   const system = `You are an elite interview coach generating ONE section of a prep guide for a specific candidate applying to a specific role.
 
 Section focus: ${brief.focus}
@@ -82,7 +92,7 @@ Rules per card:
 - confidence_level: "high" if CV strongly supports the answer, "medium" if partial, "low" if weak
 - references_cv: 1-3 concrete CV items the answer draws from (company + year + initiative)
 
-NEVER give generic advice. ALWAYS reference the candidate's specific experience.
+NEVER give generic advice. ALWAYS reference the candidate's specific experience.${intelGuidance}
 
 Use these fixed values for the section:
 - id: "${brief.id}"
@@ -99,9 +109,34 @@ TARGET JOB DESCRIPTION:
 ${params.jdText}
 
 TARGET ROLE: ${params.jobTitle}
-TARGET COMPANY: ${params.companyName}`;
+TARGET COMPANY: ${params.companyName}${intelBlock}`;
 
   return { system, user, brief };
+}
+
+function renderIntelBlock(intel: CompanyIntel): string {
+  const devs = intel.recent_developments
+    .map((d) => `- ${d.headline}: ${d.why_it_matters}`)
+    .join("\n");
+  const people = intel.key_people
+    .map((p) => `- ${p.name} (${p.role}): ${p.background_snippet}`)
+    .join("\n");
+  const culture = intel.culture_signals.join(", ");
+  return `
+
+COMPANY INTELLIGENCE (use these specific facts in your answers):
+
+Overview: ${intel.overview}
+
+Recent developments:
+${devs || "(none)"}
+
+Key people:
+${people || "(none)"}
+
+Culture signals: ${culture || "(none)"}
+
+Strategic context: ${intel.strategic_context}`;
 }
 
 export const SECTION_KINDS: SectionKind[] = [
