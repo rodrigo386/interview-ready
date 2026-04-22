@@ -28,7 +28,8 @@ test("run ATS match shows score and top fixes", async ({ page }) => {
   await page.waitForURL("**/prep/new");
   await page.getByLabel("Company").fill("Hexion");
   await page.getByLabel("Role").fill("Senior Director, AI Procurement");
-  await page.getByLabel("Your CV (paste text)").fill(CV_TEXT);
+  await page.getByRole("button", { name: /paste text instead/i }).click();
+  await page.getByLabel("Paste your CV text").fill(CV_TEXT);
   await page.getByLabel("Job Description (paste text)").fill(JD_TEXT);
   await page.getByRole("button", { name: /generate prep guide/i }).click();
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
