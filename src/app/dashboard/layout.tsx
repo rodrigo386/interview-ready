@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { logout } from "./actions";
 
 export default async function DashboardLayout({
@@ -24,16 +26,19 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-zinc-800">
+      <header className="border-b border-border bg-bg">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/dashboard" className="text-lg font-semibold">
-            InterviewReady
+          <Link href="/dashboard" aria-label="PrepaVaga — ir para o painel">
+            <Logo variant="horizontal" size={32} />
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-zinc-400">{user.email}</span>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-sm text-text-secondary sm:inline">
+              {user.email}
+            </span>
+            <ThemeToggle />
             <form action={logout}>
               <Button variant="ghost" type="submit">
-                Sign out
+                Sair
               </Button>
             </form>
           </div>

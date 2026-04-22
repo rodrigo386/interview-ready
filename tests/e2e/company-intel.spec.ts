@@ -17,39 +17,39 @@ Qualifications: 10+ years procurement transformation, hands-on AI deployment, PE
 async function signup(page: import("@playwright/test").Page) {
   const email = `e2e-intel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   await page.goto("/signup");
-  await page.getByLabel("Full name").fill("E2E Intel Tester");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("testpassword123");
-  await page.getByRole("button", { name: /create account/i }).click();
+  await page.getByLabel("Nome completo").fill("E2E Intel Tester");
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha").fill("testpassword123");
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await page.waitForURL("**/dashboard", { timeout: 15_000 });
   return email;
 }
 
-test("Company Intel tab renders and deep-links", async ({ page }) => {
+test("Visão geral tab renders and deep-links", async ({ page }) => {
   await signup(page);
 
   await page.goto("/prep/new");
-  await page.getByLabel("Company").fill("Hexion");
-  await page.getByLabel("Role").fill("Senior Director, AI Procurement");
-  await page.getByRole("button", { name: /paste text instead/i }).click();
-  await page.getByLabel("Paste your CV text").fill(CV_TEXT);
-  await page.getByLabel("Job Description (paste text)").fill(JD_TEXT);
-  await page.getByRole("button", { name: /generate prep guide/i }).click();
+  await page.getByLabel("Empresa").fill("Hexion");
+  await page.getByLabel("Cargo").fill("Senior Director, AI Procurement");
+  await page.getByRole("button", { name: /colar texto em vez disso/i }).click();
+  await page.getByLabel(/Cole o texto do seu CV/i).fill(CV_TEXT);
+  await page.getByLabel(/Descrição da vaga/i).fill(JD_TEXT);
+  await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
 
   await page.waitForURL("**/prep/**", { timeout: 30_000 });
-  await expect(page.getByRole("heading", { name: /Prep for Hexion/i })).toBeVisible({
+  await expect(page.getByRole("heading", { name: /Prep para Hexion/i })).toBeVisible({
     timeout: 15_000,
   });
 
-  // Company Intel tab visible
-  const intelTab = page.getByRole("link", { name: /Company Intel/i });
+  // Aba "Visão geral" visível
+  const intelTab = page.getByRole("link", { name: /Visão geral/i });
   await expect(intelTab).toBeVisible();
 
-  // Click it
+  // Click nela
   await intelTab.click();
-  await expect(page.getByRole("heading", { name: /Company Intel/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Visão geral/i })).toBeVisible();
 
-  // Mock fixture renders the key fields
+  // Fixture do mock renderiza os campos-chave
   await expect(page.getByText(/Mock Co is a \$3B specialty chemicals/i)).toBeVisible();
   await expect(page.getByText(/IPO filed March 2026/i)).toBeVisible();
   await expect(page.getByText(/Jane Doe/i)).toBeVisible();
@@ -58,9 +58,9 @@ test("Company Intel tab renders and deep-links", async ({ page }) => {
     page.getByText(/How does the IPO timeline affect the procurement/i),
   ).toBeVisible();
 
-  // Deep-link works
+  // Deep-link funciona
   const url = new URL(page.url());
   url.searchParams.set("section", "company-intel");
   await page.goto(url.toString());
-  await expect(page.getByRole("heading", { name: /Company Intel/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Visão geral/i })).toBeVisible();
 });

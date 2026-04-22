@@ -6,7 +6,7 @@ function OAuthErrorBanner({ error }: { error?: string }) {
   if (error !== "oauth_failed") return null;
   return (
     <p className="rounded-md border border-red-900 bg-red-950/40 px-3 py-2 text-sm text-red-300">
-      Google sign-in failed. Please try again.
+      Falha ao entrar com Google. Tente novamente.
     </p>
   );
 }
@@ -20,11 +20,11 @@ export default async function LoginPage({
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm">
-        <h1 className="text-center text-2xl font-semibold">Sign in</h1>
+        <h1 className="text-center text-2xl font-semibold">Entrar</h1>
         <p className="mt-2 text-center text-sm text-zinc-400">
-          New here?{" "}
+          Ainda não tem conta?{" "}
           <Link href="/signup" className="text-brand hover:underline">
-            Create an account
+            Criar conta
           </Link>
         </p>
         <div className="mt-8 space-y-6">
@@ -32,10 +32,10 @@ export default async function LoginPage({
           <LoginForm />
           <div className="flex items-center gap-3">
             <hr className="flex-1 border-zinc-800" />
-            <span className="text-xs text-zinc-500">OR</span>
+            <span className="text-xs text-zinc-500">OU</span>
             <hr className="flex-1 border-zinc-800" />
           </div>
-          <GoogleButton label="Sign in with Google" />
+          <GoogleButton label="Entrar com Google" />
         </div>
       </div>
     </main>

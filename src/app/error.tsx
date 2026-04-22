@@ -12,19 +12,19 @@ export default function Error({
 }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <h1 className="text-3xl font-semibold">Something went wrong</h1>
+      <h1 className="text-3xl font-semibold">Algo deu errado</h1>
       <p className="mt-2 max-w-md text-sm text-zinc-400">
-        We hit an unexpected error. Try again, or head back home.
+        Encontramos um erro inesperado. Tente novamente ou volte ao início.
       </p>
       {error.digest && (
         <p className="mt-4 font-mono text-xs text-zinc-600">
-          Reference: {error.digest}
+          Referência: {error.digest}
         </p>
       )}
       <div className="mt-8 flex gap-3">
-        <Button onClick={reset}>Try again</Button>
+        <Button onClick={reset}>Tentar novamente</Button>
         <Link href="/">
-          <Button variant="secondary">Home</Button>
+          <Button variant="secondary">Início</Button>
         </Link>
       </div>
     </main>

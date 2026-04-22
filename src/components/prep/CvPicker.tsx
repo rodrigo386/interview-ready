@@ -55,12 +55,12 @@ export function CvPicker({
 
   return (
     <div className="space-y-4">
-      <label className="block text-sm text-zinc-300">Your CV</label>
+      <label className="block text-sm text-text-secondary">Seu CV</label>
 
       {existingCvs.length > 0 && (
         <fieldset className="space-y-2 rounded-md border border-zinc-800 bg-zinc-900/40 p-4">
           <legend className="px-1 text-xs uppercase tracking-wide text-zinc-400">
-            Use an existing CV
+            Usar um CV já enviado
           </legend>
           {existingCvs.map((cv) => (
             <label
@@ -102,12 +102,12 @@ export function CvPicker({
             />
             <span className="text-sm text-zinc-200">
               {uploadPending
-                ? "Uploading and parsing…"
+                ? "Enviando e processando…"
                 : uploaded
-                  ? `Uploaded: ${uploaded.file_name}`
-                  : "Drop your CV here, or click to browse"}
+                  ? `Enviado: ${uploaded.file_name}`
+                  : "Arraste seu CV aqui, ou clique para escolher"}
             </span>
-            <span className="text-xs text-zinc-500">PDF, DOCX, or TXT · max 5MB</span>
+            <span className="text-xs text-text-muted">PDF, DOCX ou TXT · máximo 5MB</span>
           </label>
           {uploadError && (
             <p className="mt-2 text-sm text-red-400" role="alert">
@@ -120,14 +120,14 @@ export function CvPicker({
       {mode === "paste" ? (
         <div>
           <label htmlFor="cvPasteArea" className="block text-xs text-zinc-400">
-            Paste your CV text (min 200 chars)
+            Cole o texto do seu CV (mínimo 200 caracteres)
           </label>
           <textarea
             id="cvPasteArea"
             rows={10}
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
-            placeholder="Paste your CV text here."
+            placeholder="Cole aqui o texto do seu CV."
             className="mt-1 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
           />
           <button
@@ -135,7 +135,7 @@ export function CvPicker({
             className="mt-2 text-xs text-zinc-400 underline hover:text-zinc-200"
             onClick={() => setMode(existingCvs.length > 0 ? "select" : "upload")}
           >
-            Back to upload
+            Voltar ao upload
           </button>
         </div>
       ) : (
@@ -144,7 +144,7 @@ export function CvPicker({
           className="text-xs text-zinc-400 underline hover:text-zinc-200"
           onClick={() => setMode("paste")}
         >
-          Paste text instead
+          Colar texto em vez disso
         </button>
       )}
     </div>

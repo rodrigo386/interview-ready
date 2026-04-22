@@ -33,61 +33,61 @@ async function makeEmptyPdfBuffer(): Promise<Buffer> {
 async function signup(page: import("@playwright/test").Page) {
   const email = `e2e-upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   await page.goto("/signup");
-  await page.getByLabel("Full name").fill("E2E Upload Tester");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("testpassword123");
-  await page.getByRole("button", { name: /create account/i }).click();
+  await page.getByLabel("Nome completo").fill("E2E Upload Tester");
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha").fill("testpassword123");
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await page.waitForURL("**/dashboard", { timeout: 15_000 });
   return email;
 }
 
 test("upload PDF, create prep, reuse CV on second prep", async ({ page }) => {
   await signup(page);
-  await page.getByRole("link", { name: /new prep/i }).first().click();
+  await page.getByRole("link", { name: /primeiro prep|novo prep/i }).first().click();
   await page.waitForURL("**/prep/new");
 
   const pdfBuffer = await makePdfBuffer(CV_BODY);
 
-  await page.getByLabel("Company").fill("Hexion");
-  await page.getByLabel("Role").fill("Senior Director, AI Procurement");
+  await page.getByLabel("Empresa").fill("Hexion");
+  await page.getByLabel("Cargo").fill("Senior Director, AI Procurement");
 
   await page.setInputFiles('input[type="file"]', {
     name: "rodrigo-cv.pdf",
     mimeType: "application/pdf",
     buffer: pdfBuffer,
   });
-  await expect(page.getByText(/Uploaded: rodrigo-cv\.pdf/)).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/Enviado: rodrigo-cv\.pdf/)).toBeVisible({ timeout: 15_000 });
 
-  await page.getByLabel("Job Description (paste text)").fill(JD_TEXT);
-  await page.getByRole("button", { name: /generate prep guide/i }).click();
+  await page.getByLabel(/Descrição da vaga/i).fill(JD_TEXT);
+  await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
 
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: /Prep for Hexion/i })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("heading", { name: /Prep para Hexion/i })).toBeVisible({ timeout: 10_000 });
 
-  // Second prep — reuse the uploaded CV
+  // Segundo prep — reusa o CV já enviado
   await page.goto("/prep/new");
   await expect(page.getByText("rodrigo-cv.pdf")).toBeVisible();
-  await page.getByLabel("Company").fill("BASF");
-  await page.getByLabel("Role").fill("Director, Procurement");
-  await page.getByLabel("Job Description (paste text)").fill(JD_TEXT);
-  await page.getByRole("button", { name: /generate prep guide/i }).click();
+  await page.getByLabel("Empresa").fill("BASF");
+  await page.getByLabel("Cargo").fill("Director, Procurement");
+  await page.getByLabel(/Descrição da vaga/i).fill(JD_TEXT);
+  await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: /Prep for BASF/i })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("heading", { name: /Prep para BASF/i })).toBeVisible({ timeout: 10_000 });
 });
 
 test("paste fallback still works", async ({ page }) => {
   await signup(page);
   await page.goto("/prep/new");
 
-  await page.getByLabel("Company").fill("Acme");
-  await page.getByLabel("Role").fill("Director");
-  await page.getByRole("button", { name: /paste text instead/i }).click();
-  await page.getByLabel("Paste your CV text").fill(CV_BODY);
-  await page.getByLabel("Job Description (paste text)").fill(JD_TEXT);
-  await page.getByRole("button", { name: /generate prep guide/i }).click();
+  await page.getByLabel("Empresa").fill("Acme");
+  await page.getByLabel("Cargo").fill("Director");
+  await page.getByRole("button", { name: /colar texto em vez disso/i }).click();
+  await page.getByLabel(/Cole o texto do seu CV/i).fill(CV_BODY);
+  await page.getByLabel(/Descrição da vaga/i).fill(JD_TEXT);
+  await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
 
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: /Prep for Acme/i })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("heading", { name: /Prep para Acme/i })).toBeVisible({ timeout: 10_000 });
 });
 
 test("empty PDF is rejected with a helpful message", async ({ page }) => {
@@ -103,6 +103,6 @@ test("empty PDF is rejected with a helpful message", async ({ page }) => {
   });
 
   await expect(
-    page.getByText(/couldn't extract enough text/i),
+    page.getByText(/não conseguimos extrair/i),
   ).toBeVisible({ timeout: 10_000 });
 });

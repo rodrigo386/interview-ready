@@ -33,7 +33,7 @@ export async function generateMetadata({
     data?.generation_status === "pending";
 
   return {
-    title: "Prep — InterviewReady",
+    title: "Prep — PrepaVaga",
     other: isGenerating ? { "http-equiv": "refresh", content: "3" } : {},
   };
 }

@@ -49,7 +49,7 @@ export async function parseCvFile(
     raw = buffer.toString("utf8");
   } else {
     throw new ParseError(
-      `Unsupported file type: ${mimeType}. Upload a PDF, DOCX, or TXT.`,
+      `Tipo de arquivo não suportado: ${mimeType}. Envie um PDF, DOCX ou TXT.`,
     );
   }
 
@@ -57,7 +57,7 @@ export async function parseCvFile(
 
   if (text.length < MIN_CHARS) {
     throw new ParseError(
-      "We couldn't extract enough text from this file. It may be a scanned image. Try pasting the text instead.",
+      "Não conseguimos extrair texto suficiente deste arquivo. Pode ser uma imagem escaneada. Tente colar o texto em vez de enviar o arquivo.",
     );
   }
 

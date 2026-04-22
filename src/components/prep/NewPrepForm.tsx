@@ -35,19 +35,19 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
         <fieldset disabled={pending} className="space-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label htmlFor="companyName" className="block text-sm text-zinc-300">
-                Company
+              <label htmlFor="companyName" className="block text-sm text-text-secondary">
+                Empresa
               </label>
-              <Input id="companyName" name="companyName" placeholder="Acme Corp" required className="mt-1" />
+              <Input id="companyName" name="companyName" placeholder="Ex: Hexion" required className="mt-1" />
             </div>
             <div>
-              <label htmlFor="jobTitle" className="block text-sm text-zinc-300">
-                Role
+              <label htmlFor="jobTitle" className="block text-sm text-text-secondary">
+                Cargo
               </label>
               <Input
                 id="jobTitle"
                 name="jobTitle"
-                placeholder="Senior Director, AI Procurement"
+                placeholder="Ex: Diretor Sênior, AI & Procurement"
                 required
                 className="mt-1"
               />
@@ -59,8 +59,8 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
           {cvText && <input type="hidden" name="cvText" value={cvText} />}
 
           <div>
-            <label htmlFor="jobDescription" className="block text-sm text-zinc-300">
-              Job Description (paste text)
+            <label htmlFor="jobDescription" className="block text-sm text-text-secondary">
+              Descrição da vaga (cole o texto)
             </label>
             <textarea
               id="jobDescription"
@@ -68,32 +68,32 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
               rows={12}
               required
               minLength={200}
-              placeholder="Paste the full job description here."
-              className="mt-1 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-60"
+              placeholder="Cole aqui a descrição completa da vaga (LinkedIn, Gupy, Catho, site da empresa)."
+              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 disabled:opacity-60"
             />
           </div>
         </fieldset>
 
         {state.error && !pending && (
-          <p className="text-sm text-red-400" role="alert">
+          <p className="text-sm text-red-500 dark:text-red-400" role="alert">
             {state.error}
           </p>
         )}
 
-        <Button type="submit" disabled={pending || !canSubmit} className="w-full">
+        <Button type="submit" disabled={pending || !canSubmit} className="w-full" size="lg">
           {pending ? (
             <>
               <Spinner />
-              <span className="ml-2">Researching company and writing your prep… about 60 seconds</span>
+              <span className="ml-2">Pesquisando a empresa e escrevendo seu prep… cerca de 60 segundos</span>
             </>
           ) : (
-            "Generate prep guide"
+            "Gerar meu dossiê"
           )}
         </Button>
 
         {pending && (
-          <p className="text-center text-xs text-zinc-500">
-            You can stay on this page. We&apos;ll redirect you when it&apos;s ready.
+          <p className="text-center text-xs text-text-muted">
+            Pode ficar nesta página. Nós te redirecionamos quando estiver pronto.
           </p>
         )}
       </form>
@@ -108,12 +108,12 @@ function GeneratingOverlay() {
       aria-live="polite"
       className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm"
     >
-      <div className="flex max-w-sm flex-col items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900 p-8 text-center shadow-xl">
+      <div className="flex max-w-sm flex-col items-center gap-4 rounded-lg border border-border bg-bg p-8 text-center shadow-lg">
         <Spinner large />
         <div>
-          <p className="text-base font-medium text-zinc-100">Generating your prep guide</p>
-          <p className="mt-2 text-sm text-zinc-400">
-            Researching the company, then writing your prep. About 60 seconds.
+          <p className="text-base font-medium text-text-primary">Gerando seu dossiê</p>
+          <p className="mt-2 text-sm text-text-secondary">
+            Pesquisando a empresa, depois escrevendo seu prep. Cerca de 60 segundos.
           </p>
         </div>
       </div>
@@ -124,7 +124,7 @@ function GeneratingOverlay() {
 function Spinner({ large = false }: { large?: boolean }) {
   const size = large ? "h-8 w-8" : "h-4 w-4";
   return (
-    <svg className={`${size} animate-spin text-brand`} viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg className={`${size} animate-spin text-brand-600`} viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
       <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
     </svg>

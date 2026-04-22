@@ -1,17 +1,113 @@
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 
+/* -----------------------------------------------------------
+   Theme tokens
+   We remap Tailwind's default zinc palette so existing components
+   (bg-zinc-900, border-zinc-800, text-zinc-300 …) flip between
+   light and dark automatically via CSS variables. Zinc-950 is the
+   deepest background and zinc-50 the brightest text in dark mode;
+   in light mode the mapping is inverted so the same classes render
+   as light surfaces and dark text. This keeps Phase 1 non-invasive
+   at the component level.
+   ----------------------------------------------------------- */
+
 :root {
+  color-scheme: light;
+
+  /* Semantic tokens */
+  --color-bg: 255 255 255;
+  --color-surface: 250 250 249;
+  --color-surface-2: 244 244 245;
+  --color-border: 229 231 235;
+  --color-border-strong: 209 213 219;
+  --color-text-primary: 31 41 55;
+  --color-text-secondary: 75 85 99;
+  --color-text-tertiary: 107 114 128;
+  --color-text-muted: 156 163 175;
+
+  /* Zinc palette — LIGHT MODE mapping
+     Backgrounds (950/900/...) → progressively whiter/warmer surfaces
+     Text (50/100/200/...) → progressively darker charcoal */
+  --zinc-950: 255 255 255;
+  --zinc-900: 250 250 249;
+  --zinc-800: 229 231 235;
+  --zinc-700: 209 213 219;
+  --zinc-600: 156 163 175;
+  --zinc-500: 107 114 128;
+  --zinc-400: 75 85 99;
+  --zinc-300: 55 65 81;
+  --zinc-200: 31 41 55;
+  --zinc-100: 17 24 39;
+  --zinc-50:  15 23 42;
+}
+
+:root.dark {
   color-scheme: dark;
+
+  --color-bg: 15 15 16;
+  --color-surface: 24 24 27;
+  --color-surface-2: 39 39 42;
+  --color-border: 39 39 42;
+  --color-border-strong: 63 63 70;
+  --color-text-primary: 244 244 245;
+  --color-text-secondary: 161 161 170;
+  --color-text-tertiary: 113 113 122;
+  --color-text-muted: 82 82 91;
+
+  /* Zinc palette — DARK MODE mapping (Tailwind defaults) */
+  --zinc-950: 9 9 11;
+  --zinc-900: 24 24 27;
+  --zinc-800: 39 39 42;
+  --zinc-700: 63 63 70;
+  --zinc-600: 82 82 91;
+  --zinc-500: 113 113 122;
+  --zinc-400: 161 161 170;
+  --zinc-300: 212 212 216;
+  --zinc-200: 228 228 231;
+  --zinc-100: 244 244 245;
+  --zinc-50:  250 250 250;
+}
+
+@theme inline {
+  /* Override Tailwind's built-in zinc palette with our variable-driven values */
+  --color-zinc-50:  rgb(var(--zinc-50));
+  --color-zinc-100: rgb(var(--zinc-100));
+  --color-zinc-200: rgb(var(--zinc-200));
+  --color-zinc-300: rgb(var(--zinc-300));
+  --color-zinc-400: rgb(var(--zinc-400));
+  --color-zinc-500: rgb(var(--zinc-500));
+  --color-zinc-600: rgb(var(--zinc-600));
+  --color-zinc-700: rgb(var(--zinc-700));
+  --color-zinc-800: rgb(var(--zinc-800));
+  --color-zinc-900: rgb(var(--zinc-900));
+  --color-zinc-950: rgb(var(--zinc-950));
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 html,
 body {
-  background-color: #09090b; /* zinc-950 */
-  color: #fafafa;
+  background-color: rgb(var(--color-bg));
+  color: rgb(var(--color-text-primary));
   min-height: 100vh;
 }
 
 body {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Accessibility helper — visually hidden but screen-reader accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

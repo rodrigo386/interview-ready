@@ -5,9 +5,9 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
 const schema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  fullName: z.string().min(1, "Name is required"),
+  email: z.string().email("E-mail inválido"),
+  password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
+  fullName: z.string().min(1, "Informe seu nome"),
 });
 
 export type SignupState = {
@@ -17,12 +17,12 @@ export type SignupState = {
 
 function mapSupabaseError(message: string): string {
   if (/already registered|already exists/i.test(message)) {
-    return "An account with this email already exists.";
+    return "Já existe uma conta com este e-mail.";
   }
   if (/confirmation email/i.test(message)) {
-    return "Signup succeeded but sending the confirmation email failed. Contact support.";
+    return "Cadastro feito, mas o envio do e-mail de confirmação falhou. Entre em contato com o suporte.";
   }
-  return "We couldn't create your account. Please try again.";
+  return "Não conseguimos criar sua conta. Tente novamente.";
 }
 
 export async function signup(
@@ -68,7 +68,7 @@ export async function signup(
       throw err;
     }
     console.error("[signup] unexpected error:", err);
-    return { error: "Unexpected error. Please try again in a moment." };
+    return { error: "Erro inesperado. Tente novamente em alguns instantes." };
   }
 
   redirect("/dashboard");
