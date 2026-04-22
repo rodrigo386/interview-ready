@@ -43,16 +43,16 @@ export function PrepGuide({
         <div className="mb-2">
           <Link
             href="/dashboard"
-            className="text-sm text-zinc-400 hover:text-zinc-100"
+            className="text-sm text-text-secondary hover:text-text-primary"
           >
-            ← Back to dashboard
+            ← Voltar para seus preps
           </Link>
         </div>
-        <h1 className="text-3xl font-semibold">
-          Prep for <span className="text-brand">{guide.meta.company}</span>
+        <h1 className="text-3xl font-semibold tracking-tight text-text-primary">
+          Prep para <span className="text-brand-600">{guide.meta.company}</span>
         </h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          {guide.meta.role} · est. {guide.meta.estimated_prep_time_minutes} min prep
+        <p className="mt-1 text-sm text-text-secondary">
+          {guide.meta.role} · tempo estimado: {guide.meta.estimated_prep_time_minutes} min
         </p>
       </header>
 
@@ -63,12 +63,12 @@ export function PrepGuide({
             href={`/prep/${sessionId}?section=${INTEL_TAB_ID}`}
             className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors ${
               intelIsActive
-                ? "border-brand bg-brand text-white"
-                : "border-zinc-800 bg-zinc-900/40 text-zinc-300 hover:bg-zinc-900"
+                ? "border-brand-600 bg-brand-600 text-white"
+                : "border-border bg-surface text-text-secondary hover:bg-surface-muted"
             }`}
           >
             <span aria-hidden>🏢</span>
-            <span>Company Intel</span>
+            <span>Visão geral</span>
           </Link>
         )}
         {guide.sections.map((section) => {
@@ -92,14 +92,14 @@ export function PrepGuide({
 
       {intelIsActive && companyIntel ? (
         <section>
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-semibold text-text-primary">
             <span className="mr-2" aria-hidden>
               🏢
             </span>
-            Company Intel
+            Visão geral
           </h2>
-          <p className="mt-1 text-sm text-zinc-400">
-            Research on {guide.meta.company} — weave these into your answers.
+          <p className="mt-1 text-sm text-text-secondary">
+            Pesquisa sobre {guide.meta.company} — use estes fatos nas suas respostas.
           </p>
           <div className="mt-6">
             <CompanyIntelCards intel={companyIntel} />
@@ -107,13 +107,13 @@ export function PrepGuide({
         </section>
       ) : activeSection ? (
         <section>
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-semibold text-text-primary">
             <span className="mr-2" aria-hidden>
               {activeSection.icon}
             </span>
             {activeSection.title}
           </h2>
-          <p className="mt-1 text-sm text-zinc-400">{activeSection.summary}</p>
+          <p className="mt-1 text-sm text-text-secondary">{activeSection.summary}</p>
 
           <div className="mt-6 space-y-3">
             {activeSection.cards.map((card) => (
