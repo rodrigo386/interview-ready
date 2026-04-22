@@ -7,6 +7,8 @@ import {
   type AtsAnalysis,
   companyIntelSchema,
   type CompanyIntel,
+  cvRewriteSchema,
+  type CvRewrite,
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
@@ -454,6 +456,25 @@ const companyIntelToolSchema = {
   },
 };
 
+const cvRewriteToolSchema = {
+  type: "object" as const,
+  required: ["markdown", "summary_of_changes", "preserved_facts"],
+  properties: {
+    markdown: { type: "string" as const, minLength: 200, maxLength: 12000 },
+    summary_of_changes: {
+      type: "array" as const,
+      minItems: 1,
+      maxItems: 10,
+      items: { type: "string" as const, minLength: 5, maxLength: 300 },
+    },
+    preserved_facts: {
+      type: "array" as const,
+      maxItems: 20,
+      items: { type: "string" as const, minLength: 3, maxLength: 300 },
+    },
+  },
+};
+
 const MOCK_ATS: AtsAnalysis = {
   score: 73,
   title_match: {
@@ -602,6 +623,41 @@ const MOCK_COMPANY_INTEL: CompanyIntel = {
   ],
 };
 
+const MOCK_CV_REWRITE: CvRewrite = {
+  markdown: `## Professional Summary
+
+Senior procurement leader with 10+ years driving digital and AI-enabled transformation across LATAM. Proven track record deploying **agentic AI** sourcing capability and **touchless P2P** processes at scale.
+
+## Experience
+
+### Head of Digital Procurement Transformation — Bayer (2019-2022)
+- Led $500M addressable spend rollout of e-sourcing platform across 12 countries
+- Delivered 18% cost takeout and 40% cycle-time reduction over 24 months
+- Built target operating model and stood up center of excellence
+
+### Portfolio Advisor — Private Equity (2022-present)
+- Advise PE-backed portfolio companies on procurement digitization
+- Hands-on AI deployment on tail spend automation
+
+## Education
+MBA, INSEAD, 2018
+
+## Additional Information
+Private equity experience; sponsor-owned speed and accountability.`,
+  summary_of_changes: [
+    "Upgraded 'digital tools' to 'agentic AI' in Professional Summary",
+    "Added exact JD phrase 'touchless P2P' to summary",
+    "Reframed Bayer achievements around 'target operating model' and 'center of excellence'",
+  ],
+  preserved_facts: [
+    "$500M addressable spend at Bayer 2019-2022",
+    "18% cost takeout",
+    "40% cycle-time reduction",
+    "12 countries LATAM",
+    "MBA INSEAD 2018",
+  ],
+};
+
 /**
  * Multi-turn tool-use loop. Claude may call web_search multiple times before
  * calling submit_company_intel. We iterate, feeding assistant responses back
@@ -715,4 +771,59 @@ export async function generateCompanyIntel(params: {
     );
   }
   return null;
+}
+
+export async function generateCvRewrite(params: {
+  system: string;
+  user: string;
+}): Promise<CvRewrite> {
+  if (process.env.MOCK_ANTHROPIC === "1") {
+    return MOCK_CV_REWRITE;
+  }
+  if (!env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY is not set");
+  }
+
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+  const start = Date.now();
+  console.log("[anthropic] cv-rewrite starting");
+  const response = await client.messages.create(
+    {
+      model: MODEL_ID,
+      max_tokens: 6000,
+      system: params.system,
+      messages: [{ role: "user", content: params.user }],
+      tools: [
+        {
+          name: "submit_cv_rewrite",
+          description:
+            "Submit the full ATS-optimized CV rewrite along with summary of changes and preserved facts.",
+          input_schema: cvRewriteToolSchema,
+        },
+      ],
+      tool_choice: { type: "tool", name: "submit_cv_rewrite" },
+    },
+    { timeout: 120_000 },
+  );
+  console.log(
+    `[anthropic] cv-rewrite completed in ${Date.now() - start}ms stop_reason=${response.stop_reason} output_tokens=${response.usage?.output_tokens ?? "?"}`,
+  );
+
+  const toolUse = response.content.find((b) => b.type === "tool_use");
+  if (!toolUse || toolUse.type !== "tool_use") {
+    throw new ClaudeResponseError(
+      `Claude did not call submit_cv_rewrite. stop_reason=${response.stop_reason}`,
+      dumpResponse(response),
+      response.stop_reason,
+    );
+  }
+  const parsed = cvRewriteSchema.safeParse(toolUse.input);
+  if (!parsed.success) {
+    throw new ClaudeResponseError(
+      `CV rewrite failed schema validation: ${parsed.error.message}`,
+      dumpResponse(response),
+      response.stop_reason,
+    );
+  }
+  return parsed.data;
 }
