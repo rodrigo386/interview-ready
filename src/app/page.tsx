@@ -1,26 +1,43 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/Button";
-import { Logo } from "@/components/Logo";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { LandingNavbar } from "@/components/landing/LandingNavbar";
+import { Hero } from "@/components/landing/Hero";
+import { Comparison } from "@/components/landing/Comparison";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { WhatYouGet } from "@/components/landing/WhatYouGet";
+import { Founder } from "@/components/landing/Founder";
+import { FAQ } from "@/components/landing/FAQ";
+import { FinalCta } from "@/components/landing/FinalCta";
+import { LandingFooter } from "@/components/landing/LandingFooter";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  let user = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // Unauthenticated state — fall through to landing
+    user = null;
+  }
+
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6">
-      <div className="max-w-2xl text-center">
-        <div className="mb-8 flex justify-center">
-          <Logo variant="horizontal" size={56} />
-        </div>
-        <p className="mt-6 text-xl text-text-secondary">
-          Seu coach de carreira com IA. Entre pronto, saia contratado.
-        </p>
-        <div className="mt-10 flex items-center justify-center gap-4">
-          <Link href="/signup">
-            <Button variant="primary">Começar grátis</Button>
-          </Link>
-          <Link href="/login">
-            <Button variant="secondary">Entrar</Button>
-          </Link>
-        </div>
-      </div>
-    </main>
+    <>
+      <LandingNavbar />
+      <main>
+        <Hero />
+        <Comparison />
+        <HowItWorks />
+        <WhatYouGet />
+        <Founder />
+        <FAQ />
+        <FinalCta />
+      </main>
+      <LandingFooter />
+    </>
   );
 }
