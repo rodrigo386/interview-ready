@@ -84,7 +84,7 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
           {pending ? (
             <>
               <Spinner />
-              <span className="ml-2">Generating your prep… about 30 seconds</span>
+              <span className="ml-2">Researching company and writing your prep… about 60 seconds</span>
             </>
           ) : (
             "Generate prep guide"
@@ -113,7 +113,7 @@ function GeneratingOverlay() {
         <div>
           <p className="text-base font-medium text-zinc-100">Generating your prep guide</p>
           <p className="mt-2 text-sm text-zinc-400">
-            Analyzing your CV and the job description. About 30 seconds.
+            Researching the company, then writing your prep. About 60 seconds.
           </p>
         </div>
       </div>
