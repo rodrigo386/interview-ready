@@ -1,6 +1,10 @@
-import type { AtsAnalysis } from "@/lib/ai/schemas";
+import type { AtsAnalysis, CvRewrite } from "@/lib/ai/schemas";
 import { runAtsAnalysis } from "@/app/prep/[id]/ats-actions";
 import { PendingButton } from "./PendingButton";
+import { CvRewriteCta } from "./CvRewriteCta";
+import { CvRewriteSkeleton } from "./CvRewriteSkeleton";
+import { CvRewriteFailed } from "./CvRewriteFailed";
+import { CvRewriteView } from "./CvRewriteView";
 
 function ringColor(score: number): string {
   if (score < 40) return "text-red-500";
@@ -11,9 +15,15 @@ function ringColor(score: number): string {
 export function AtsScoreCard({
   analysis,
   sessionId,
+  cvRewrite,
+  cvRewriteStatus,
+  cvRewriteError,
 }: {
   analysis: AtsAnalysis;
   sessionId: string;
+  cvRewrite?: CvRewrite | null;
+  cvRewriteStatus?: string | null;
+  cvRewriteError?: string | null;
 }) {
   const r = 36;
   const c = 2 * Math.PI * r;
@@ -80,6 +90,16 @@ export function AtsScoreCard({
           ))}
         </ol>
       </div>
+
+      {cvRewriteStatus === "generating" ? (
+        <CvRewriteSkeleton />
+      ) : cvRewriteStatus === "failed" ? (
+        <CvRewriteFailed sessionId={sessionId} errorMessage={cvRewriteError ?? null} />
+      ) : cvRewriteStatus === "complete" && cvRewrite ? (
+        <CvRewriteView rewrite={cvRewrite} sessionId={sessionId} />
+      ) : (
+        <CvRewriteCta sessionId={sessionId} />
+      )}
 
       <details className="mt-8">
         <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-zinc-400">
