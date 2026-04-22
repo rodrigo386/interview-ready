@@ -8,7 +8,8 @@ Applied manually via Supabase Dashboard → SQL Editor after each merge to `main
 | 0002 | `0002_prep_sessions.sql` | 2026-04-21 |
 | 0004 | `0004_ats_analysis.sql` | 2026-04-21 |
 | 0005 | `0005_cvs.sql` | 2026-04-22 |
-| 0006 | `0006_company_intel.sql` | pending |
+| 0006 | `0006_company_intel.sql` | 2026-04-22 |
+| 0007 | `0007_cv_rewrite.sql` | pending |
 
 ## 0005 deploy steps
 
@@ -21,3 +22,8 @@ Applied manually via Supabase Dashboard → SQL Editor after each merge to `main
 
 1. Run `0006_company_intel.sql` in Supabase SQL Editor.
 2. Verify: create a prep, watch `company_intel_status` on `prep_sessions` transition `researching → complete` (or `skipped`).
+
+## 0007 deploy steps
+
+1. Run `0007_cv_rewrite.sql` in Supabase SQL Editor.
+2. Verify: complete an ATS analysis, click "Generate ATS-Optimized CV", confirm a row with `cv_rewrite_status='complete'` on `prep_sessions`, and download the `.docx`.
