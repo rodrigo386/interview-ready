@@ -60,7 +60,33 @@ test("run ATS match shows score and top fixes", async ({ page }) => {
   await page.getByRole("link", { name: /Hexion/i }).first().click();
   await page.waitForURL("**/prep/**");
   await expect(page.getByText(/ATS Match Score/i)).toBeVisible();
-  await page.getByRole("button", { name: /Re-run/i }).click();
+  await page.getByRole("button", { name: /Re-run/i }).first().click();
   await expect(page.getByText(/ATS Match Score/i)).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/Missing: agentic AI/i)).toBeVisible();
+
+  // Rewrite CTA visible once ATS is complete
+  await expect(
+    page.getByRole("button", { name: /Generate ATS-Optimized CV/i }),
+  ).toBeVisible();
+
+  // Click Generate → view renders with MOCK_CV_REWRITE data
+  await page.getByRole("button", { name: /Generate ATS-Optimized CV/i }).click();
+  await expect(page.getByText(/Summary of changes/i)).toBeVisible({ timeout: 20_000 });
+  await expect(
+    page.getByText(/Upgraded 'digital tools' to 'agentic AI'/i),
+  ).toBeVisible();
+  await expect(page.getByText(/touchless P2P/i).first()).toBeVisible();
+
+  // Copy button visible
+  await expect(page.getByRole("button", { name: /Copy markdown/i })).toBeVisible();
+
+  // Download link points to the DOCX route and responds 200 with the right mime
+  const href = await page
+    .getByRole("link", { name: /Download .docx/i })
+    .getAttribute("href");
+  expect(href).toMatch(/\/prep\/.+\/cv-rewrite\.docx$/);
+  const docxUrl = new URL(href!, page.url()).toString();
+  const res = await page.request.get(docxUrl);
+  expect(res.status()).toBe(200);
+  expect(res.headers()["content-type"]).toContain("wordprocessingml");
 });

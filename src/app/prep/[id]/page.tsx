@@ -5,6 +5,7 @@ import {
   prepGuideSchema,
   atsAnalysisSchema,
   companyIntelSchema,
+  cvRewriteSchema,
 } from "@/lib/ai/schemas";
 import { PrepGuide } from "@/components/prep/PrepGuide";
 import { PrepFailed } from "@/components/prep/PrepFailed";
@@ -56,7 +57,7 @@ export default async function PrepViewPage({
   const { data: session, error } = await supabase
     .from("prep_sessions")
     .select(
-      "id, generation_status, prep_guide, error_message, ats_status, ats_analysis, ats_error_message, company_intel, company_intel_status",
+      "id, generation_status, prep_guide, error_message, ats_status, ats_analysis, ats_error_message, company_intel, company_intel_status, cv_rewrite, cv_rewrite_status, cv_rewrite_error",
     )
     .eq("id", id)
     .single();
@@ -108,6 +109,9 @@ function renderAtsBlock(session: {
   ats_status: string | null;
   ats_analysis: unknown;
   ats_error_message: string | null;
+  cv_rewrite: unknown;
+  cv_rewrite_status: string | null;
+  cv_rewrite_error: string | null;
 }) {
   if (session.ats_status === "generating") return <AtsSkeleton />;
   if (session.ats_status === "failed") {
@@ -118,7 +122,20 @@ function renderAtsBlock(session: {
     if (!parsed.success) {
       return <AtsFailed sessionId={session.id} errorMessage="Stored analysis is malformed." />;
     }
-    return <AtsScoreCard analysis={parsed.data} sessionId={session.id} />;
+    const rewriteParsed =
+      session.cv_rewrite_status === "complete"
+        ? cvRewriteSchema.safeParse(session.cv_rewrite)
+        : null;
+    const validRewrite = rewriteParsed?.success ? rewriteParsed.data : null;
+    return (
+      <AtsScoreCard
+        analysis={parsed.data}
+        sessionId={session.id}
+        cvRewrite={validRewrite}
+        cvRewriteStatus={session.cv_rewrite_status}
+        cvRewriteError={session.cv_rewrite_error}
+      />
+    );
   }
   return <AtsCtaCard sessionId={session.id} />;
 }
