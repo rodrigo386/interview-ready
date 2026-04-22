@@ -5,6 +5,8 @@ import {
   type PrepSection,
   atsAnalysisSchema,
   type AtsAnalysis,
+  companyIntelSchema,
+  type CompanyIntel,
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
@@ -400,6 +402,58 @@ function keywordItemSchema() {
   };
 }
 
+const companyIntelToolSchema = {
+  type: "object" as const,
+  required: [
+    "overview",
+    "recent_developments",
+    "key_people",
+    "culture_signals",
+    "strategic_context",
+    "questions_this_creates",
+  ],
+  properties: {
+    overview: { type: "string" as const, minLength: 20, maxLength: 600 },
+    recent_developments: {
+      type: "array" as const,
+      maxItems: 6,
+      items: {
+        type: "object" as const,
+        required: ["headline", "why_it_matters"],
+        properties: {
+          headline: { type: "string" as const, minLength: 1, maxLength: 200 },
+          why_it_matters: { type: "string" as const, minLength: 10, maxLength: 400 },
+          source_url: { type: "string" as const, format: "uri" as const },
+        },
+      },
+    },
+    key_people: {
+      type: "array" as const,
+      maxItems: 5,
+      items: {
+        type: "object" as const,
+        required: ["name", "role", "background_snippet"],
+        properties: {
+          name: { type: "string" as const, minLength: 1, maxLength: 120 },
+          role: { type: "string" as const, minLength: 1, maxLength: 120 },
+          background_snippet: { type: "string" as const, minLength: 1, maxLength: 400 },
+        },
+      },
+    },
+    culture_signals: {
+      type: "array" as const,
+      maxItems: 6,
+      items: { type: "string" as const, minLength: 1, maxLength: 150 },
+    },
+    strategic_context: { type: "string" as const, minLength: 20, maxLength: 600 },
+    questions_this_creates: {
+      type: "array" as const,
+      maxItems: 4,
+      items: { type: "string" as const, minLength: 5, maxLength: 200 },
+    },
+  },
+};
+
 const MOCK_ATS: AtsAnalysis = {
   score: 73,
   title_match: {
@@ -515,4 +569,150 @@ export async function generateAtsAnalysis(params: {
     );
   }
   return parsed.data;
+}
+
+const MOCK_COMPANY_INTEL: CompanyIntel = {
+  overview:
+    "Mock Co is a $3B specialty chemicals company headquartered in Columbus, OH, private-equity owned by Apollo Global Management.",
+  recent_developments: [
+    {
+      headline: "IPO filed March 2026",
+      why_it_matters:
+        "Signals a liquidity event — leadership is under shareholder pressure to accelerate AI and cost transformation.",
+    },
+    {
+      headline: "New CFO appointed",
+      why_it_matters:
+        "Brings an ex-Goldman background; historically pushes hard on cost and margin discipline.",
+    },
+  ],
+  key_people: [
+    {
+      name: "Jane Doe",
+      role: "Chief Procurement Officer",
+      background_snippet: "Ex-Bayer, joined 2024 to lead procurement transformation.",
+    },
+  ],
+  culture_signals: ["fast-paced", "sponsor-owned speed", "hands-on leadership"],
+  strategic_context:
+    "Specialty chemicals is consolidating; the PE sponsor is targeting a 2027 exit and needs EBITDA expansion via operational efficiency.",
+  questions_this_creates: [
+    "How does the IPO timeline affect the procurement transformation roadmap?",
+    "What are the quick wins the new CFO expects in the first 6 months?",
+  ],
+};
+
+/**
+ * Multi-turn tool-use loop. Claude may call web_search multiple times before
+ * calling submit_company_intel. We iterate, feeding assistant responses back
+ * so Anthropic's server resolves web_search tool calls server-side, until:
+ *  - Claude calls submit_company_intel → validate + return CompanyIntel
+ *  - Claude stops without calling the tool → return null (skipped)
+ *  - Iteration cap reached → return null (skipped)
+ *  - Claude errors or schema validation fails → throw ClaudeResponseError
+ *
+ * With MOCK_ANTHROPIC=1, returns MOCK_COMPANY_INTEL immediately. No web_search
+ * call is ever made in CI.
+ */
+export async function generateCompanyIntel(params: {
+  system: string;
+  user: string;
+}): Promise<CompanyIntel | null> {
+  if (process.env.MOCK_ANTHROPIC === "1") {
+    return MOCK_COMPANY_INTEL;
+  }
+
+  if (!env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY is not set");
+  }
+
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+  const start = Date.now();
+  console.log("[anthropic] company-intel starting");
+
+  // Anthropic's server-side web_search tool is a specific tool type not fully
+  // typed in older SDK versions — cast the tools array to the SDK's loose type.
+  const tools = [
+    { type: "web_search_20250305", name: "web_search" },
+    {
+      name: "submit_company_intel",
+      description:
+        "Submit the structured company intelligence report after research is complete.",
+      input_schema: companyIntelToolSchema,
+    },
+  ] as unknown as Anthropic.Messages.Tool[];
+
+  const messages: Anthropic.Messages.MessageParam[] = [
+    { role: "user", content: params.user },
+  ];
+
+  const MAX_ITERATIONS = 8;
+  let lastResponse: Anthropic.Messages.Message | null = null;
+
+  for (let i = 0; i < MAX_ITERATIONS; i++) {
+    const response = await client.messages.create(
+      {
+        model: MODEL_ID,
+        max_tokens: 4000,
+        system: params.system,
+        messages,
+        tools,
+      },
+      { timeout: 120_000 },
+    );
+    lastResponse = response;
+
+    console.log(
+      `[anthropic] company-intel turn ${i + 1} stop_reason=${response.stop_reason} output_tokens=${response.usage?.output_tokens ?? "?"}`,
+    );
+
+    // Check for submit_company_intel in any content block
+    const submit = response.content.find(
+      (b) => b.type === "tool_use" && b.name === "submit_company_intel",
+    );
+    if (submit && submit.type === "tool_use") {
+      const parsed = companyIntelSchema.safeParse(submit.input);
+      if (!parsed.success) {
+        throw new ClaudeResponseError(
+          `Company intel failed schema validation: ${parsed.error.message}`,
+          dumpResponse(response),
+          response.stop_reason,
+        );
+      }
+      console.log(
+        `[anthropic] company-intel completed in ${Date.now() - start}ms`,
+      );
+      return parsed.data;
+    }
+
+    // Claude used web_search (handled server-side by Anthropic — results are
+    // already inline in response.content) but didn't submit yet. Continue the
+    // conversation by appending the assistant turn and a short user nudge.
+    const hasWebSearchBlock = response.content.some(
+      (b) => b.type !== "text" && b.type !== "tool_use",
+    );
+    if (response.stop_reason === "end_turn" && !hasWebSearchBlock) {
+      console.warn(
+        `[anthropic] company-intel ended without submit; returning null (skipped)`,
+      );
+      return null;
+    }
+
+    messages.push({ role: "assistant", content: response.content });
+    messages.push({
+      role: "user",
+      content:
+        "Continue your research, then call submit_company_intel when you have enough to write a useful report. You can skip the tool call if searches returned nothing useful — empty arrays are acceptable.",
+    });
+  }
+
+  console.warn(
+    `[anthropic] company-intel hit MAX_ITERATIONS without submit; returning null`,
+  );
+  if (lastResponse) {
+    console.warn(
+      `[anthropic] last stop_reason=${lastResponse.stop_reason}`,
+    );
+  }
+  return null;
 }
