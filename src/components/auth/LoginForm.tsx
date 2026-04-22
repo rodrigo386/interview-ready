@@ -15,13 +15,13 @@ export function LoginForm() {
     <form action={formAction} className="space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm text-zinc-300">
-          Email
+          E-mail
         </label>
         <Input id="email" name="email" type="email" required className="mt-1" />
       </div>
       <div>
         <label htmlFor="password" className="block text-sm text-zinc-300">
-          Password
+          Senha
         </label>
         <Input
           id="password"
@@ -37,7 +37,7 @@ export function LoginForm() {
         </p>
       )}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Signing in..." : "Sign in"}
+        {pending ? "Entrando..." : "Entrar"}
       </Button>
     </form>
   );

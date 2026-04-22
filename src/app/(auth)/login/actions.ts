@@ -5,8 +5,8 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
 const schema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().email("E-mail inválido"),
+  password: z.string().min(1, "Informe sua senha"),
 });
 
 export type LoginState = { error?: string };
@@ -31,7 +31,7 @@ export async function login(
   });
 
   if (error) {
-    return { error: "Invalid email or password" };
+    return { error: "E-mail ou senha inválidos" };
   }
 
   redirect("/dashboard");

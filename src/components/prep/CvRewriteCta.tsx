@@ -6,17 +6,17 @@ export function CvRewriteCta({ sessionId }: { sessionId: string }) {
   return (
     <div className="mt-8 rounded-md border border-zinc-800 bg-zinc-900/60 p-5">
       <h3 className="text-sm font-semibold text-zinc-100">
-        🎯 ATS-Optimized CV
+        🎯 Currículo otimizado para ATS
       </h3>
       <p className="mt-2 text-sm text-zinc-400">
-        Rewrite your CV to use the exact vocabulary from this JD. Factual
-        content (companies, metrics, dates) stays the same. Takes about 30
-        seconds.
+        Reescreva seu CV usando o vocabulário exato desta vaga. Dados factuais
+        (empresas, métricas, datas) permanecem iguais. Leva cerca de 30
+        segundos.
       </p>
       <form action={action} className="mt-4">
         <PendingButton
-          idleLabel="Generate ATS-Optimized CV"
-          pendingLabel="Generating…"
+          idleLabel="Gerar CV otimizado para ATS"
+          pendingLabel="Gerando…"
           variant="primary"
         />
       </form>

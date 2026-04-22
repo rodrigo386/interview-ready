@@ -14,9 +14,9 @@ export function SignupForm() {
   if (state.pendingConfirmation) {
     return (
       <div className="rounded-md border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-300">
-        <p className="font-medium">Check your email.</p>
+        <p className="font-medium">Confira seu e-mail.</p>
         <p className="mt-1 text-zinc-400">
-          We sent you a confirmation link. Click it, then come back and sign in.
+          Enviamos um link de confirmação. Clique nele e volte aqui para entrar.
         </p>
       </div>
     );
@@ -26,19 +26,19 @@ export function SignupForm() {
     <form action={formAction} className="space-y-4">
       <div>
         <label htmlFor="fullName" className="block text-sm text-zinc-300">
-          Full name
+          Nome completo
         </label>
         <Input id="fullName" name="fullName" required className="mt-1" />
       </div>
       <div>
         <label htmlFor="email" className="block text-sm text-zinc-300">
-          Email
+          E-mail
         </label>
         <Input id="email" name="email" type="email" required className="mt-1" />
       </div>
       <div>
         <label htmlFor="password" className="block text-sm text-zinc-300">
-          Password
+          Senha
         </label>
         <Input
           id="password"
@@ -55,7 +55,7 @@ export function SignupForm() {
         </p>
       )}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Creating account..." : "Create account"}
+        {pending ? "Criando conta..." : "Criar conta"}
       </Button>
     </form>
   );

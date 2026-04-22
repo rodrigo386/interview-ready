@@ -18,11 +18,11 @@ export function PrepFailed({
     <main className="mx-auto max-w-2xl px-6 py-12">
       <div className="rounded-lg border border-red-900 bg-red-950/30 p-6">
         <h1 className="text-xl font-semibold text-red-200">
-          We couldn&apos;t generate your prep.
+          Não conseguimos gerar sua preparação.
         </h1>
         <p className="mt-2 text-sm text-red-300">
-          Something went wrong while calling the AI. Retry uses the same CV and
-          job description — no need to re-paste.
+          Algo deu errado ao chamar a IA. O botão Tentar novamente reaproveita o
+          mesmo CV e a mesma descrição da vaga — não precisa colar de novo.
         </p>
         {errorMessage && <ErrorDetails raw={errorMessage} />}
       </div>
@@ -30,20 +30,20 @@ export function PrepFailed({
       <div className="mt-6 flex flex-wrap gap-3">
         <form action={retryAction}>
           <PendingButton
-            idleLabel="Retry"
-            pendingLabel="Retrying… about 30 seconds"
+            idleLabel="Tentar novamente"
+            pendingLabel="Tentando… cerca de 30 segundos"
             variant="primary"
           />
         </form>
         <form action={deleteAction}>
           <PendingButton
-            idleLabel="Delete and start over"
-            pendingLabel="Deleting…"
+            idleLabel="Excluir e começar de novo"
+            pendingLabel="Excluindo…"
             variant="secondary"
           />
         </form>
         <Link href="/dashboard">
-          <Button variant="ghost">Back to dashboard</Button>
+          <Button variant="ghost">Voltar ao dashboard</Button>
         </Link>
       </div>
     </main>
