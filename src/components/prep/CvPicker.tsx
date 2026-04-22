@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { uploadCv, type UploadCvState } from "@/app/prep/new/cv-actions";
 
 export type CvSummary = {
@@ -25,20 +25,25 @@ export function CvPicker({
   );
   const [uploaded, setUploaded] = useState<{ id: string; file_name: string } | null>(null);
   const [pasted, setPasted] = useState("");
-
-  const [uploadState, uploadAction, uploadPending] = useActionState<
-    UploadCvState,
-    FormData
-  >(uploadCv, {});
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadPending, startUpload] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (uploadState.cv) {
-      setUploaded(uploadState.cv);
-      setMode("upload");
-      onResolved({ cvId: uploadState.cv.id, cvText: null });
-    }
-  }, [uploadState.cv, onResolved]);
+  const handleFile = (file: File) => {
+    setUploadError(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    startUpload(async () => {
+      const result: UploadCvState = await uploadCv({}, fd);
+      if (result.cv) {
+        setUploaded(result.cv);
+        setMode("upload");
+        onResolved({ cvId: result.cv.id, cvText: null });
+      } else if (result.error) {
+        setUploadError(result.error);
+      }
+    });
+  };
 
   useEffect(() => {
     if (mode === "select") {
@@ -82,16 +87,16 @@ export function CvPicker({
       )}
 
       {mode !== "paste" && (
-        <form action={uploadAction}>
+        <div>
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-zinc-800 bg-zinc-900/30 px-4 py-8 text-center hover:border-zinc-700">
             <input
               ref={fileRef}
               type="file"
-              name="file"
               accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
               className="hidden"
               onChange={(e) => {
-                if (e.target.files?.[0]) e.target.form?.requestSubmit();
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
               }}
               disabled={uploadPending}
             />
@@ -104,12 +109,12 @@ export function CvPicker({
             </span>
             <span className="text-xs text-zinc-500">PDF, DOCX, or TXT · max 5MB</span>
           </label>
-          {uploadState.error && (
+          {uploadError && (
             <p className="mt-2 text-sm text-red-400" role="alert">
-              {uploadState.error}
+              {uploadError}
             </p>
           )}
-        </form>
+        </div>
       )}
 
       {mode === "paste" ? (
