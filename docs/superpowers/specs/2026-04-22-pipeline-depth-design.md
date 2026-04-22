@@ -94,9 +94,9 @@ Replaces the current `runGeneration` as the orchestration entry point. Flow:
    error_message=null, company_intel=null, company_intel_error=null
 4. Stage A — Company research:
    - Call generateCompanyIntel(companyName, jobTitle)
-   - On success: persist company_intel JSONB, status='complete'
-   - On ParseError (web_search unavailable / empty results): status='skipped'
-   - On other error: status='failed', persist raw response to company_intel_error
+   - Returns non-null CompanyIntel: persist JSONB, status='complete'
+   - Returns null (web_search unavailable, empty results, or Claude never called submit): status='skipped'
+   - Throws ClaudeResponseError (Claude errored or intel failed Zod validation): status='failed', persist raw response to company_intel_error
    - Either way, hold the intel (or null) in memory and continue
 5. Stage B — 5 parallel section calls via Promise.allSettled (unchanged logic
    except buildSectionPrompt now accepts optional companyIntel)
