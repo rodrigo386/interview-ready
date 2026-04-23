@@ -47,7 +47,7 @@ export function QuestionCard({
         <span
           className={`inline-flex items-center justify-center rounded-pill px-3 py-1 text-xs font-bold text-white ${ACCENT_NUMBER_BG[accent]}`}
         >
-          {questionNumber}
+          #{questionNumber}
         </span>
         <div className="flex items-center gap-2">
           <button

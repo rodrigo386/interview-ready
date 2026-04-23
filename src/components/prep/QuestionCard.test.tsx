@@ -14,7 +14,7 @@ const baseProps = {
 describe("<QuestionCard />", () => {
   it("renderiza title, questionNumber e section heading", () => {
     const { getByText } = render(<QuestionCard accent="orange" {...baseProps} />);
-    expect(getByText("01 / 03")).toBeDefined();
+    expect(getByText("#01 / 03")).toBeDefined();
     expect(getByText(baseProps.title)).toBeDefined();
     expect(getByText("💡 O que querem ouvir")).toBeDefined();
   });
