@@ -17,13 +17,13 @@ export function SuccessCard({ sessionId }: { sessionId: string }) {
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         <Link
           href={`/prep/${sessionId}/likely`}
-          className="rounded-pill border border-white/40 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+          className="rounded-pill border border-white/40 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-green-700"
         >
           Refazer perguntas básicas
         </Link>
         <button
           type="button"
-          className="rounded-pill bg-white px-5 py-2.5 text-sm font-semibold text-green-700 shadow-prep hover:bg-green-soft"
+          className="rounded-pill bg-white px-5 py-2.5 text-sm font-semibold text-green-700 shadow-prep hover:bg-green-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-green-700"
           onClick={() => {
             window.alert("Export PDF em breve");
           }}
