@@ -38,12 +38,14 @@ test("signup + create prep + view prep guide", async ({ page }) => {
 
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
 
-  await expect(page.getByRole("heading", { name: /Prep para Hexion/i })).toBeVisible({
+  // Default landing is Visão geral (overview): caption "Prep para" + h1 com company
+  await expect(page.getByText("Prep para", { exact: true })).toBeVisible({
     timeout: 10_000,
   });
-  // Com Company Intel presente, "Visão geral" é a aba default — clica em "Likely Questions" (título vindo da IA).
-  await page.getByRole("link", { name: /Likely Questions/i }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Hexion" })).toBeVisible();
 
+  // Navega para Likely Questions via sidebar (título vem da IA em EN)
+  await page.getByRole("link", { name: /Likely Questions/i }).click();
   await page
     .getByRole("button", { name: /why are you interested in this role/i })
     .click();

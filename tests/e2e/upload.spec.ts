@@ -62,7 +62,7 @@ test("upload PDF, create prep, reuse CV on second prep", async ({ page }) => {
   await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
 
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: /Prep para Hexion/i })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("heading", { level: 1, name: "Hexion" })).toBeVisible({ timeout: 10_000 });
 
   // Segundo prep — reusa o CV já enviado
   await page.goto("/prep/new");
@@ -72,7 +72,7 @@ test("upload PDF, create prep, reuse CV on second prep", async ({ page }) => {
   await page.getByLabel(/Descrição da vaga/i).fill(JD_TEXT);
   await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: /Prep para BASF/i })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("heading", { level: 1, name: "BASF" })).toBeVisible({ timeout: 10_000 });
 });
 
 test("paste fallback still works", async ({ page }) => {
@@ -87,7 +87,7 @@ test("paste fallback still works", async ({ page }) => {
   await page.getByRole("button", { name: /gerar meu dossiê/i }).click();
 
   await page.waitForURL("**/prep/**", { timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: /Prep para Acme/i })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("heading", { level: 1, name: "Acme" })).toBeVisible({ timeout: 10_000 });
 });
 
 test("empty PDF is rejected with a helpful message", async ({ page }) => {
