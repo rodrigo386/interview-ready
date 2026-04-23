@@ -26,6 +26,11 @@
   --color-text-tertiary: 107 114 128;
   --color-text-muted: 156 163 175;
 
+  /* PrepaVAGA Opção A — gauge color tokens (consumed via CSS var em Gauge.tsx) */
+  --prep-red: #E54848;
+  --prep-yellow: #F5B800;
+  --prep-green: #2DB87F;
+
   /* Zinc palette — LIGHT MODE mapping
      Backgrounds (950/900/...) → progressively whiter/warmer surfaces
      Text (50/100/200/...) → progressively darker charcoal */
