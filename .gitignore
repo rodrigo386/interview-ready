@@ -54,6 +54,8 @@ supabase/.temp/
 
 # claude code local settings (per-machine)
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/scheduled_tasks.jsonl
 
 # brand assets (kept outside repo — source SVGs/PNGs, briefs)
 BrandAssets/

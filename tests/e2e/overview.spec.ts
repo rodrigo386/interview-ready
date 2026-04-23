@@ -33,47 +33,63 @@ async function signupAndCreatePrep(page: import("@playwright/test").Page) {
   await page.waitForURL("**/prep/**", { timeout: 30_000 });
 }
 
-test("Visão geral é a tela inicial com status, cards e sidebar", async ({ page }) => {
+test("Visão geral é a tela inicial com JourneyArc + ContinueCard", async ({
+  page,
+}) => {
   await signupAndCreatePrep(page);
 
-  // Landing: overview com caption "Prep para" + h1 do company
+  // Landing: hero com caption "Prep para" + h1 do company
   await expect(page.getByText("Prep para", { exact: true })).toBeVisible({
     timeout: 15_000,
   });
-  await expect(page.getByRole("heading", { level: 1, name: "Hexion" })).toBeVisible();
-
-  // Status grid
   await expect(
-    page.getByRole("heading", { name: /Status do seu prep/i }),
+    page.getByRole("heading", { level: 1, name: "Hexion" }),
   ).toBeVisible();
-  await expect(page.getByText(/Guia de perguntas/i)).toBeVisible();
-  await expect(page.getByText(/Sobre a empresa/i).first()).toBeVisible();
-  await expect(page.getByText(/Compatibilidade ATS/i).first()).toBeVisible();
 
-  // Cards "Comece por aqui"
+  // JourneyArc visível
+  const journey = page.getByRole("navigation", { name: /Jornada do prep/i });
+  await expect(journey).toBeVisible();
+
+  // Nós da jornada presentes (como links)
   await expect(
-    page.getByRole("heading", { name: /Comece por aqui/i }),
+    journey.getByRole("link", { name: /Visão geral/i }),
   ).toBeVisible();
-  await expect(page.getByText(/Conheça a empresa/i)).toBeVisible();
-  await expect(page.getByText(/Cheque seu ATS/i)).toBeVisible();
+  await expect(
+    journey.getByRole("link", { name: /Sobre a empresa/i }),
+  ).toBeVisible();
+  await expect(
+    journey.getByRole("link", { name: /Compatibilidade ATS/i }),
+  ).toBeVisible();
 
-  // Sidebar tem Visão geral, Sobre a empresa, Compatibilidade ATS
-  const sidebar = page.getByRole("navigation", { name: /Navegação do prep/i });
-  await expect(sidebar.getByRole("link", { name: /Visão geral/i })).toBeVisible();
-  await expect(sidebar.getByRole("link", { name: /Sobre a empresa/i })).toBeVisible();
-  await expect(sidebar.getByRole("link", { name: /Compatibilidade ATS/i })).toBeVisible();
+  // ContinueCard presente — com intel ready e ATS pending no MOCK, próxima parada é "Cheque seu ATS"
+  await expect(page.getByText(/Sua próxima parada/i)).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Cheque seu ATS/i }),
+  ).toBeVisible();
 
-  // Clicar "Comece por aqui" card 1 → Sobre a empresa
-  await page.getByRole("link", { name: /Conheça a empresa/i }).click();
-  await expect(page.getByRole("heading", { name: /Sobre a empresa/i })).toBeVisible();
+  // Clicar CTA do ContinueCard navega pro ATS
+  await page.getByRole("link", { name: /Rodar análise ATS/i }).click();
+  await expect(
+    page.getByRole("heading", { name: /Cheque sua compatibilidade com ATS/i }),
+  ).toBeVisible();
 
-  // Voltar à Visão geral via sidebar
-  await sidebar.getByRole("link", { name: /Visão geral/i }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Hexion" })).toBeVisible();
+  // Na seção interna o SectionTabs aparece
+  const tabs = page.getByRole("navigation", { name: /Seções do prep/i });
+  await expect(tabs).toBeVisible();
 
-  // Deep-link ?section=overview
+  // Voltar à Visão geral via breadcrumb
+  await page
+    .getByRole("link", { name: /← Visão geral · Hexion/i })
+    .click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Hexion" }),
+  ).toBeVisible();
+
+  // Deep-link ?section=overview continua válido
   const url = new URL(page.url());
   url.searchParams.set("section", "overview");
   await page.goto(url.toString());
-  await expect(page.getByRole("heading", { level: 1, name: "Hexion" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Hexion" }),
+  ).toBeVisible();
 });

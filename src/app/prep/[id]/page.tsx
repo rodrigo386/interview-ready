@@ -20,11 +20,11 @@ import { AtsScoreCard } from "@/components/prep/AtsScoreCard";
 import { AtsFailed } from "@/components/prep/AtsFailed";
 import { AtsSkeleton } from "@/components/prep/AtsSkeleton";
 import { PrepOverview } from "@/components/prep/PrepOverview";
-import {
-  PrepSidebar,
-  type SidebarItem,
-  type SidebarItemStatus,
-} from "@/components/prep/PrepSidebar";
+import { SectionTabs } from "@/components/prep/SectionTabs";
+import type {
+  JourneyNode,
+  JourneyNodeStatus,
+} from "@/components/prep/navigation-types";
 
 const OVERVIEW_ID = "overview";
 const ATS_ID = "ats";
@@ -118,7 +118,8 @@ export default async function PrepViewPage({
       ? companyIntelSchema.safeParse(session.company_intel)
       : null;
   const intel = intelParsed?.success ? intelParsed.data : null;
-  const intelStatus = toSidebarStatus(
+
+  const intelStatus = toNodeStatus(
     session.company_intel_status,
     intel !== null,
   );
@@ -127,24 +128,20 @@ export default async function PrepViewPage({
     intelStatus === "generating" ||
     intelStatus === "failed";
 
-  const atsStatus = toAtsSidebarStatus(session.ats_status);
-  const atsScore =
-    session.ats_status === "complete"
-      ? safeAtsScore(session.ats_analysis)
-      : null;
-  const rewriteStatus = toSidebarStatus(session.cv_rewrite_status, false);
+  const atsStatus = toAtsNodeStatus(session.ats_status);
+  const rewriteStatus = toNodeStatus(session.cv_rewrite_status, false);
 
   const sectionContainingCard = card
     ? guide.sections.find((s) => s.cards.some((c) => c.id === card))
     : undefined;
 
-  const activeId = resolveActiveId({
+  const desiredActiveId = resolveActiveId({
     sectionParam,
     sectionContainingCard,
     sectionIds: guide.sections.map((s) => s.id),
   });
 
-  const items: SidebarItem[] = buildSidebarItems({
+  const nodes: JourneyNode[] = buildJourneyNodes({
     sessionId: session.id,
     guide,
     intelAvailable,
@@ -152,67 +149,85 @@ export default async function PrepViewPage({
     atsStatus,
   });
 
-  const activeIdResolved = items.some((i) => i.id === activeId)
-    ? activeId
+  const activeId = nodes.some((n) => n.id === desiredActiveId)
+    ? desiredActiveId
     : OVERVIEW_ID;
 
+  const isOverview = activeId === OVERVIEW_ID;
+  const nextStep = isOverview
+    ? deriveNextStep({
+        sessionId: session.id,
+        intelAvailable,
+        intelStatus,
+        atsStatus,
+        rewriteStatus,
+        firstAiSectionId: guide.sections[0]?.id ?? null,
+      })
+    : null;
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
-      <header className="mb-6 md:mb-8">
-        <Link
-          href="/dashboard"
-          className="text-sm text-text-secondary hover:text-text-primary"
-        >
-          ← Voltar para seus preps
-        </Link>
+    <div className="mx-auto max-w-3xl px-4 py-6 md:px-6 md:py-10">
+      <header className="mb-6 flex items-center gap-3 text-sm">
+        {isOverview ? (
+          <Link
+            href="/dashboard"
+            className="text-text-secondary hover:text-text-primary"
+          >
+            ← Voltar para seus preps
+          </Link>
+        ) : (
+          <Link
+            href={`/prep/${session.id}?section=${OVERVIEW_ID}`}
+            className="text-text-secondary hover:text-text-primary"
+          >
+            ← Visão geral · {guide.meta.company}
+          </Link>
+        )}
       </header>
 
-      <div className="grid gap-6 md:grid-cols-[220px,1fr] md:gap-10">
-        <aside>
-          <PrepSidebar items={items} activeId={activeIdResolved} />
-        </aside>
+      {!isOverview && <SectionTabs nodes={nodes} activeId={activeId} />}
 
-        <main>
-          {renderActiveSection({
-            activeId: activeIdResolved,
+      <main className={isOverview ? "" : "pt-6"}>
+        {isOverview ? (
+          <PrepOverview
+            sessionId={session.id}
+            company={guide.meta.company}
+            role={guide.meta.role}
+            estimatedMinutes={guide.meta.estimated_prep_time_minutes}
+            nodes={nodes}
+            nextStep={nextStep}
+          />
+        ) : (
+          renderActiveSection({
+            activeId,
             session,
             guide,
             intel,
-            intelStatus,
-            atsStatus,
-            atsScore,
-            rewriteStatus,
             activeCardId: card,
-          })}
-        </main>
-      </div>
+          })
+        )}
+      </main>
     </div>
   );
 }
 
-function toSidebarStatus(
+function toNodeStatus(
   raw: string | null | undefined,
   hasData: boolean,
-): SidebarItemStatus {
+): JourneyNodeStatus {
   if (raw === "generating" || raw === "researching" || raw === "pending") {
     return "generating";
   }
   if (raw === "failed") return "failed";
   if (raw === "complete" && hasData) return "ready";
-  if (raw === "complete") return "pending";
   return "pending";
 }
 
-function toAtsSidebarStatus(raw: string | null | undefined): SidebarItemStatus {
+function toAtsNodeStatus(raw: string | null | undefined): JourneyNodeStatus {
   if (raw === "generating") return "generating";
   if (raw === "failed") return "failed";
   if (raw === "complete") return "ready";
   return "pending";
-}
-
-function safeAtsScore(raw: unknown): number | null {
-  const parsed = atsAnalysisSchema.safeParse(raw);
-  return parsed.success ? parsed.data.score : null;
 }
 
 function resolveActiveId({
@@ -234,7 +249,7 @@ function resolveActiveId({
   return OVERVIEW_ID;
 }
 
-function buildSidebarItems({
+function buildJourneyNodes({
   sessionId,
   guide,
   intelAvailable,
@@ -244,10 +259,10 @@ function buildSidebarItems({
   sessionId: string;
   guide: { sections: Array<{ id: string; icon: string; title: string }> };
   intelAvailable: boolean;
-  intelStatus: SidebarItemStatus;
-  atsStatus: SidebarItemStatus;
-}): SidebarItem[] {
-  const items: SidebarItem[] = [
+  intelStatus: JourneyNodeStatus;
+  atsStatus: JourneyNodeStatus;
+}): JourneyNode[] {
+  const nodes: JourneyNode[] = [
     {
       id: OVERVIEW_ID,
       icon: "🏠",
@@ -258,7 +273,7 @@ function buildSidebarItems({
   ];
 
   if (intelAvailable) {
-    items.push({
+    nodes.push({
       id: INTEL_SECTION_ID,
       icon: "🏢",
       label: "Sobre a empresa",
@@ -267,7 +282,7 @@ function buildSidebarItems({
     });
   }
 
-  items.push({
+  nodes.push({
     id: ATS_ID,
     icon: "📊",
     label: "Compatibilidade ATS",
@@ -276,7 +291,7 @@ function buildSidebarItems({
   });
 
   for (const section of guide.sections) {
-    items.push({
+    nodes.push({
       id: section.id,
       icon: section.icon,
       label: section.title,
@@ -285,7 +300,75 @@ function buildSidebarItems({
     });
   }
 
-  return items;
+  return nodes;
+}
+
+function deriveNextStep({
+  sessionId,
+  intelAvailable,
+  intelStatus,
+  atsStatus,
+  rewriteStatus,
+  firstAiSectionId,
+}: {
+  sessionId: string;
+  intelAvailable: boolean;
+  intelStatus: JourneyNodeStatus;
+  atsStatus: JourneyNodeStatus;
+  rewriteStatus: JourneyNodeStatus;
+  firstAiSectionId: string | null;
+}) {
+  if (intelAvailable && intelStatus === "generating") {
+    return {
+      title: "Aguardando pesquisa da empresa",
+      body: "Estamos compilando os fatos sobre a empresa. Volte em alguns instantes.",
+      href: `/prep/${sessionId}?section=${INTEL_SECTION_ID}`,
+      ctaLabel: "Ver status",
+    };
+  }
+  if (intelAvailable && intelStatus === "ready") {
+    if (atsStatus === "pending") {
+      return {
+        title: "Cheque seu ATS",
+        body: "Descubra a compatibilidade do seu CV com a vaga e receba sugestões de reescrita.",
+        href: `/prep/${sessionId}?section=${ATS_ID}`,
+        ctaLabel: "Rodar análise ATS",
+      };
+    }
+  }
+  if (atsStatus === "pending") {
+    return {
+      title: "Cheque seu ATS",
+      body: "Descubra a compatibilidade do seu CV com a vaga em 15 segundos.",
+      href: `/prep/${sessionId}?section=${ATS_ID}`,
+      ctaLabel: "Rodar análise ATS",
+    };
+  }
+  if (atsStatus === "failed") {
+    return {
+      title: "Tente rodar o ATS novamente",
+      body: "A última análise falhou. Recomendamos rodar antes de continuar.",
+      href: `/prep/${sessionId}?section=${ATS_ID}`,
+      ctaLabel: "Ir para Compatibilidade ATS",
+    };
+  }
+  if (atsStatus === "ready" && rewriteStatus === "pending") {
+    return {
+      title: "Otimize seu CV para o ATS",
+      body: "Reescreva seu CV com o vocabulário exato da vaga. Fatos ficam inalterados.",
+      href: `/prep/${sessionId}?section=${ATS_ID}`,
+      ctaLabel: "Ver sugestões",
+    };
+  }
+  if (firstAiSectionId) {
+    return {
+      title: "Estude as perguntas prováveis",
+      body: "Respostas modelo, pontos-chave e dicas — organize sua narrativa.",
+      href: `/prep/${sessionId}?section=${firstAiSectionId}`,
+      ctaLabel: "Começar pelas perguntas",
+    };
+  }
+  return null;
 }
 
 function renderActiveSection({
@@ -293,42 +376,27 @@ function renderActiveSection({
   session,
   guide,
   intel,
-  intelStatus,
-  atsStatus,
-  atsScore,
-  rewriteStatus,
   activeCardId,
 }: {
   activeId: string;
   session: SessionRow;
-  guide: { meta: { company: string; role: string; estimated_prep_time_minutes: number }; sections: Array<{ id: string; icon: string; title: string; summary: string; cards: Array<{ id: string }> }> };
+  guide: {
+    meta: {
+      company: string;
+      role: string;
+      estimated_prep_time_minutes: number;
+    };
+    sections: Array<{
+      id: string;
+      icon: string;
+      title: string;
+      summary: string;
+      cards: Array<{ id: string }>;
+    }>;
+  };
   intel: ReturnType<typeof companyIntelSchema.parse> | null;
-  intelStatus: SidebarItemStatus;
-  atsStatus: SidebarItemStatus;
-  atsScore: number | null;
-  rewriteStatus: SidebarItemStatus;
   activeCardId?: string;
 }) {
-  if (activeId === OVERVIEW_ID) {
-    return (
-      <PrepOverview
-        sessionId={session.id}
-        company={guide.meta.company}
-        role={guide.meta.role}
-        estimatedMinutes={guide.meta.estimated_prep_time_minutes}
-        sectionsReady={guide.sections.length}
-        sectionsTotal={guide.sections.length}
-        intelStatus={
-          intelStatus === "pending" && !intel ? "unavailable" : intelStatus
-        }
-        atsStatus={atsStatus}
-        atsScore={atsScore}
-        rewriteStatus={rewriteStatus}
-        firstSectionId={guide.sections[0]?.id ?? null}
-      />
-    );
-  }
-
   if (activeId === ATS_ID) {
     return renderAtsBlock(session);
   }
@@ -341,13 +409,8 @@ function renderActiveSection({
 
   const aiSection = guide.sections.find((s) => s.id === activeId);
   if (aiSection) {
-    // activeCardId is validated against the section's cards inside PrepSection.
-    // Type assertion is safe: the section shape matches PrepGuideType["sections"][number].
     return (
-      <PrepSection
-        section={aiSection as never}
-        activeCardId={activeCardId}
-      />
+      <PrepSection section={aiSection as never} activeCardId={activeCardId} />
     );
   }
 
