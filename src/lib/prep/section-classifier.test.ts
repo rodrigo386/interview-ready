@@ -62,4 +62,26 @@ describe("classifyPrepSections", () => {
     expect(out.likely?.id).toBe("likely-questions");
     expect(out.deepDive?.id).toBe("deep-dive");
   });
+
+  it("não confunde 'task' com 'ask' (word boundary)", () => {
+    const out = classifyPrepSections([
+      make("technical-tasks"),
+      make("likely-questions"),
+      make("ask-interviewer"),
+    ]);
+    expect(out.likely?.id).toBe("likely-questions");
+    expect(out.ask?.id).toBe("ask-interviewer");
+    // technical-tasks NÃO deve virar ask
+    expect(out.deepDive?.id).toBe("technical-tasks"); // cai no fallback posicional
+  });
+
+  it("matches PT-BR 'Prováveis' (acento)", () => {
+    const out = classifyPrepSections([make("s1", "Perguntas Prováveis")]);
+    expect(out.likely?.id).toBe("s1");
+  });
+
+  it("matches snake_case 'deep_dive'", () => {
+    const out = classifyPrepSections([make("deep_dive_questions")]);
+    expect(out.deepDive?.id).toBe("deep_dive_questions");
+  });
 });

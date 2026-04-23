@@ -7,9 +7,9 @@ export type ClassifiedSections = {
 };
 
 const matchers = {
-  likely: /likely|provav|basic|b[áa]sic/i,
-  deepDive: /deep[\s-]?dive|aprofund/i,
-  ask: /ask|pergunt.*entrev|to[\s-]?ask|voc[êe].*pergunt/i,
+  likely: /likely|prov[aá]v|basic|b[áa]sic/i,
+  deepDive: /deep[\s_-]?dive|aprofund/i,
+  ask: /\bask\b|pergunt.*entrev|to[\s-]?ask|voc[êe].*pergunt/i,
 } as const;
 
 function matches(section: PrepSection, kind: keyof typeof matchers): boolean {
