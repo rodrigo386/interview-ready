@@ -11,7 +11,11 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    environmentMatchGlobs: [
+      ["src/components/**/*.test.{ts,tsx}", "jsdom"],
+    ],
     globals: true,
+    setupFiles: ["./vitest.setup.ts"],
     exclude: ["**/node_modules/**", "**/tests/e2e/**"],
   },
   resolve: {
