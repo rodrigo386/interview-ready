@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
+import { DeletePrepButton } from "@/components/prep/DeletePrepButton";
 import { Logo } from "@/components/Logo";
 
 type SessionRow = {
@@ -104,12 +105,16 @@ export default async function DashboardPage() {
         {list.map((s) => {
           const status = STATUS[s.generation_status] ?? STATUS.pending;
           return (
-            <Link
+            <article
               key={s.id}
-              href={`/prep/${s.id}`}
-              className="group block rounded-lg border border-border bg-bg p-6 transition-all hover:border-brand-400 hover:shadow-md"
+              className="group relative rounded-lg border border-border bg-bg p-6 transition-all hover:border-brand-400 hover:shadow-md"
             >
-              <div className="flex items-start justify-between gap-3">
+              <Link
+                href={`/prep/${s.id}`}
+                aria-label={`Abrir prep de ${s.company_name}`}
+                className="absolute inset-0 z-0 rounded-lg"
+              />
+              <div className="pointer-events-none relative z-[1] flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-lg font-semibold text-text-primary">
                     {s.company_name}
@@ -125,7 +130,7 @@ export default async function DashboardPage() {
                   →
                 </span>
               </div>
-              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-text-tertiary">
+              <div className="pointer-events-none relative z-[1] mt-4 flex flex-wrap items-center gap-2 text-sm text-text-tertiary">
                 <span>
                   {new Date(s.created_at).toLocaleDateString("pt-BR", {
                     year: "numeric",
@@ -148,7 +153,14 @@ export default async function DashboardPage() {
                     <AtsScoreBadge score={atsScoreFromRow(s) as number} />
                   )}
               </div>
-            </Link>
+              <div className="pointer-events-auto relative z-[2] mt-4 flex justify-end">
+                <DeletePrepButton
+                  sessionId={s.id}
+                  companyName={s.company_name}
+                  variant="compact"
+                />
+              </div>
+            </article>
           );
         })}
       </div>

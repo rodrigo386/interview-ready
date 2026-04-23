@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { SidebarItemStatus } from "./PrepSidebar";
+import { DeletePrepButton } from "./DeletePrepButton";
 
 type StatusLine = {
   label: string;
@@ -161,6 +162,15 @@ export function PrepOverview({
           pesquisa da empresa te dá contexto, o ATS valida seu CV e as seções
           de perguntas te preparam para a conversa.
         </p>
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+          Zona de perigo
+        </h2>
+        <div className="mt-4">
+          <DeletePrepButton sessionId={sessionId} companyName={company} />
+        </div>
       </section>
     </div>
   );
