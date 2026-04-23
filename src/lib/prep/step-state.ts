@@ -27,12 +27,12 @@ export function resolveCurrentStep(completed: StepNumber[]): StepNumber {
   return 5;
 }
 
-export const STORAGE_KEY = (sessionId: string) => `prepavaga:steps:${sessionId}`;
+export const storageKey = (sessionId: string) => `prepavaga:steps:${sessionId}`;
 
 export function readLocalCompleted(sessionId: string): number[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY(sessionId));
+    const raw = window.localStorage.getItem(storageKey(sessionId));
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((n): n is number => typeof n === "number") : [];
@@ -44,7 +44,7 @@ export function readLocalCompleted(sessionId: string): number[] {
 export function writeLocalCompleted(sessionId: string, steps: number[]): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY(sessionId), JSON.stringify(steps));
+    window.localStorage.setItem(storageKey(sessionId), JSON.stringify(steps));
   } catch {
     // quota / disabled — silently no-op
   }

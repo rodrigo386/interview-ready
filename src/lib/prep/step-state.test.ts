@@ -22,7 +22,6 @@ describe("mergeCompleted", () => {
     expect(mergeCompleted([1, 2], [3, 1, 5])).toEqual([1, 2, 3, 5]);
   });
   it("ignora valores fora de 1..5", () => {
-    // @ts-expect-error testing runtime bound
     expect(mergeCompleted([1], [9, 0, 3])).toEqual([1, 3]);
   });
 });

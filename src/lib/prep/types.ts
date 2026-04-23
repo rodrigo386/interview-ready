@@ -8,3 +8,12 @@ export const STEP_LABELS: Record<StepNumber, string> = {
   4: "Aprofundamento",
   5: "Você pergunta",
 };
+
+export type PrepShellData = {
+  sessionId: string;
+  company: string;
+  role: string;
+  estimatedMinutes: number;
+  currentStep: StepNumber;
+  completedSteps: StepNumber[];
+};
