@@ -2,7 +2,9 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const updateProfileSchema = z.object({
   full_name: z.string().trim().max(120).optional(),
@@ -182,4 +184,37 @@ export async function changePassword(
   if (updErr) return { ok: false, error: updErr.message };
 
   return { ok: true };
+}
+
+const deleteAccountSchema = z.object({
+  confirmation: z.literal("EXCLUIR"),
+});
+
+export async function deleteAccount(
+  input: z.infer<typeof deleteAccountSchema>,
+): Promise<ActionResult> {
+  const parsed = deleteAccountSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Confirmação inválida." };
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false, error: "Não autenticado." };
+  const uid = auth.user.id;
+
+  // Best-effort storage cleanup. List + remove (paths under {uid}/).
+  for (const bucket of ["cvs", "avatars"] as const) {
+    const { data: files } = await supabase.storage.from(bucket).list(uid);
+    if (files && files.length > 0) {
+      const paths = files.map((f) => `${uid}/${f.name}`);
+      await supabase.storage.from(bucket).remove(paths);
+    }
+  }
+
+  // Delete the auth user (cascades profiles, cvs, prep_sessions).
+  const admin = createAdminClient();
+  const { error: delErr } = await admin.auth.admin.deleteUser(uid);
+  if (delErr) return { ok: false, error: delErr.message };
+
+  await supabase.auth.signOut();
+  redirect("/");
 }
