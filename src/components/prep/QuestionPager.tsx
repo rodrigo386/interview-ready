@@ -5,12 +5,21 @@ import { useRouter } from "next/navigation";
 import { QuestionCard, type QuestionSection } from "./QuestionCard";
 import { markStepComplete } from "@/lib/prep/step-state";
 import type { Accent, StepNumber } from "@/lib/prep/types";
-import type { PrepCard } from "@/lib/ai/schemas";
+
+/**
+ * Pre-built page data. JSX (React elements) serializes across the
+ * server→client RSC boundary; closures do not. Server pages must build
+ * `sections` arrays before passing to this client component.
+ */
+export type PagerPage = {
+  title: string;
+  sections: QuestionSection[];
+  chips?: string[];
+};
 
 export function QuestionPager({
   accent,
-  cards,
-  buildSections,
+  pages,
   defaultMeta,
   step,
   sessionId,
@@ -19,8 +28,7 @@ export function QuestionPager({
   perQuestionCtaLabel = "Próxima pergunta →",
 }: {
   accent: Accent;
-  cards: PrepCard[];
-  buildSections: (card: PrepCard) => QuestionSection[];
+  pages: PagerPage[];
   defaultMeta?: string;
   step: StepNumber;
   sessionId: string;
@@ -30,8 +38,8 @@ export function QuestionPager({
 }) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
-  const total = cards.length;
-  const card = cards[index];
+  const total = pages.length;
+  const page = pages[index];
   const isLast = index === total - 1;
 
   const goNext = () => {
@@ -49,9 +57,9 @@ export function QuestionPager({
     <QuestionCard
       accent={accent}
       questionNumber={`${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`}
-      title={card.question}
-      sections={buildSections(card)}
-      chips={card.references_cv}
+      title={page.title}
+      sections={page.sections}
+      chips={page.chips}
       meta={defaultMeta}
       ctaLabel={isLast ? nextStepCtaLabel : perQuestionCtaLabel}
       onNext={goNext}

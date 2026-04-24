@@ -39,6 +39,10 @@ export function JobDescriptionPicker({
       const res: FetchJdState = await fetchJdFromUrl({}, fd);
       if (res.jd) {
         setFetched(res.jd);
+        // Auto-switch to paste mode and pre-fill the textarea with the full
+        // extracted text — user can review/edit before submitting.
+        setPasted(res.jd.text);
+        setMode("paste");
       } else if (res.error) {
         setError(res.error);
         setFetched(null);
