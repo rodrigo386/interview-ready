@@ -1,3 +1,7 @@
+// MUST import before pdf-parse: stubs DOMMatrix/ImageData/Path2D so pdfjs-dist
+// doesn't throw "ReferenceError: DOMMatrix is not defined" on PDFs with
+// vector transforms when @napi-rs/canvas isn't available at runtime.
+import "./dom-polyfill";
 import mammoth from "mammoth";
 // pdf-parse v2.x exposes a PDFParse class built on pdfjs-dist.
 // Marked as a server-external package in next.config.ts so the bundled
