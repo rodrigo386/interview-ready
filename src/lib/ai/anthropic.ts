@@ -12,12 +12,10 @@ import {
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
-// Sonnet for high-leverage single calls (ATS analysis, CV rewrite, company intel
-// with web_search). Haiku for the 5 parallel section calls — those run together
-// and were blasting the 30k input tokens/min Sonnet rate limit. Haiku has ~10×
-// higher limits and the structured tool_use output is comparable for sections.
+// Sonnet for ATS analysis, CV rewrite, and company intel (web_search).
+// The 5 parallel section calls moved to Gemini Flash (see src/lib/ai/gemini.ts)
+// to dodge the 30k input tokens/min Anthropic rate limit.
 const SONNET_MODEL_ID = "claude-sonnet-4-5";
-const HAIKU_MODEL_ID = "claude-haiku-4-5";
 
 export class ClaudeResponseError extends Error {
   rawResponse: string;
@@ -313,7 +311,7 @@ export async function generateSection(params: {
   console.log(`[anthropic] section ${params.kind} starting`);
   const response = await client.messages.create(
     {
-      model: HAIKU_MODEL_ID,
+      model: SONNET_MODEL_ID,
       max_tokens: 2500,
       system: params.system,
       messages: [{ role: "user", content: params.user }],
