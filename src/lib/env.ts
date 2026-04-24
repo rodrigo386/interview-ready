@@ -10,6 +10,10 @@ const schema = z.object({
     .union([z.string().min(1), z.literal("")])
     .optional()
     .transform((val) => (val === "" ? undefined : val)),
+  GOOGLE_API_KEY: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
 });
 
 type Env = z.infer<typeof schema>;
@@ -23,6 +27,7 @@ function parseOrThrow(): Env {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
   });
   if (!result.success) {
     console.error("Invalid environment variables:", result.error.flatten().fieldErrors);
