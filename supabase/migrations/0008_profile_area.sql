@@ -27,6 +27,10 @@ CREATE POLICY "avatars: update own folder"
   USING (
     bucket_id = 'avatars'
     AND auth.uid()::text = (storage.foldername(name))[1]
+  )
+  WITH CHECK (
+    bucket_id = 'avatars'
+    AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
 CREATE POLICY "avatars: delete own folder"
