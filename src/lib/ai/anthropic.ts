@@ -12,7 +12,12 @@ import {
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
-const MODEL_ID = "claude-sonnet-4-5";
+// Sonnet for high-leverage single calls (ATS analysis, CV rewrite, company intel
+// with web_search). Haiku for the 5 parallel section calls — those run together
+// and were blasting the 30k input tokens/min Sonnet rate limit. Haiku has ~10×
+// higher limits and the structured tool_use output is comparable for sections.
+const SONNET_MODEL_ID = "claude-sonnet-4-5";
+const HAIKU_MODEL_ID = "claude-haiku-4-5";
 
 export class ClaudeResponseError extends Error {
   rawResponse: string;
@@ -308,7 +313,7 @@ export async function generateSection(params: {
   console.log(`[anthropic] section ${params.kind} starting`);
   const response = await client.messages.create(
     {
-      model: MODEL_ID,
+      model: HAIKU_MODEL_ID,
       max_tokens: 2500,
       system: params.system,
       messages: [{ role: "user", content: params.user }],
@@ -555,7 +560,7 @@ export async function generateAtsAnalysis(params: {
   console.log("[anthropic] ats starting");
   const response = await client.messages.create(
     {
-      model: "claude-sonnet-4-5",
+      model: SONNET_MODEL_ID,
       max_tokens: 3500,
       system: params.system,
       messages: [{ role: "user", content: params.user }],
@@ -708,7 +713,7 @@ export async function generateCompanyIntel(params: {
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const response = await client.messages.create(
       {
-        model: MODEL_ID,
+        model: SONNET_MODEL_ID,
         max_tokens: 4000,
         system: params.system,
         messages,
@@ -789,7 +794,7 @@ export async function generateCvRewrite(params: {
   console.log("[anthropic] cv-rewrite starting");
   const response = await client.messages.create(
     {
-      model: MODEL_ID,
+      model: SONNET_MODEL_ID,
       max_tokens: 6000,
       system: params.system,
       messages: [{ role: "user", content: params.user }],
