@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { logout } from "./actions";
+import { logout } from "./dashboard/actions";
 
 export default async function DashboardLayout({
   children,
