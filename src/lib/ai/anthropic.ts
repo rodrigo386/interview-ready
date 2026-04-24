@@ -463,16 +463,16 @@ const cvRewriteToolSchema = {
   type: "object" as const,
   required: ["markdown", "summary_of_changes", "preserved_facts"],
   properties: {
-    markdown: { type: "string" as const, minLength: 200, maxLength: 12000 },
+    markdown: { type: "string" as const, minLength: 200, maxLength: 20000 },
     summary_of_changes: {
       type: "array" as const,
       minItems: 1,
-      maxItems: 10,
+      maxItems: 40,
       items: { type: "string" as const, minLength: 5, maxLength: 300 },
     },
     preserved_facts: {
       type: "array" as const,
-      maxItems: 20,
+      maxItems: 60,
       items: { type: "string" as const, minLength: 3, maxLength: 300 },
     },
   },
