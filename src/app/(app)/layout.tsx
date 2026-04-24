@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AvatarMenu } from "@/components/ui/AvatarMenu";
+import { resolveAvatarUrl } from "@/lib/profile/avatar-url";
 import { logout } from "./dashboard/actions";
 
 export default async function DashboardLayout({
@@ -12,12 +13,36 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   let user = null;
+  let resolvedAvatarUrl = "";
   try {
     const supabase = await createClient();
     const { data } = await supabase.auth.getUser();
     user = data.user;
+    if (user) {
+      let avatarPath: string | null = null;
+      let avatarUpdatedAt: string | null = null;
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("avatar_url, avatar_updated_at")
+          .eq("id", user.id)
+          .single();
+        avatarPath = (profile as { avatar_url?: string | null } | null)?.avatar_url ?? null;
+        avatarUpdatedAt =
+          (profile as { avatar_updated_at?: string | null } | null)?.avatar_updated_at ?? null;
+      } catch (err) {
+        console.warn(
+          "[(app)/layout] profile fetch failed (migration may not be applied):",
+          err,
+        );
+      }
+      resolvedAvatarUrl = resolveAvatarUrl(
+        { email: user.email!, avatarPath, avatarUpdatedAt },
+        supabase,
+      );
+    }
   } catch (err) {
-    console.error("[dashboard/layout] auth check failed:", err);
+    console.error("[(app)/layout] auth check failed:", err);
   }
 
   if (!user) {
@@ -32,15 +57,12 @@ export default async function DashboardLayout({
             <Logo variant="horizontal" size={32} />
           </Link>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-text-secondary sm:inline">
-              {user.email}
-            </span>
             <ThemeToggle />
-            <form action={logout}>
-              <Button variant="ghost" type="submit">
-                Sair
-              </Button>
-            </form>
+            <AvatarMenu
+              email={user.email!}
+              avatarUrl={resolvedAvatarUrl}
+              logoutAction={logout}
+            />
           </div>
         </div>
       </header>
