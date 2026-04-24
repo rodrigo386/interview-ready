@@ -5,6 +5,7 @@ import { prepGuideSchema } from "@/lib/ai/schemas";
 import { PrepShellProvider } from "@/components/prep/PrepShellProvider";
 import { PrepStepperBound } from "@/components/prep/PrepStepperBound";
 import { PrepBreadcrumb } from "@/components/prep/PrepBreadcrumb";
+import { PrepSidebar } from "@/components/prep/PrepSidebar";
 import { computeServerCompleted } from "@/lib/prep/step-state";
 import { PrepSkeleton } from "@/components/prep/PrepSkeleton";
 import { PrepFailed } from "@/components/prep/PrepFailed";
@@ -55,14 +56,17 @@ export default async function PrepLayout({
       estimatedMinutes={parsed.data.meta.estimated_prep_time_minutes}
       serverCompleted={serverCompleted}
     >
-      <div className="mx-auto max-w-[1200px] px-4 py-6 md:px-6 md:py-10">
+      <div className="mx-auto max-w-[1280px] px-4 py-6 md:px-6 md:py-10">
         <header className="mb-6 flex items-center gap-3 text-sm">
           <PrepBreadcrumb sessionId={session.id} />
         </header>
         <div className="mb-8">
           <PrepStepperBound />
         </div>
-        <main>{children}</main>
+        <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
+          <PrepSidebar />
+          <main className="min-w-0">{children}</main>
+        </div>
       </div>
     </PrepShellProvider>
   );
