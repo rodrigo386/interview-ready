@@ -2,7 +2,9 @@ import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-
 import { env } from "@/lib/env";
 import {
   prepSectionSchema,
+  cvRewriteSchema,
   type PrepSection,
+  type CvRewrite,
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
@@ -216,6 +218,88 @@ export async function generateSection(params: {
   if (!parsed.success) {
     throw new GeminiResponseError(
       `Gemini section failed schema validation: ${parsed.error.message}`,
+      text,
+    );
+  }
+  return parsed.data;
+}
+
+// ---------------------------- CV Rewrite -----------------------------
+
+/** JSON Schema mirror of cvRewriteSchema for Gemini responseSchema. */
+const cvRewriteResponseSchema: Schema = {
+  type: SchemaType.OBJECT,
+  required: ["markdown", "summary_of_changes", "preserved_facts"],
+  properties: {
+    markdown: { type: SchemaType.STRING },
+    summary_of_changes: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    },
+    preserved_facts: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    },
+  },
+};
+
+const MOCK_CV_REWRITE: CvRewrite = {
+  markdown: `## Resumo Profissional\n\nLíder de procurement com 10+ anos em transformação digital e AI-enabled em LATAM.\n\n## Experiência\n\n### Bayer (2019-2022)\n- $500M em spend, 18% de cost takeout, 40% redução de cycle time.\n\n## Educação\nMBA, INSEAD, 2018.`,
+  summary_of_changes: [
+    "Mock change 1: termo 'digital tools' → 'agentic AI'",
+    "Mock change 2: adicionado 'touchless P2P' no resumo",
+  ],
+  preserved_facts: ["$500M spend", "18% cost takeout", "MBA INSEAD 2018"],
+};
+
+/**
+ * Generate ATS-optimized CV rewrite via Gemini Flash with JSON
+ * schema-constrained output. Throws on error.
+ */
+export async function generateCvRewrite(params: {
+  system: string;
+  user: string;
+}): Promise<CvRewrite> {
+  if (process.env.MOCK_ANTHROPIC === "1") {
+    return MOCK_CV_REWRITE;
+  }
+
+  if (!env.GOOGLE_API_KEY) {
+    throw new Error("GOOGLE_API_KEY is not set");
+  }
+
+  const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
+  const model = client.getGenerativeModel({
+    model: MODEL_ID,
+    systemInstruction: params.system,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: cvRewriteResponseSchema,
+      maxOutputTokens: 8192,
+      temperature: 0.5,
+    },
+  });
+
+  const start = Date.now();
+  console.log("[gemini] cv-rewrite starting");
+  const result = await model.generateContent(params.user);
+  const text = result.response.text();
+  console.log(`[gemini] cv-rewrite completed in ${Date.now() - start}ms`);
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (err) {
+    throw new GeminiResponseError(
+      `Gemini returned non-JSON output: ${err instanceof Error ? err.message : String(err)}`,
+      text,
+    );
+  }
+
+  const parsed = cvRewriteSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new GeminiResponseError(
+      `Gemini cv-rewrite failed schema validation: ${parsed.error.message}`,
       text,
     );
   }

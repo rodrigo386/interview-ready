@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { buildCvRewritePrompt } from "@/lib/ai/prompts/cv-rewriter";
-import { generateCvRewrite, ClaudeResponseError } from "@/lib/ai/anthropic";
+import { generateCvRewrite, GeminiResponseError } from "@/lib/ai/gemini";
 import { atsAnalysisSchema } from "@/lib/ai/schemas";
 
 export async function runCvRewrite(sessionId: string): Promise<void> {
@@ -83,7 +83,7 @@ export async function runCvRewrite(sessionId: string): Promise<void> {
 }
 
 function formatRewriteError(err: unknown): string {
-  if (err instanceof ClaudeResponseError) {
+  if (err instanceof GeminiResponseError) {
     return `${err.message}\n\nRAW RESPONSE:\n${err.rawResponse}`;
   }
   if (err instanceof Error) {
