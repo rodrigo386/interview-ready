@@ -24,19 +24,19 @@ const sampleIntel: CompanyIntel = {
 };
 
 describe("buildSectionPrompt", () => {
-  it("omits COMPANY INTELLIGENCE block when intel is null", () => {
+  it("omits INTELIGÊNCIA DA EMPRESA block when intel is null", () => {
     const { user } = buildSectionPrompt({ ...baseParams, companyIntel: null });
-    expect(user).not.toMatch(/COMPANY INTELLIGENCE/);
+    expect(user).not.toMatch(/INTELIGÊNCIA DA EMPRESA/);
   });
 
-  it("omits COMPANY INTELLIGENCE block when intel is undefined", () => {
+  it("omits INTELIGÊNCIA DA EMPRESA block when intel is undefined", () => {
     const { user } = buildSectionPrompt(baseParams);
-    expect(user).not.toMatch(/COMPANY INTELLIGENCE/);
+    expect(user).not.toMatch(/INTELIGÊNCIA DA EMPRESA/);
   });
 
   it("includes intel fields when companyIntel provided", () => {
     const { user } = buildSectionPrompt({ ...baseParams, companyIntel: sampleIntel });
-    expect(user).toMatch(/COMPANY INTELLIGENCE/);
+    expect(user).toMatch(/INTELIGÊNCIA DA EMPRESA/);
     expect(user).toContain("Acme is a $3B specialty chemicals");
     expect(user).toContain("IPO filed");
     expect(user).toContain("Jane Doe");
@@ -44,8 +44,8 @@ describe("buildSectionPrompt", () => {
     expect(user).toContain("2027 exit");
   });
 
-  it("system prompt mentions COMPANY INTELLIGENCE guidance", () => {
+  it("system prompt mentions INTELIGÊNCIA DA EMPRESA guidance", () => {
     const { system } = buildSectionPrompt({ ...baseParams, companyIntel: sampleIntel });
-    expect(system).toMatch(/COMPANY INTELLIGENCE/);
+    expect(system).toMatch(/INTELIGÊNCIA DA EMPRESA/);
   });
 });

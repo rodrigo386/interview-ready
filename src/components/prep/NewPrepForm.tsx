@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useCallback, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -69,6 +70,28 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
             <input type="hidden" name="jobDescription" value={jdText} />
           )}
         </fieldset>
+
+        {state.duplicate && !pending && (
+          <div
+            role="alert"
+            className="rounded-md border border-yellow-500/40 bg-yellow-soft p-4 text-sm"
+          >
+            <p className="font-semibold text-yellow-700">
+              Você já tem um prep para essa vaga
+            </p>
+            <p className="mt-1 text-ink-2">
+              Encontramos um prep idêntico pra <strong>{state.duplicate.companyName}</strong>
+              {" — "}
+              {state.duplicate.jobTitle}. Reaproveite o existente em vez de gerar de novo.
+            </p>
+            <Link
+              href={`/prep/${state.duplicate.id}`}
+              className="mt-3 inline-block rounded-pill bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-700"
+            >
+              Abrir prep existente →
+            </Link>
+          </div>
+        )}
 
         {state.error && !pending && (
           <p className="text-sm text-red-500 dark:text-red-400" role="alert">
