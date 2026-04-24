@@ -76,7 +76,7 @@ export default async function AskPage({
         sessionId={id}
         step={5}
         nextHref={`/prep/${id}`}
-        nextStepCtaLabel="Exportar resumo em PDF"
+        nextStepCtaLabel="Finalizar prep →"
         defaultMeta="📋 2 opções alternativas caso essa seja respondida antes"
       />
     </div>

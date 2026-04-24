@@ -1,10 +1,21 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createPrepInputSchema } from "./schema";
 
-export type CreatePrepState = { error?: string };
+export type CreatePrepState = {
+  error?: string;
+  /** When set, indicates a duplicate prep already exists for this JD. */
+  duplicate?: { id: string; companyName: string; jobTitle: string };
+};
+
+/** Stable fingerprint for "same JD" detection — lowercase, collapse whitespace. */
+function jdFingerprint(jd: string): string {
+  const normalized = jd.toLowerCase().replace(/\s+/g, " ").trim();
+  return createHash("sha256").update(normalized).digest("hex");
+}
 
 export async function createPrep(
   _prev: CreatePrepState,
@@ -25,7 +36,33 @@ export async function createPrep(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "You must be signed in to create a prep." };
+  if (!user) return { error: "Você precisa estar logado pra criar um prep." };
+
+  // Duplicate-JD check: same user + same JD fingerprint = same prep.
+  // We hash all the user's existing JDs and compare; for typical users (<50
+  // preps) this is fast enough without a DB index.
+  const targetHash = jdFingerprint(parsed.data.jobDescription);
+  const { data: existingPreps } = await supabase
+    .from("prep_sessions")
+    .select("id, company_name, job_title, job_description")
+    .eq("user_id", user.id);
+
+  if (existingPreps) {
+    const dup = existingPreps.find(
+      (p): p is { id: string; company_name: string; job_title: string; job_description: string } =>
+        typeof p.job_description === "string" &&
+        jdFingerprint(p.job_description) === targetHash,
+    );
+    if (dup) {
+      return {
+        duplicate: {
+          id: dup.id,
+          companyName: dup.company_name,
+          jobTitle: dup.job_title,
+        },
+      };
+    }
+  }
 
   let cv_text: string;
   let cv_id: string | null = null;

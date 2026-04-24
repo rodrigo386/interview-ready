@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 
 export function SuccessCard({ sessionId }: { sessionId: string }) {
@@ -21,15 +19,13 @@ export function SuccessCard({ sessionId }: { sessionId: string }) {
         >
           Refazer perguntas básicas
         </Link>
-        <button
-          type="button"
+        <a
+          href={`/prep/${sessionId}/summary.pdf`}
+          download
           className="rounded-pill bg-white px-5 py-2.5 text-sm font-semibold text-green-700 shadow-prep hover:bg-green-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-green-700"
-          onClick={() => {
-            window.alert("Export PDF em breve");
-          }}
         >
           Exportar resumo em PDF
-        </button>
+        </a>
       </div>
     </section>
   );

@@ -1,8 +1,5 @@
-import { prepSectionSchema } from "@/lib/ai/schemas";
-import { z } from "zod";
 import type { CompanyIntel } from "@/lib/ai/schemas";
 
-// Runtime type of a PrepSection (import to reuse)
 export type SectionKind =
   | "likely"
   | "deep-dive"
@@ -21,42 +18,42 @@ type SectionBrief = {
 const SECTION_BRIEFS: Record<SectionKind, SectionBrief> = {
   likely: {
     id: "likely-questions",
-    title: "Likely Questions",
+    title: "Perguntas prováveis",
     icon: "💬",
     focus:
-      "Core behavioral and role-fit questions an interviewer is most likely to open with. Think motivation, strengths, achievements, and a single 'tell me about yourself' angle.",
+      "Perguntas comportamentais e de fit que o entrevistador provavelmente vai abrir. Pense em motivação, pontos fortes, conquistas e um ângulo de 'me fala sobre você'.",
     num_cards: 3,
   },
   "deep-dive": {
     id: "deep-dive-questions",
-    title: "Deep Dive Questions",
+    title: "Perguntas de aprofundamento",
     icon: "🔍",
     focus:
-      "Technical and domain-specific questions tied to the role's responsibilities. Examples: how the candidate would approach the first 90 days, complex projects they've led, decision frameworks they use.",
+      "Perguntas técnicas e de domínio ligadas às responsabilidades da vaga. Exemplos: como abordaria os primeiros 90 dias, projetos complexos que liderou, frameworks de decisão que usa.",
     num_cards: 3,
   },
   "questions-to-ask": {
     id: "questions-to-ask",
-    title: "Questions to Ask the Interviewer",
+    title: "Perguntas pra fazer ao entrevistador",
     icon: "❓",
     focus:
-      "Strategic questions the candidate should ask that signal research and judgement. Each card's 'question' is the candidate's question; sample_answer is coaching on WHY to ask it and what signal to listen for.",
+      "Perguntas estratégicas que o candidato deve fazer e que sinalizam pesquisa e julgamento. O campo 'question' de cada card é a pergunta do candidato; 'sample_answer' é o coaching sobre POR QUE perguntar isso e que sinal escutar.",
     num_cards: 3,
   },
-  "tricky": {
+  tricky: {
     id: "tricky-questions",
-    title: "Tricky Questions",
+    title: "Perguntas difíceis",
     icon: "🎯",
     focus:
-      "Difficult, unexpected, or stress-test questions. Examples: why leaving current role, what would you do differently from the previous person in this role, weakness with real mitigation, 'sell me this pen'-style curveballs, handling bad news or pushback. Each card must feel realistic and grounded in the candidate's actual risk areas given their CV.",
+      "Perguntas difíceis, inesperadas ou de stress-test. Exemplos: por que está saindo da empresa atual, o que faria diferente da pessoa anterior nessa vaga, fraqueza com mitigação real, perguntas-curveball estilo 'venda essa caneta', como lidaria com má notícia ou pushback. Cada card precisa parecer realista e ancorado nas áreas de risco do CV do candidato.",
     num_cards: 3,
   },
-  "mindset": {
+  mindset: {
     id: "mindset-tips",
-    title: "Mindset & Tips",
+    title: "Mentalidade e dicas",
     icon: "🧠",
     focus:
-      "Framing, soft skills, and delivery advice specific to this candidate and role. Examples: how to frame their value vs. lower-cost candidates, pacing for a 45-minute interview, what to emphasize vs. downplay given the CV, video-call setup tips, recovery from a wobble mid-interview. Each card's 'question' is a situation/topic, 'sample_answer' is the coaching they need.",
+      "Framing, soft skills e dicas de delivery específicas pra esse candidato e essa vaga. Exemplos: como enquadrar o valor dele vs. candidatos mais baratos, ritmo de uma entrevista de 45 minutos, o que enfatizar vs. minimizar dado o CV, dicas de setup de videocall, como se recuperar de uma derrapada no meio da entrevista. O 'question' de cada card é uma situação/tópico, 'sample_answer' é o coaching que ele precisa.",
     num_cards: 3,
   },
 };
@@ -75,41 +72,43 @@ export function buildSectionPrompt(params: {
     : "";
 
   const intelGuidance = params.companyIntel
-    ? `\n\nIf COMPANY INTELLIGENCE is provided, weave specific facts (names, dates, strategic bets) into at least 2 of your sample_answers. Do not fabricate facts beyond what is provided.`
+    ? `\n\nSe a INTELIGÊNCIA DA EMPRESA estiver disponível, costure fatos específicos (nomes, datas, apostas estratégicas) em pelo menos 2 dos seus sample_answers. Não invente fatos além do que foi fornecido.`
     : "";
 
-  const system = `You are an elite interview coach generating ONE section of a prep guide for a specific candidate applying to a specific role.
+  const system = `Você é um coach de entrevista de elite gerando UMA seção do guia de prep para um candidato específico aplicando pra uma vaga específica.
 
-Section focus: ${brief.focus}
+**RESPONDA EM PORTUGUÊS BRASILEIRO.** Todo o conteúdo das perguntas, key_points, sample_answers, tips e summary deve estar em PT-BR — mesmo que o CV ou a descrição da vaga estejam em inglês.
 
-You MUST call the submit_section tool with exactly ${brief.num_cards} cards.
+Foco da seção: ${brief.focus}
 
-Rules per card:
-- question: the likely interview question (or for "Questions to Ask", the question the candidate should ask)
-- key_points: 3-4 bullets, each ≤ 15 words, that the candidate hits in their answer
-- sample_answer: 3-4 sentences (60-100 words) of natural conversational scripted answer, using SPECIFIC details from the candidate's CV — company names, metrics, project titles
-- tips: ONE sentence (≤ 25 words) of delivery advice
-- confidence_level: "high" if CV strongly supports the answer, "medium" if partial, "low" if weak
-- references_cv: 1-3 concrete CV items the answer draws from (company + year + initiative)
+Você DEVE retornar exatamente ${brief.num_cards} cards.
 
-NEVER give generic advice. ALWAYS reference the candidate's specific experience.${intelGuidance}
+Regras por card:
+- question: a pergunta provável de entrevista (ou, pra "Perguntas pra fazer ao entrevistador", a pergunta que o candidato deve fazer)
+- key_points: 3-4 bullets, cada um ≤ 15 palavras, que o candidato cobre na resposta
+- sample_answer: 3-4 frases (60-100 palavras) de uma resposta natural e conversacional, usando detalhes ESPECÍFICOS do CV do candidato — nomes de empresas, métricas, títulos de projetos
+- tips: UMA frase (≤ 25 palavras) de dica de delivery
+- confidence_level: "high" se o CV sustenta fortemente a resposta, "medium" se parcial, "low" se fraco
+- references_cv: 1-3 itens concretos do CV em que a resposta se baseia (empresa + ano + iniciativa)
 
-Use these fixed values for the section:
+NUNCA dê conselho genérico. SEMPRE referencie a experiência específica do candidato.${intelGuidance}
+
+Use estes valores fixos pra seção:
 - id: "${brief.id}"
 - title: "${brief.title}"
 - icon: "${brief.icon}"
-- summary: one sentence (≤ 20 words) describing what this section covers
+- summary: uma frase (≤ 20 palavras) descrevendo o que essa seção cobre
 
-Call submit_section now.`;
+Retorne agora a seção completa.`;
 
-  const user = `CANDIDATE CV:
+  const user = `CV DO CANDIDATO:
 ${params.cvText}
 
-TARGET JOB DESCRIPTION:
+DESCRIÇÃO DA VAGA-ALVO:
 ${params.jdText}
 
-TARGET ROLE: ${params.jobTitle}
-TARGET COMPANY: ${params.companyName}${intelBlock}`;
+CARGO-ALVO: ${params.jobTitle}
+EMPRESA-ALVO: ${params.companyName}${intelBlock}`;
 
   return { system, user, brief };
 }
@@ -124,19 +123,19 @@ function renderIntelBlock(intel: CompanyIntel): string {
   const culture = intel.culture_signals.join(", ");
   return `
 
-COMPANY INTELLIGENCE (use these specific facts in your answers):
+INTELIGÊNCIA DA EMPRESA (use estes fatos específicos nas suas respostas):
 
-Overview: ${intel.overview}
+Visão geral: ${intel.overview}
 
-Recent developments:
-${devs || "(none)"}
+Desenvolvimentos recentes:
+${devs || "(nenhum)"}
 
-Key people:
-${people || "(none)"}
+Pessoas-chave:
+${people || "(nenhuma)"}
 
-Culture signals: ${culture || "(none)"}
+Sinais de cultura: ${culture || "(nenhum)"}
 
-Strategic context: ${intel.strategic_context}`;
+Contexto estratégico: ${intel.strategic_context}`;
 }
 
 export const SECTION_KINDS: SectionKind[] = [

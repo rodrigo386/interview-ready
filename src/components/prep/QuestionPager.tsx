@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { QuestionCard, type QuestionSection } from "./QuestionCard";
-import { markStepComplete } from "@/lib/prep/step-state";
+import { usePrepShell } from "./PrepShellProvider";
 import type { Accent, StepNumber } from "@/lib/prep/types";
 
 /**
@@ -37,6 +37,7 @@ export function QuestionPager({
   perQuestionCtaLabel?: string;
 }) {
   const router = useRouter();
+  const { markStepComplete } = usePrepShell();
   const [index, setIndex] = useState(0);
   const total = pages.length;
   const page = pages[index];
@@ -47,7 +48,9 @@ export function QuestionPager({
       setIndex((i) => i + 1);
       return;
     }
-    markStepComplete(sessionId, step);
+    // Mark via context so the stepper repaints immediately (sync state +
+    // localStorage). Cross-tab updates still flow via the storage event.
+    markStepComplete(step);
     router.push(nextHref);
   };
 
