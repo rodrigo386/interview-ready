@@ -7,9 +7,10 @@ import {
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
 // Sections (5 parallel calls in Stage B) blew through Sonnet's 30k input
-// tokens/min limit. Gemini 3.1 Flash has much higher rate limits and JSON
-// schema-constrained output works comparably for these structured sections.
-const MODEL_ID = "gemini-3.1-flash";
+// tokens/min limit. Gemini 3.1 Flash Lite (preview) has much higher rate
+// limits, lower cost, lower latency. JSON schema-constrained output works
+// comparably for these structured sections.
+const MODEL_ID = "gemini-3.1-flash-lite-preview";
 
 /** JSON Schema mirror of prepSectionSchema for Gemini responseSchema. */
 const sectionResponseSchema: Schema = {

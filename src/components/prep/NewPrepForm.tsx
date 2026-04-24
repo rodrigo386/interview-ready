@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { createPrep, type CreatePrepState } from "@/app/prep/new/actions";
 import { CvPicker, type CvSummary } from "./CvPicker";
+import { JobDescriptionPicker } from "./JobDescriptionPicker";
 
 export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
   const [state, formAction, pending] = useActionState<CreatePrepState, FormData>(
@@ -16,8 +17,9 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
     existingCvs[0]?.id ?? null,
   );
   const [cvText, setCvText] = useState<string | null>(null);
+  const [jdText, setJdText] = useState<string | null>(null);
 
-  const onResolved = useCallback(
+  const onCvResolved = useCallback(
     (v: { cvId: string | null; cvText: string | null }) => {
       setCvId(v.cvId);
       setCvText(v.cvText);
@@ -25,7 +27,11 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
     [],
   );
 
-  const canSubmit = Boolean(cvId) || Boolean(cvText);
+  const onJdResolved = useCallback((text: string | null) => {
+    setJdText(text);
+  }, []);
+
+  const canSubmit = (Boolean(cvId) || Boolean(cvText)) && Boolean(jdText);
 
   return (
     <>
@@ -54,24 +60,14 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
             </div>
           </div>
 
-          <CvPicker existingCvs={existingCvs} onResolved={onResolved} />
+          <CvPicker existingCvs={existingCvs} onResolved={onCvResolved} />
           {cvId && <input type="hidden" name="cvId" value={cvId} />}
           {cvText && <input type="hidden" name="cvText" value={cvText} />}
 
-          <div>
-            <label htmlFor="jobDescription" className="block text-sm text-text-secondary">
-              Descrição da vaga (cole o texto)
-            </label>
-            <textarea
-              id="jobDescription"
-              name="jobDescription"
-              rows={12}
-              required
-              minLength={200}
-              placeholder="Cole aqui a descrição completa da vaga (LinkedIn, Gupy, Catho, site da empresa)."
-              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 disabled:opacity-60"
-            />
-          </div>
+          <JobDescriptionPicker onResolved={onJdResolved} />
+          {jdText && (
+            <input type="hidden" name="jobDescription" value={jdText} />
+          )}
         </fieldset>
 
         {state.error && !pending && (
