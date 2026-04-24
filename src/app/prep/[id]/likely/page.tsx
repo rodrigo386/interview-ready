@@ -3,8 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { prepGuideSchema } from "@/lib/ai/schemas";
 import { classifyPrepSections } from "@/lib/prep/section-classifier";
-import { QuestionPager } from "@/components/prep/QuestionPager";
-import type { PrepCard } from "@/lib/ai/schemas";
+import { QuestionPager, type PagerPage } from "@/components/prep/QuestionPager";
 
 export default async function LikelyPage({
   params,
@@ -49,35 +48,40 @@ export default async function LikelyPage({
 
       <QuestionPager
         accent="orange"
-        cards={likely.cards}
+        pages={likely.cards.map(
+          (card): PagerPage => ({
+            title: card.question,
+            chips: card.references_cv,
+            sections: [
+              {
+                heading: "💡 O que o avaliador quer ouvir",
+                body: (
+                  <ul className="list-disc pl-5 space-y-1">
+                    {card.key_points.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                ),
+              },
+              {
+                heading: "📝 Resposta modelo (edite como quiser)",
+                body: (
+                  <p className="rounded-md bg-orange-soft/40 p-4 italic text-ink">
+                    {card.sample_answer}
+                  </p>
+                ),
+              },
+              ...(card.tips
+                ? [{ heading: "🎯 Dica", body: <p>{card.tips}</p> }]
+                : []),
+            ],
+          }),
+        )}
         sessionId={id}
         step={3}
         nextHref={`/prep/${id}/deep-dive`}
         nextStepCtaLabel="Ir pro aprofundamento →"
         defaultMeta="⏱ Leva ~90s pra responder em voz alta"
-        buildSections={(card: PrepCard) => [
-          {
-            heading: "💡 O que o avaliador quer ouvir",
-            body: (
-              <ul className="list-disc pl-5 space-y-1">
-                {card.key_points.map((p, i) => (
-                  <li key={i}>{p}</li>
-                ))}
-              </ul>
-            ),
-          },
-          {
-            heading: "📝 Resposta modelo (edite como quiser)",
-            body: (
-              <p className="rounded-md bg-orange-soft/40 p-4 italic text-ink">
-                {card.sample_answer}
-              </p>
-            ),
-          },
-          ...(card.tips
-            ? [{ heading: "🎯 Dica", body: <p>{card.tips}</p> }]
-            : []),
-        ]}
       />
     </div>
   );

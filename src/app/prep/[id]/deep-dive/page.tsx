@@ -3,8 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { prepGuideSchema } from "@/lib/ai/schemas";
 import { classifyPrepSections } from "@/lib/prep/section-classifier";
-import { QuestionPager } from "@/components/prep/QuestionPager";
-import type { PrepCard } from "@/lib/ai/schemas";
+import { QuestionPager, type PagerPage } from "@/components/prep/QuestionPager";
 
 export default async function DeepDivePage({
   params,
@@ -55,35 +54,40 @@ export default async function DeepDivePage({
 
       <QuestionPager
         accent="yellow"
-        cards={deepDive.cards}
+        pages={deepDive.cards.map(
+          (card): PagerPage => ({
+            title: card.question,
+            chips: card.references_cv,
+            sections: [
+              {
+                heading: "🎯 Pontos-chave (evitar se perder)",
+                body: (
+                  <ul className="list-disc pl-5 space-y-1">
+                    {card.key_points.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                ),
+              },
+              {
+                heading: "📝 Resposta modelo",
+                body: (
+                  <p className="rounded-md bg-yellow-soft/40 p-4 italic text-ink">
+                    {card.sample_answer}
+                  </p>
+                ),
+              },
+              ...(card.tips
+                ? [{ heading: "💡 Dica", body: <p>{card.tips}</p> }]
+                : []),
+            ],
+          }),
+        )}
         sessionId={id}
         step={4}
         nextHref={`/prep/${id}/ask`}
         nextStepCtaLabel="Ir pras suas perguntas →"
         defaultMeta="⏱ Resposta ideal: 2-3 min"
-        buildSections={(card: PrepCard) => [
-          {
-            heading: "🎯 Pontos-chave (evitar se perder)",
-            body: (
-              <ul className="list-disc pl-5 space-y-1">
-                {card.key_points.map((p, i) => (
-                  <li key={i}>{p}</li>
-                ))}
-              </ul>
-            ),
-          },
-          {
-            heading: "📝 Resposta modelo",
-            body: (
-              <p className="rounded-md bg-yellow-soft/40 p-4 italic text-ink">
-                {card.sample_answer}
-              </p>
-            ),
-          },
-          ...(card.tips
-            ? [{ heading: "💡 Dica", body: <p>{card.tips}</p> }]
-            : []),
-        ]}
       />
     </div>
   );

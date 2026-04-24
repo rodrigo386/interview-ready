@@ -6,7 +6,9 @@ import { FocusCard } from "./FocusCard";
 import { SkipCard } from "./SkipCard";
 import { SuccessCard } from "./SuccessCard";
 import { DeletePrepButton } from "./DeletePrepButton";
+import { PrepDetails } from "./PrepDetails";
 import type { StepNumber } from "@/lib/prep/types";
+import type { CompanyIntel } from "@/lib/ai/schemas";
 
 const FOCUS_BY_STEP: Record<
   StepNumber,
@@ -60,7 +62,17 @@ const SKIP_BY_STEP: Record<
   5: null,
 };
 
-export function Tela1Visual({ sessionId }: { sessionId: string }) {
+export function Tela1Visual({
+  sessionId,
+  jobDescription,
+  companyIntel,
+  companyIntelStatus,
+}: {
+  sessionId: string;
+  jobDescription?: string | null;
+  companyIntel?: CompanyIntel | null;
+  companyIntelStatus?: string | null;
+}) {
   const { company, role, estimatedMinutes, currentStep, completedSteps } = usePrepShell();
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const allDone = completedSteps.includes(5);
@@ -103,6 +115,12 @@ export function Tela1Visual({ sessionId }: { sessionId: string }) {
           )}
         </>
       )}
+
+      <PrepDetails
+        jobDescription={jobDescription ?? null}
+        companyIntel={companyIntel ?? null}
+        companyIntelStatus={companyIntelStatus ?? null}
+      />
 
       <section className="border-t border-line pt-6">
         <button

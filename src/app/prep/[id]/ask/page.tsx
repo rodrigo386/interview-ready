@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { prepGuideSchema } from "@/lib/ai/schemas";
 import { classifyPrepSections } from "@/lib/prep/section-classifier";
-import { QuestionPager } from "@/components/prep/QuestionPager";
+import { QuestionPager, type PagerPage } from "@/components/prep/QuestionPager";
 import { SuccessBanner } from "@/components/prep/SuccessBanner";
 
 export default async function AskPage({
@@ -51,26 +51,33 @@ export default async function AskPage({
 
       <QuestionPager
         accent="green"
-        cards={ask.cards}
+        pages={ask.cards.map(
+          (card): PagerPage => ({
+            title: card.question,
+            chips: card.references_cv,
+            sections: [
+              {
+                heading: "🎯 Por que fazer essa pergunta",
+                body: <p>{card.tips || card.sample_answer}</p>,
+              },
+              {
+                heading: "🎧 O que escutar",
+                body: (
+                  <ul className="list-disc pl-5 space-y-1 italic">
+                    {card.key_points.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                ),
+              },
+            ],
+          }),
+        )}
         sessionId={id}
         step={5}
         nextHref={`/prep/${id}`}
         nextStepCtaLabel="Exportar resumo em PDF"
         defaultMeta="📋 2 opções alternativas caso essa seja respondida antes"
-        buildSections={(card) => [
-          {
-            heading: "🎯 Por que fazer essa pergunta",
-            body: <p>{card.tips || card.sample_answer}</p>,
-          },
-          {
-            heading: "🎧 O que escutar",
-            body: (
-              <ul className="list-disc pl-5 space-y-1 italic">
-                {card.key_points.map((p, i) => <li key={i}>{p}</li>)}
-              </ul>
-            ),
-          },
-        ]}
       />
     </div>
   );
