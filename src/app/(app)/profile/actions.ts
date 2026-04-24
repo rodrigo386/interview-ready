@@ -155,3 +155,31 @@ export async function deleteAiCvRewrite(input: z.infer<typeof prepIdSchema>): Pr
   revalidatePath("/profile/cvs");
   return { ok: true };
 }
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(72),
+});
+
+export async function changePassword(
+  input: z.infer<typeof changePasswordSchema>,
+): Promise<ActionResult> {
+  const parsed = changePasswordSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Senha nova precisa ter pelo menos 8 caracteres." };
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user || !auth.user.email) return { ok: false, error: "Não autenticado." };
+
+  // Reauthenticate by attempting sign-in with current password.
+  const { error: reAuthErr } = await supabase.auth.signInWithPassword({
+    email: auth.user.email,
+    password: parsed.data.currentPassword,
+  });
+  if (reAuthErr) return { ok: false, error: "Senha atual incorreta." };
+
+  const { error: updErr } = await supabase.auth.updateUser({ password: parsed.data.newPassword });
+  if (updErr) return { ok: false, error: updErr.message };
+
+  return { ok: true };
+}
