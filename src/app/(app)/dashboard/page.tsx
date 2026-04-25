@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
 import { DeletePrepButton } from "@/components/prep/DeletePrepButton";
 import { Logo } from "@/components/Logo";
+import { FreeTierBanner } from "@/components/billing/FreeTierBanner";
 
 type SessionRow = {
   id: string;
@@ -63,19 +64,43 @@ export default async function DashboardPage() {
 
   const list: SessionRow[] = sessions ?? [];
 
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("subscription_status, preps_used_this_month, preps_reset_at, prep_credits")
+    .eq("id", user.id)
+    .single();
+  const billing = (profileRow ?? {}) as {
+    subscription_status?: "active" | "overdue" | "canceled" | "expired" | "none" | null;
+    preps_used_this_month?: number;
+    preps_reset_at?: string;
+    prep_credits?: number;
+  };
+
+  const showFreeTierBanner =
+    billing.subscription_status !== "active" && billing.subscription_status !== "overdue";
+
   if (list.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <Logo variant="symbol" size={120} className="opacity-80" />
-        <h1 className="mt-8 text-2xl font-semibold text-text-primary">
-          Prepare sua primeira vaga
-        </h1>
-        <p className="mt-3 max-w-md text-sm text-text-secondary">
-          Em 20 minutos, você recebe o dossiê completo da vaga: empresa, CV, roteiros.
-        </p>
-        <Link href="/prep/new" className="mt-8">
-          <Button size="lg">Criar meu primeiro prep</Button>
-        </Link>
+      <div>
+        {showFreeTierBanner && (
+          <FreeTierBanner
+            prepsUsedThisMonth={billing.preps_used_this_month ?? 0}
+            prepsResetAt={billing.preps_reset_at ?? new Date().toISOString()}
+            credits={billing.prep_credits ?? 0}
+          />
+        )}
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <Logo variant="symbol" size={120} className="opacity-80" />
+          <h1 className="mt-8 text-2xl font-semibold text-text-primary">
+            Prepare sua primeira vaga
+          </h1>
+          <p className="mt-3 max-w-md text-sm text-text-secondary">
+            Em 20 minutos, você recebe o dossiê completo da vaga: empresa, CV, roteiros.
+          </p>
+          <Link href="/prep/new" className="mt-8">
+            <Button size="lg">Criar meu primeiro prep</Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -87,6 +112,13 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      {showFreeTierBanner && (
+        <FreeTierBanner
+          prepsUsedThisMonth={billing.preps_used_this_month ?? 0}
+          prepsResetAt={billing.preps_reset_at ?? new Date().toISOString()}
+          credits={billing.prep_credits ?? 0}
+        />
+      )}
       <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-text-primary">
