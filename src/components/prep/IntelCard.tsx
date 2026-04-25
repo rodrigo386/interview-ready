@@ -1,13 +1,18 @@
 import type { CompanyIntel } from "@/lib/ai/schemas";
+import { RerunIntelButton } from "./RerunIntelButton";
 
 export function IntelCard({
+  sessionId,
   intel,
   status,
 }: {
+  sessionId: string;
   intel: CompanyIntel | null;
   status: string | null;
 }) {
   const isResearching = status === "researching" || status === "pending";
+  const isFailed = status === "failed";
+  const isSkipped = status === "skipped" || (!isResearching && !isFailed && !intel);
 
   return (
     <article className="flex h-full flex-col gap-4 rounded-xl border border-line bg-white p-5 shadow-prep">
@@ -24,10 +29,15 @@ export function IntelCard({
         </p>
       )}
 
-      {!isResearching && !intel && (
-        <p className="text-[14px] italic text-ink-3">
-          Intel não disponível.
-        </p>
+      {(isFailed || isSkipped) && (
+        <div className="space-y-2">
+          <p className="text-[14px] italic text-ink-3">
+            {isFailed
+              ? "A pesquisa não rodou. Toque em pesquisar pra rodar agora."
+              : "Sem intel pra esta empresa ainda."}
+          </p>
+          <RerunIntelButton sessionId={sessionId} isResearching={false} />
+        </div>
       )}
 
       {intel && (
