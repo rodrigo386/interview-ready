@@ -19,58 +19,47 @@ function hrefFor(sessionId: string, step: StepNumber): string {
 
 export function MobileStepNav() {
   const { sessionId, currentStep } = usePrepShell();
-  const prev = currentStep > 1 ? ((currentStep - 1) as StepNumber) : null;
+  const onOverview = currentStep === 1;
   const next = currentStep < 5 ? ((currentStep + 1) as StepNumber) : null;
+  const overviewHref = `/prep/${sessionId}`;
 
   return (
     <nav
       aria-label="Navegação entre etapas"
-      className="sticky bottom-0 left-0 right-0 z-30 mt-4 -mx-4 border-t border-line bg-white/95 px-3 py-2 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] backdrop-blur md:-mx-6 lg:hidden"
+      className="sticky bottom-0 left-0 right-0 z-30 mt-4 -mx-4 border-t border-line bg-white/95 px-3 py-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] backdrop-blur md:-mx-6 lg:hidden"
     >
-      <div className="flex items-center justify-between gap-2">
-        {prev ? (
+      <div className="flex items-stretch gap-2">
+        {onOverview ? (
           <Link
-            href={hrefFor(sessionId, prev)}
-            className="flex-1 rounded-md border border-line bg-white px-3 py-2.5 text-left text-sm font-semibold text-ink-2 transition-colors active:bg-bg"
+            href="/dashboard"
+            className="flex flex-1 items-center justify-center rounded-lg border border-line bg-white px-4 py-3 text-sm font-semibold text-ink-2 transition-colors active:bg-bg"
           >
-            <span className="block text-[10px] font-bold uppercase tracking-wide text-ink-3">
-              ← Etapa {prev}
-            </span>
-            <span className="block truncate text-[13px]">
-              {STEP_LABELS[prev]}
-            </span>
+            ← Dashboard
           </Link>
         ) : (
           <Link
-            href="/dashboard"
-            className="flex-1 rounded-md border border-line bg-white px-3 py-2.5 text-left text-sm font-semibold text-ink-2 transition-colors active:bg-bg"
+            href={overviewHref}
+            className="flex flex-1 items-center justify-center rounded-lg border border-orange-500 bg-orange-soft px-4 py-3 text-sm font-semibold text-orange-700 transition-colors active:bg-orange-100"
           >
-            <span className="block text-[10px] font-bold uppercase tracking-wide text-ink-3">
-              ← Sair
-            </span>
-            <span className="block truncate text-[13px]">Dashboard</span>
+            🏠 Visão geral
           </Link>
         )}
 
         {next ? (
           <Link
             href={hrefFor(sessionId, next)}
-            className="flex-1 rounded-md bg-orange-500 px-3 py-2.5 text-right text-sm font-semibold text-white shadow-prep transition-colors active:bg-orange-700"
+            className="flex flex-1 items-center justify-center rounded-lg bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-prep transition-colors active:bg-orange-700"
           >
-            <span className="block text-[10px] font-bold uppercase tracking-wide text-white/80">
-              Etapa {next} →
+            <span className="truncate">
+              {STEP_LABELS[next]} →
             </span>
-            <span className="block truncate text-[13px]">{STEP_LABELS[next]}</span>
           </Link>
         ) : (
           <Link
-            href={`/prep/${sessionId}`}
-            className="flex-1 rounded-md bg-green-500 px-3 py-2.5 text-right text-sm font-semibold text-white shadow-prep transition-colors active:bg-green-700"
+            href={overviewHref}
+            className="flex flex-1 items-center justify-center rounded-lg bg-green-500 px-4 py-3 text-sm font-semibold text-white shadow-prep transition-colors active:bg-green-700"
           >
-            <span className="block text-[10px] font-bold uppercase tracking-wide text-white/80">
-              Voltar pro topo
-            </span>
-            <span className="block truncate text-[13px]">Visão geral</span>
+            ✓ Concluído
           </Link>
         )}
       </div>
