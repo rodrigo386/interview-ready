@@ -72,7 +72,7 @@ export const companyIntelSchema = z.object({
       z.object({
         headline: z.string().min(1).max(200),
         why_it_matters: z.string().min(10).max(400),
-        source_url: z.string().url().optional(),
+        source_url: z.string().url().nullable().optional(),
       }),
     )
     .min(0)
@@ -89,7 +89,7 @@ export const companyIntelSchema = z.object({
     .max(5),
   culture_signals: z.array(z.string().min(1).max(150)).min(0).max(6),
   strategic_context: z.string().min(20).max(2000),
-  questions_this_creates: z.array(z.string().min(5).max(200)).min(0).max(4),
+  questions_this_creates: z.array(z.string().min(5).max(400)).min(0).max(4),
 });
 
 export type CompanyIntel = z.infer<typeof companyIntelSchema>;
