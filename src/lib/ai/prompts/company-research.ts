@@ -37,7 +37,7 @@ OUTPUT FORMAT — return ONLY valid JSON matching this exact shape, no prose, no
 {
   "overview": "2-3 sentences on what the company does and current state (150-400 chars)",
   "recent_developments": [
-    { "headline": "Concrete, dated event from last 6 months", "why_it_matters": "Why this matters for an interview at this role", "source_url": "https://..." }
+    { "headline": "Concrete, dated event from last 6 months", "why_it_matters": "Why this matters for an interview at this role" }
   ],
   "key_people": [
     { "name": "...", "role": "...", "background_snippet": "..." }
@@ -47,9 +47,11 @@ OUTPUT FORMAT — return ONLY valid JSON matching this exact shape, no prose, no
   "questions_this_creates": ["specific question the candidate could ask"]
 }
 
+DO NOT include any "source_url", "url", "link", or "citation" field in the output. We pull source URLs from grounding metadata separately. Including URLs breaks the JSON parser. If you mentally reference a source, just put it in why_it_matters as text like "(per Reuters, March 2026)". No URLs in the JSON.
+
 Quality rules:
 - overview: 2-3 sentences (max 2000 chars). Mention size/stage/ownership if knowable.
-- recent_developments: 3-6 items, ALL from the last 6 months (after ${cutoffLabel}). Order most-impactful first. If a date is in the headline, prefer keeping it (e.g., "Acquired X in March ${currentYear}"). source_url is optional — if you don't have a real URL, OMIT THE FIELD ENTIRELY (do not write null, do not write empty string, do not write a placeholder).
+- recent_developments: 3-6 items, ALL from the last 6 months (after ${cutoffLabel}). Order most-impactful first. If a date is in the headline, prefer keeping it (e.g., "Acquired X in March ${currentYear}").
 - key_people: 2-4 executives relevant to the hiring chain. CEO/CPO/CHRO/hiring manager if identifiable. Include a 1-line background that gives the candidate something to reference.
 - culture_signals: 3-6 short phrases ("aggressive shipping cadence", "PE-owned speed + accountability"). No fillers like "team-oriented".
 - strategic_context: 2-3 sentences. Industry pressures, competitive position, strategic bets.

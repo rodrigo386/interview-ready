@@ -72,7 +72,10 @@ export const companyIntelSchema = z.object({
       z.object({
         headline: z.string().min(1).max(200),
         why_it_matters: z.string().min(10).max(400),
-        source_url: z.string().url().nullable().optional(),
+        // source_url removed: Gemini grounding emits Vertex AI redirect URLs
+        // that often run thousands of chars and break JSON parsing. Citations
+        // are better surfaced via the model's grounding metadata if needed.
+        source_url: z.string().nullable().optional(),
       }),
     )
     .min(0)
