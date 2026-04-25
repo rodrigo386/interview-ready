@@ -428,7 +428,13 @@ export async function generateAtsAnalysis(params: {
       responseMimeType: "application/json",
       responseSchema: atsResponseSchema,
       maxOutputTokens: 4096,
-      temperature: 0.3,
+      // Deterministic-as-possible: same CV + JD should produce the same
+      // score and analysis on re-run. temperature=0 + topK=1 collapses the
+      // sampling distribution; minor variation may still leak from float
+      // ops on the server, but it's no longer the wild swings users saw.
+      temperature: 0,
+      topK: 1,
+      topP: 0,
     },
   });
 
