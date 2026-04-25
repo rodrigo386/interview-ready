@@ -13,7 +13,7 @@ export default async function ProfileLayout({ children }: { children: React.Reac
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, email, full_name, preferred_language, tier, preps_used_this_month, avatar_url, avatar_updated_at",
+      "id, email, full_name, preferred_language, tier, preps_used_this_month, avatar_url, avatar_updated_at, asaas_customer_id, subscription_status, subscription_renews_at, prep_credits, preps_reset_at",
     )
     .eq("id", auth.user.id)
     .single();
@@ -29,6 +29,11 @@ export default async function ProfileLayout({ children }: { children: React.Reac
     preps_used_this_month: number;
     avatar_url: string | null;
     avatar_updated_at: string | null;
+    asaas_customer_id: string | null;
+    subscription_status: "active" | "overdue" | "canceled" | "expired" | "none" | null;
+    subscription_renews_at: string | null;
+    prep_credits: number;
+    preps_reset_at: string;
   };
 
   const data: ProfileShellData = {
@@ -48,6 +53,11 @@ export default async function ProfileLayout({ children }: { children: React.Reac
       },
       supabase,
     ),
+    asaasCustomerId: p.asaas_customer_id,
+    subscriptionStatus: p.subscription_status ?? "none",
+    subscriptionRenewsAt: p.subscription_renews_at,
+    prepCredits: p.prep_credits,
+    prepsResetAt: p.preps_reset_at,
   };
 
   return (
