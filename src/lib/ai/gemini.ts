@@ -555,32 +555,73 @@ export async function generateCompanyIntel(params: {
   }
 
   const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
-  // SDK types for grounding tools are loose across versions — cast to a
-  // permissive shape so older typings still compile.
-  const groundingTool = { googleSearchRetrieval: {} } as unknown as never;
-  const model = client.getGenerativeModel({
-    model: GROUNDED_MODEL_ID,
-    systemInstruction: params.system,
-    tools: [groundingTool],
-    generationConfig: {
-      maxOutputTokens: 4096,
-      temperature: 0.4,
-    },
-  });
 
-  const start = Date.now();
-  console.log("[gemini] company-intel starting");
-  let text = "";
-  try {
+  // For Gemini 2.5+ models, the grounding tool is `googleSearch` (no Retrieval
+  // suffix). Older models used `googleSearchRetrieval`. The bundled SDK types
+  // only know the old name, so we cast. Try the new name first; if the API
+  // rejects it, fall back to the legacy name.
+  async function callWith(tool: unknown, label: string): Promise<string> {
+    const model = client.getGenerativeModel({
+      model: GROUNDED_MODEL_ID,
+      systemInstruction: params.system,
+      tools: [tool] as never,
+      generationConfig: {
+        maxOutputTokens: 4096,
+        temperature: 0.4,
+      },
+    });
+    console.log(`[gemini] company-intel ${label} starting`);
+    const t0 = Date.now();
     const result = await model.generateContent(params.user);
-    text = result.response.text();
-  } catch (err) {
-    throw new GeminiResponseError(
-      `Gemini company-intel call failed: ${err instanceof Error ? err.message : String(err)}`,
-      "",
+    const text = result.response.text();
+    console.log(
+      `[gemini] company-intel ${label} completed in ${Date.now() - t0}ms (${text.length} chars)`,
     );
+    return text;
   }
-  console.log(`[gemini] company-intel completed in ${Date.now() - start}ms`);
+
+  let text = "";
+  let lastErr: unknown = null;
+  for (const attempt of [
+    { tool: { googleSearch: {} }, label: "googleSearch" },
+    { tool: { googleSearchRetrieval: {} }, label: "googleSearchRetrieval" },
+  ]) {
+    try {
+      text = await callWith(attempt.tool, attempt.label);
+      break;
+    } catch (err) {
+      lastErr = err;
+      console.warn(
+        `[gemini] company-intel ${attempt.label} threw: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  // Last-resort: try without grounding so we still produce *something* for
+  // the candidate from the model's training knowledge.
+  if (!text) {
+    try {
+      console.warn("[gemini] company-intel falling back to ungrounded call");
+      const model = client.getGenerativeModel({
+        model: GROUNDED_MODEL_ID,
+        systemInstruction: params.system,
+        generationConfig: {
+          maxOutputTokens: 4096,
+          temperature: 0.4,
+        },
+      });
+      const result = await model.generateContent(params.user);
+      text = result.response.text();
+    } catch (err) {
+      throw new GeminiResponseError(
+        `Gemini company-intel failed all attempts. Last error: ${
+          (lastErr instanceof Error ? lastErr.message : String(lastErr)) ||
+          (err instanceof Error ? err.message : String(err))
+        }`,
+        "",
+      );
+    }
+  }
 
   const stripped = stripCodeFences(text);
   const jsonStr = stripped.startsWith("{")
