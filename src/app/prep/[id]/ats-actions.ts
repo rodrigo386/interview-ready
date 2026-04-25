@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { buildAtsAnalyzerPrompt } from "@/lib/ai/prompts/ats-analyzer";
-import { generateAtsAnalysis, ClaudeResponseError } from "@/lib/ai/anthropic";
+import { generateAtsAnalysis, GeminiResponseError } from "@/lib/ai/gemini";
 
 export async function runAtsAnalysis(sessionId: string) {
   const supabase = await createClient();
@@ -64,7 +64,7 @@ export async function runAtsAnalysis(sessionId: string) {
 }
 
 function formatAtsError(err: unknown): string {
-  if (err instanceof ClaudeResponseError) {
+  if (err instanceof GeminiResponseError) {
     return `${err.message}\n\nRAW RESPONSE:\n${err.rawResponse}`;
   }
   if (err instanceof Error) {
