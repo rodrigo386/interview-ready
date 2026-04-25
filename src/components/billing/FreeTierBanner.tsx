@@ -1,4 +1,4 @@
-import { CheckoutButton } from "./CheckoutButton";
+import Link from "next/link";
 
 export function FreeTierBanner({
   prepsUsedThisMonth,
@@ -24,7 +24,12 @@ export function FreeTierBanner({
           <span className="text-ink-3">Próximo grátis em {daysLeft} {daysLeft === 1 ? "dia" : "dias"}.</span>
         )}
       </p>
-      <CheckoutButton kind="pro_subscription">Assinar Pro</CheckoutButton>
+      <Link
+        href="/pricing"
+        className="rounded-pill bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
+      >
+        Ver planos
+      </Link>
     </div>
   );
 }

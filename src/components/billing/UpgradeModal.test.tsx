@@ -11,13 +11,12 @@ describe("<UpgradeModal />", () => {
     expect(getByText(/R\$\s*10/)).toBeInTheDocument();
   });
 
-  it("clicar Pro dispara onCheckout('pro_subscription')", () => {
-    const cb = vi.fn();
+  it("CTA do Pro vai pra /pricing", () => {
     const { getByRole } = render(
-      <UpgradeModal open onClose={vi.fn()} onCheckout={cb} />,
+      <UpgradeModal open onClose={vi.fn()} onCheckout={vi.fn()} />,
     );
-    fireEvent.click(getByRole("button", { name: /assinar pro/i }));
-    expect(cb).toHaveBeenCalledWith("pro_subscription");
+    const link = getByRole("link", { name: /ver detalhes do pro/i });
+    expect(link.getAttribute("href")).toBe("/pricing");
   });
 
   it("clicar Per-use dispara onCheckout('prep_purchase')", () => {
