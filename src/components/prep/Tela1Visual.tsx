@@ -124,12 +124,17 @@ export function Tela1Visual({
         </h2>
         <div className="grid gap-4 lg:grid-cols-3">
           <CompanyCard
+            sessionId={sessionId}
             companyName={company}
             intel={companyIntel ?? null}
             status={companyIntelStatus ?? null}
           />
           <JobCard jobTitle={role} jobDescription={jobDescription ?? null} />
-          <IntelCard intel={companyIntel ?? null} status={companyIntelStatus ?? null} />
+          <IntelCard
+            sessionId={sessionId}
+            intel={companyIntel ?? null}
+            status={companyIntelStatus ?? null}
+          />
         </div>
       </section>
 

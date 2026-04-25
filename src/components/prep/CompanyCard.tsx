@@ -1,4 +1,5 @@
 import type { CompanyIntel } from "@/lib/ai/schemas";
+import { RerunIntelButton } from "./RerunIntelButton";
 
 const PALETTE = [
   { bg: "bg-orange-soft", text: "text-orange-700" },
@@ -17,10 +18,12 @@ function paletteFor(name: string) {
 }
 
 export function CompanyCard({
+  sessionId,
   companyName,
   intel,
   status,
 }: {
+  sessionId: string;
   companyName: string;
   intel: CompanyIntel | null;
   status: string | null;
@@ -28,6 +31,7 @@ export function CompanyCard({
   const palette = paletteFor(companyName);
   const isResearching = status === "researching" || status === "pending";
   const isFailed = status === "failed";
+  const isSkipped = status === "skipped" || (!isResearching && !isFailed && !intel);
 
   return (
     <article className="flex h-full flex-col gap-4 rounded-xl border border-line bg-white p-5 shadow-prep">
@@ -53,20 +57,28 @@ export function CompanyCard({
       )}
 
       {isFailed && (
-        <p className="text-[14px] italic text-ink-3">
-          Pesquisa falhou. Tente recriar o prep.
-        </p>
+        <div className="space-y-2">
+          <p className="text-[14px] italic text-ink-3">
+            A pesquisa não rodou. Toque em pesquisar pra rodar agora.
+          </p>
+          <RerunIntelButton sessionId={sessionId} isResearching={false} />
+        </div>
       )}
 
-      {!isResearching && !isFailed && !intel && (
-        <p className="text-[14px] italic text-ink-3">
-          Pesquisa não disponível para esta empresa.
-        </p>
+      {isSkipped && (
+        <div className="space-y-2">
+          <p className="text-[14px] italic text-ink-3">
+            Sem pesquisa pra esta empresa ainda.
+          </p>
+          <RerunIntelButton sessionId={sessionId} isResearching={false} />
+        </div>
       )}
 
       {intel && (
         <>
-          <p className="text-[15px] leading-6 text-ink-2">{intel.overview}</p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-[15px] leading-6 text-ink-2">{intel.overview}</p>
+          </div>
 
           {intel.culture_signals.length > 0 && (
             <div>
@@ -124,6 +136,14 @@ export function CompanyCard({
               )}
             </div>
           )}
+
+          <div className="flex justify-end pt-2">
+            <RerunIntelButton
+              sessionId={sessionId}
+              isResearching={isResearching}
+              variant="ghost"
+            />
+          </div>
         </>
       )}
     </article>
