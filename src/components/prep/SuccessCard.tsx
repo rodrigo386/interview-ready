@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export function SuccessCard({ sessionId }: { sessionId: string }) {
   return (
     <section
@@ -12,17 +10,11 @@ export function SuccessCard({ sessionId }: { sessionId: string }) {
       <h2 className="mt-3 text-2xl font-extrabold tracking-tight md:text-[28px]">
         Você está pronto para a entrevista
       </h2>
-      <div className="mt-6 flex flex-wrap justify-center gap-3">
-        <Link
-          href={`/prep/${sessionId}/likely`}
-          className="rounded-pill border border-white/40 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-green-700"
-        >
-          Refazer perguntas básicas
-        </Link>
+      <div className="mt-6">
         <a
           href={`/prep/${sessionId}/summary.pdf`}
           download
-          className="rounded-pill bg-white px-5 py-2.5 text-sm font-semibold text-green-700 shadow-prep hover:bg-green-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-green-700"
+          className="inline-block rounded-pill bg-white px-8 py-3.5 text-sm font-semibold text-green-700 shadow-prep transition-colors hover:bg-green-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-green-700"
         >
           Exportar resumo em PDF
         </a>
