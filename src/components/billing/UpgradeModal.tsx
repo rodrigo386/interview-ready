@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 
@@ -56,18 +57,20 @@ export function UpgradeModal({
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-orange-500 bg-orange-soft p-4">
             <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-orange-700">
-              Recomendado
+              Recomendado · promo de lançamento
             </p>
             <h4 className="mt-1 text-lg font-bold text-ink">Pro</h4>
-            <p className="text-sm text-ink-2">Preps ilimitados, R$ 30 / mês</p>
-            <Button
-              type="button"
-              onClick={() => handle("pro_subscription")}
-              disabled={pendingKind !== null}
-              className="mt-4 w-full"
+            <p className="text-sm text-ink-2">
+              Preps ilimitados.{" "}
+              <span className="text-ink-3 line-through">R$ 50</span>{" "}
+              <strong className="text-orange-700">R$ 30/mês</strong>
+            </p>
+            <Link
+              href="/pricing"
+              className="mt-4 inline-flex w-full items-center justify-center rounded-pill bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
             >
-              {pendingKind === "pro_subscription" ? "Abrindo…" : "Assinar Pro"}
-            </Button>
+              Ver detalhes do Pro
+            </Link>
           </div>
           <div className="rounded-lg border border-line bg-bg p-4">
             <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-ink-3">
