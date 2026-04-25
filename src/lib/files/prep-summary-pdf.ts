@@ -6,6 +6,46 @@ const PAGE_H = 841.89;
 const MARGIN = 50;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 
+// pdf-lib's standard fonts (Helvetica) only support WinAnsi (≈Latin-1 +
+// CP1252 extras). Emojis, CJK, and most Unicode > 0xFF will throw
+// "WinAnsi cannot encode" at draw time. We strip / map common offenders
+// before drawing.
+const UNICODE_MAP: Record<string, string> = {
+  "‘": "'",
+  "’": "'",
+  "“": '"',
+  "”": '"',
+  "–": "-",
+  "—": "-",
+  "…": "...",
+  " ": " ",
+  " ": " ",
+  "​": "",
+  "‌": "",
+  "‍": "",
+  "﻿": "",
+};
+
+function sanitize(input: string): string {
+  if (!input) return "";
+  let out = "";
+  for (const ch of input) {
+    const mapped = UNICODE_MAP[ch];
+    if (mapped !== undefined) {
+      out += mapped;
+      continue;
+    }
+    const code = ch.codePointAt(0) ?? 0;
+    // ASCII + Latin-1 Supplement is safe in WinAnsi.
+    if (code <= 0xFF) {
+      out += ch;
+      continue;
+    }
+    // Anything else (emojis, smart symbols, CJK, etc.) is dropped.
+  }
+  return out;
+}
+
 type Ctx = {
   doc: PDFDocument;
   page: PDFPage;
@@ -51,7 +91,12 @@ function drawText(
   const font = opts.bold ? ctx.bold : ctx.font;
   const color = opts.color ?? rgb(0.1, 0.1, 0.1);
   const lineHeight = size * 1.4;
-  const lines = wrap(text, font, size, CONTENT_W);
+  const safe = sanitize(text);
+  if (!safe) {
+    if (opts.gap) ctx.y -= opts.gap;
+    return;
+  }
+  const lines = wrap(safe, font, size, CONTENT_W);
   for (const line of lines) {
     ensureSpace(ctx, lineHeight);
     ctx.page.drawText(line, {
@@ -86,7 +131,7 @@ export async function buildPrepSummaryPdf(input: {
   jobDescription: string | null;
 }): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  doc.setTitle(`Prep — ${input.company} — ${input.role}`);
+  doc.setTitle(sanitize(`Prep - ${input.company} - ${input.role}`));
   doc.setAuthor("PrepaVAGA");
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -136,7 +181,9 @@ export async function buildPrepSummaryPdf(input: {
   // Sections (likely / deep-dive / ask / etc.)
   for (const section of input.guide.sections) {
     ensureSpace(ctx, 80);
-    drawText(ctx, `${section.icon} ${section.title}`, {
+    // Skip the icon (emoji) — sanitize would drop it but keeps a leading
+    // space; cleaner to omit altogether.
+    drawText(ctx, section.title, {
       size: 16,
       bold: true,
       color: rgb(0.55, 0.35, 0.14),
