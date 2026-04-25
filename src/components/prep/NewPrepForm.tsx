@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/Input";
 import { createPrep, type CreatePrepState } from "@/app/prep/new/actions";
 import { CvPicker, type CvSummary } from "./CvPicker";
 import { JobDescriptionPicker } from "./JobDescriptionPicker";
+import { UpgradeModal } from "@/components/billing/UpgradeModal";
+import { startCheckout } from "@/components/billing/CheckoutButton";
 
 export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
   const [state, formAction, pending] = useActionState<CreatePrepState, FormData>(
@@ -93,11 +95,25 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
           </div>
         )}
 
-        {state.error && !pending && (
+        {state.error && !pending && state.error !== "quota_exceeded" && (
           <p className="text-sm text-red-500 dark:text-red-400" role="alert">
             {state.error}
           </p>
         )}
+
+        <UpgradeModal
+          open={state.error === "quota_exceeded" && !pending}
+          onClose={() => {
+            // No-op: re-submitting the form will retry; user can also navigate away.
+            // The modal closes on Esc or outside-click via its own handlers.
+            window.location.reload();
+          }}
+          onCheckout={(kind) =>
+            startCheckout(kind).catch((err) =>
+              alert(err instanceof Error ? err.message : "Erro"),
+            )
+          }
+        />
 
         <Button type="submit" disabled={pending || !canSubmit} className="w-full" size="lg">
           {pending ? (
