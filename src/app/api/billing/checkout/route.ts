@@ -93,7 +93,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "cpf_required" }, { status: 422 });
   }
 
-  // Ensure customer.
+  // Ensure customer exists AND has cpfCnpj on Asaas side. Customers created
+  // before we collected CPF won't have it; PATCH them to avoid 400 on the
+  // next createSubscription/createPayment.
   let customerId = p.asaas_customer_id;
   if (!customerId) {
     const cust = await asaas.createCustomer({
@@ -107,6 +109,13 @@ export async function POST(req: Request) {
       .from("profiles")
       .update({ asaas_customer_id: customerId })
       .eq("id", p.id);
+  } else {
+    // Best-effort: ensure the existing customer has the cpfCnpj on file.
+    try {
+      await asaas.updateCustomer(customerId, { cpfCnpj });
+    } catch (err) {
+      console.warn("[billing/checkout] updateCustomer failed:", err);
+    }
   }
 
   const successUrl = `${appUrl()}/dashboard?billing=ok`;

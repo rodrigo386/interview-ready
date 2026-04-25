@@ -35,6 +35,11 @@ export const asaas = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  updateCustomer: (id: string, input: Partial<CreateCustomerInput>) =>
+    call<AsaasCustomer>(`/customers/${id}`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
   createSubscription: (input: CreateSubscriptionInput) =>
     call<AsaasSubscription>("/subscriptions", {
       method: "POST",
