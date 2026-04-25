@@ -41,6 +41,7 @@ export type CreateCustomerInput = {
   name: string;
   email: string;
   externalReference: string;
+  cpfCnpj: string;
 };
 
 export type CreateSubscriptionInput = {

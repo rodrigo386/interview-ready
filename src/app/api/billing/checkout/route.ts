@@ -8,7 +8,16 @@ import { env } from "@/lib/env";
 
 const bodySchema = z.object({
   kind: z.enum(["pro_subscription", "prep_purchase"]),
+  cpfCnpj: z.string().trim().min(11).max(20).optional(),
 });
+
+function normalizeCpf(raw: string): string {
+  return raw.replace(/[^0-9]/g, "");
+}
+
+function isValidCpfCnpjLength(digits: string): boolean {
+  return digits.length === 11 || digits.length === 14;
+}
 
 function tomorrowIso(): string {
   const d = new Date();
@@ -40,33 +49,64 @@ export async function POST(req: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, email, asaas_customer_id, asaas_subscription_id, subscription_status")
+    .select(
+      "id, full_name, email, asaas_customer_id, asaas_subscription_id, subscription_status, cpf_cnpj",
+    )
     .eq("id", auth.user.id)
     .single();
-  if (!profile) {
+  const p = profile as
+    | {
+        id: string;
+        full_name: string | null;
+        email: string;
+        asaas_customer_id: string | null;
+        asaas_subscription_id: string | null;
+        subscription_status: string | null;
+        cpf_cnpj: string | null;
+      }
+    | null;
+  if (!p) {
     return NextResponse.json({ error: "Profile missing" }, { status: 500 });
   }
 
   if (
     parsed.kind === "pro_subscription" &&
-    (profile.subscription_status === "active" || profile.subscription_status === "overdue")
+    (p.subscription_status === "active" || p.subscription_status === "overdue")
   ) {
     return NextResponse.json({ error: "Já assinante" }, { status: 409 });
   }
 
+  // Resolve CPF/CNPJ: profile takes precedence, body provides on first run.
+  let cpfCnpj: string | null = p.cpf_cnpj;
+  if (!cpfCnpj && parsed.cpfCnpj) {
+    const digits = normalizeCpf(parsed.cpfCnpj);
+    if (!isValidCpfCnpjLength(digits)) {
+      return NextResponse.json(
+        { error: "CPF inválido. Use 11 dígitos (CPF) ou 14 (CNPJ)." },
+        { status: 422 },
+      );
+    }
+    cpfCnpj = digits;
+    await supabase.from("profiles").update({ cpf_cnpj: digits }).eq("id", p.id);
+  }
+  if (!cpfCnpj) {
+    return NextResponse.json({ error: "cpf_required" }, { status: 422 });
+  }
+
   // Ensure customer.
-  let customerId = profile.asaas_customer_id;
+  let customerId = p.asaas_customer_id;
   if (!customerId) {
     const cust = await asaas.createCustomer({
-      name: profile.full_name ?? profile.email,
-      email: profile.email,
-      externalReference: profile.id,
+      name: p.full_name ?? p.email,
+      email: p.email,
+      externalReference: p.id,
+      cpfCnpj,
     });
     customerId = cust.id;
     await supabase
       .from("profiles")
       .update({ asaas_customer_id: customerId })
-      .eq("id", profile.id);
+      .eq("id", p.id);
   }
 
   const successUrl = `${appUrl()}/dashboard?billing=ok`;
@@ -81,14 +121,14 @@ export async function POST(req: Request) {
       description: "PrepaVAGA Pro — assinatura mensal",
       externalReference: buildExternalReference({
         kind: "pro_subscription",
-        userId: profile.id,
+        userId: p.id,
       }),
       callback: { successUrl, autoRedirect: true },
     });
     await supabase
       .from("profiles")
       .update({ asaas_subscription_id: sub.id })
-      .eq("id", profile.id);
+      .eq("id", p.id);
 
     const { data: firstPayment } = await fetchFirstPayment(sub.id);
     const checkoutUrl = firstPayment?.invoiceUrl ?? firstPayment?.bankSlipUrl;
@@ -107,7 +147,7 @@ export async function POST(req: Request) {
     description: "PrepaVAGA — 1 prep avulso",
     externalReference: buildExternalReference({
       kind: "prep_purchase",
-      userId: profile.id,
+      userId: p.id,
       nano: nano(),
     }),
     callback: { successUrl, autoRedirect: true },
