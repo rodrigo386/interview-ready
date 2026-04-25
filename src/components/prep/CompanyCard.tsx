@@ -56,19 +56,10 @@ export function CompanyCard({
         </p>
       )}
 
-      {isFailed && (
+      {(isFailed || isSkipped) && (
         <div className="space-y-2">
           <p className="text-[14px] italic text-ink-3">
-            A pesquisa não rodou. Toque em pesquisar pra rodar agora.
-          </p>
-          <RerunIntelButton sessionId={sessionId} isResearching={false} />
-        </div>
-      )}
-
-      {isSkipped && (
-        <div className="space-y-2">
-          <p className="text-[14px] italic text-ink-3">
-            Sem pesquisa pra esta empresa ainda.
+            Toque em pesquisar pra rodar agora.
           </p>
           <RerunIntelButton sessionId={sessionId} isResearching={false} />
         </div>

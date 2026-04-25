@@ -32,9 +32,7 @@ export function IntelCard({
       {(isFailed || isSkipped) && (
         <div className="space-y-2">
           <p className="text-[14px] italic text-ink-3">
-            {isFailed
-              ? "A pesquisa não rodou. Toque em pesquisar pra rodar agora."
-              : "Sem intel pra esta empresa ainda."}
+            Toque em pesquisar pra rodar agora.
           </p>
           <RerunIntelButton sessionId={sessionId} isResearching={false} />
         </div>

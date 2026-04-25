@@ -564,37 +564,49 @@ function stripCodeFences(text: string): string {
 }
 
 /**
- * Extract the first balanced JSON object from a string. Useful when the model
- * mixes prose around the JSON despite our prompt asking for JSON only.
+ * Extract every balanced top-level JSON object from a string and return them
+ * in order. Useful when the model emits multiple ```json blocks (Gemini does
+ * this when grounding citations get long) — we pick the most complete one.
  */
-function extractJsonObject(text: string): string | null {
-  const start = text.indexOf("{");
-  if (start === -1) return null;
-  let depth = 0;
-  let inString = false;
-  let escape = false;
-  for (let i = start; i < text.length; i++) {
-    const c = text[i];
-    if (escape) {
-      escape = false;
-      continue;
+function extractJsonObjects(text: string): string[] {
+  const found: string[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const start = text.indexOf("{", i);
+    if (start === -1) break;
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    let end = -1;
+    for (let j = start; j < text.length; j++) {
+      const c = text[j];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (c === "\\") {
+        escape = true;
+        continue;
+      }
+      if (c === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (inString) continue;
+      if (c === "{") depth++;
+      else if (c === "}") {
+        depth--;
+        if (depth === 0) {
+          end = j;
+          break;
+        }
+      }
     }
-    if (c === "\\") {
-      escape = true;
-      continue;
-    }
-    if (c === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-    if (c === "{") depth++;
-    else if (c === "}") {
-      depth--;
-      if (depth === 0) return text.slice(start, i + 1);
-    }
+    if (end === -1) break;
+    found.push(text.slice(start, end + 1));
+    i = end + 1;
   }
-  return null;
+  return found;
 }
 
 /**
@@ -685,32 +697,49 @@ export async function generateCompanyIntel(params: {
     }
   }
 
+  // Gemini grounding sometimes emits multiple ```json blocks separated by
+  // citation noise. Try every top-level object and pick the first that
+  // parses + matches the schema.
   const stripped = stripCodeFences(text);
-  const jsonStr = stripped.startsWith("{")
-    ? stripped
-    : extractJsonObject(stripped);
+  const candidates = stripped.startsWith("{") ? [stripped] : extractJsonObjects(stripped);
 
-  if (!jsonStr) {
+  if (candidates.length === 0) {
     console.warn("[gemini] company-intel produced no parseable JSON; skipping");
     return null;
   }
 
-  let raw: unknown;
-  try {
-    raw = JSON.parse(jsonStr);
-  } catch (err) {
-    throw new GeminiResponseError(
-      `Gemini company-intel returned non-JSON: ${err instanceof Error ? err.message : String(err)}`,
-      text,
-    );
+  let parseErr: string | null = null;
+  for (const jsonStr of candidates) {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(jsonStr);
+    } catch (err) {
+      parseErr = `JSON.parse: ${err instanceof Error ? err.message : String(err)}`;
+      continue;
+    }
+    // Defensive: strip any URL-ish fields the model might have sneaked in
+    // despite the prompt — Vertex AI redirect URLs run thousands of chars.
+    const clean = stripUrlFields(raw);
+    const parsed = companyIntelSchema.safeParse(clean);
+    if (parsed.success) return parsed.data;
+    parseErr = `schema: ${parsed.error.message}`;
   }
 
-  const parsed = companyIntelSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new GeminiResponseError(
-      `Gemini company-intel failed schema validation: ${parsed.error.message}`,
-      text,
-    );
+  throw new GeminiResponseError(
+    `Gemini company-intel: no candidate parsed (${candidates.length} tried). Last error: ${parseErr ?? "unknown"}`,
+    text,
+  );
+}
+
+function stripUrlFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripUrlFields);
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (k === "source_url" || k === "url" || k === "link" || k === "citation") continue;
+      out[k] = stripUrlFields(v);
+    }
+    return out;
   }
-  return parsed.data;
+  return value;
 }
