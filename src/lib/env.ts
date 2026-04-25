@@ -10,6 +10,18 @@ const schema = z.object({
     .union([z.string().min(1), z.literal("")])
     .optional()
     .transform((val) => (val === "" ? undefined : val)),
+  ASAAS_API_KEY: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
+  ASAAS_WEBHOOK_TOKEN: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
+  ASAAS_BASE_URL: z
+    .string()
+    .url()
+    .default("https://sandbox.asaas.com/api/v3"),
 });
 
 type Env = z.infer<typeof schema>;
@@ -23,6 +35,9 @@ function parseOrThrow(): Env {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+    ASAAS_API_KEY: process.env.ASAAS_API_KEY,
+    ASAAS_WEBHOOK_TOKEN: process.env.ASAAS_WEBHOOK_TOKEN,
+    ASAAS_BASE_URL: process.env.ASAAS_BASE_URL,
   });
   if (!result.success) {
     console.error("Invalid environment variables:", result.error.flatten().fieldErrors);

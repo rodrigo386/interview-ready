@@ -43,4 +43,9 @@ export type ProfileShellData = {
   avatarPath: string | null;
   avatarUpdatedAt: string | null;
   resolvedAvatarUrl: string;
+  asaasCustomerId: string | null;
+  subscriptionStatus: "active" | "overdue" | "canceled" | "expired" | "none";
+  subscriptionRenewsAt: string | null;
+  prepCredits: number;
+  prepsResetAt: string;
 };
