@@ -6,7 +6,9 @@ import { FocusCard } from "./FocusCard";
 import { SkipCard } from "./SkipCard";
 import { SuccessCard } from "./SuccessCard";
 import { DeletePrepButton } from "./DeletePrepButton";
-import { PrepDetails } from "./PrepDetails";
+import { CompanyCard } from "./CompanyCard";
+import { JobCard } from "./JobCard";
+import { IntelCard } from "./IntelCard";
 import type { StepNumber } from "@/lib/prep/types";
 import type { CompanyIntel } from "@/lib/ai/schemas";
 
@@ -116,11 +118,20 @@ export function Tela1Visual({
         </>
       )}
 
-      <PrepDetails
-        jobDescription={jobDescription ?? null}
-        companyIntel={companyIntel ?? null}
-        companyIntelStatus={companyIntelStatus ?? null}
-      />
+      <section>
+        <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.6px] text-ink-3">
+          Inteligência da vaga
+        </h2>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <CompanyCard
+            companyName={company}
+            intel={companyIntel ?? null}
+            status={companyIntelStatus ?? null}
+          />
+          <JobCard jobTitle={role} jobDescription={jobDescription ?? null} />
+          <IntelCard intel={companyIntel ?? null} status={companyIntelStatus ?? null} />
+        </div>
+      </section>
 
       <section className="border-t border-line pt-6">
         <button
