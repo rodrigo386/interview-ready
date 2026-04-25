@@ -2,12 +2,45 @@
 
 import { useTransition } from "react";
 
-export async function startCheckout(kind: "pro_subscription" | "prep_purchase"): Promise<void> {
-  const res = await fetch("/api/billing/checkout", {
+async function postCheckout(body: {
+  kind: "pro_subscription" | "prep_purchase";
+  cpfCnpj?: string;
+}): Promise<Response> {
+  return fetch("/api/billing/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ kind }),
+    body: JSON.stringify(body),
   });
+}
+
+function promptCpf(): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.prompt(
+    "Pra emitir a cobrança, o Asaas exige seu CPF (ou CNPJ). Digite só os números:",
+  );
+  if (!raw) return null;
+  const digits = raw.replace(/[^0-9]/g, "");
+  if (digits.length !== 11 && digits.length !== 14) {
+    window.alert("CPF/CNPJ inválido. Use 11 dígitos (CPF) ou 14 (CNPJ).");
+    return null;
+  }
+  return digits;
+}
+
+export async function startCheckout(kind: "pro_subscription" | "prep_purchase"): Promise<void> {
+  let res = await postCheckout({ kind });
+
+  // First attempt may return 422 cpf_required when the user has never paid
+  // before. Prompt for CPF and retry once.
+  if (res.status === 422) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (data.error === "cpf_required") {
+      const cpfCnpj = promptCpf();
+      if (!cpfCnpj) return; // user canceled
+      res = await postCheckout({ kind, cpfCnpj });
+    }
+  }
+
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(data.error ?? `Checkout falhou (HTTP ${res.status})`);

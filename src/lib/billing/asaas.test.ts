@@ -33,6 +33,7 @@ describe("asaas client", () => {
       name: "X",
       email: "x@y.com",
       externalReference: "u1",
+      cpfCnpj: "12345678901",
     });
     expect(result.id).toBe("cus_1");
     const [url, init] = stubFetch.mock.calls[0];
@@ -40,7 +41,7 @@ describe("asaas client", () => {
     expect((init as RequestInit).method).toBe("POST");
     expect((init as RequestInit).headers).toMatchObject({ access_token: "test-key" });
     const body = JSON.parse(((init as RequestInit).body as string) ?? "");
-    expect(body).toEqual({ name: "X", email: "x@y.com", externalReference: "u1" });
+    expect(body).toEqual({ name: "X", email: "x@y.com", externalReference: "u1", cpfCnpj: "12345678901" });
   });
 
   it("createSubscription posts to /subscriptions", async () => {
@@ -80,7 +81,7 @@ describe("asaas client", () => {
     );
     const { asaas } = await import("./asaas");
     await expect(
-      asaas.createCustomer({ name: "X", email: "bad", externalReference: "u1" }),
+      asaas.createCustomer({ name: "X", email: "bad", externalReference: "u1", cpfCnpj: "12345678901" }),
     ).rejects.toThrow(/422/);
   });
 });
