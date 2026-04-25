@@ -25,8 +25,8 @@ Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-24.
 | UI | React 19 + Tailwind v4 (`@import "tailwindcss"` + `@config "../../tailwind.config.ts"`) |
 | Lang | TypeScript strict |
 | DB / Auth / Storage | Supabase (project `reslmtzofwczxrswulca`) |
-| AI — sections + CV rewrite | **Google Gemini** (`gemini-3.1-flash-lite-preview`) via `@google/generative-ai` |
-| AI — ATS analysis + Company intel + web_search | **Anthropic Claude Sonnet 4.5** (`claude-sonnet-4-5`) via `@anthropic-ai/sdk` |
+| AI — sections + ATS + CV rewrite | **Google Gemini** (`gemini-3.1-flash-lite-preview`) via `@google/generative-ai` |
+| AI — Company intel (com Google Search grounding) | **Google Gemini** (`gemini-2.5-flash`) via `@google/generative-ai` |
 | File parse | `pdf-parse@2` (PDF), `mammoth` (DOCX) |
 | PDF gen | `pdf-lib` |
 | URL fetch | Jina Reader (`https://r.jina.ai/<URL>`) — free, no key, handles JS-rendered pages |
@@ -36,9 +36,8 @@ Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-24.
 
 ### Env vars obrigatórias (Railway)
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- `ANTHROPIC_API_KEY` — para ATS / company intel / web_search
-- `GOOGLE_API_KEY` — **OBRIGATÓRIO** para sections + CV rewrite. Sem ele, geração quebra com `"GOOGLE_API_KEY is not set"`. Get em https://aistudio.google.com/apikey
-- `MOCK_ANTHROPIC=1` — kill switch global de AI nos tests
+- `GOOGLE_API_KEY` — **OBRIGATÓRIO** para todas as chamadas de IA (sections, ATS, company intel, CV rewrite). Sem ele, geração quebra com `"GOOGLE_API_KEY is not set"`. Get em https://aistudio.google.com/apikey
+- `MOCK_ANTHROPIC=1` — kill switch global de AI nos tests (nome legado, vale para Gemini agora)
 
 ---
 
@@ -65,9 +64,9 @@ Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-24.
 **`QuestionPager` (client)** recebe `pages: PagerPage[]` **pré-renderizadas** (JSX serializa cross RSC boundary, closures não — não passar `buildSections: fn` do server). Ao chegar na última pergunta, chama `markStepComplete` do context + `router.push(nextHref)`.
 
 **Pipeline de geração** (`src/lib/ai/pipeline.ts`):
-- Stage A: company research (Claude Sonnet + `web_search` server-side tool, multi-turn)
-- Stage B: 5 chamadas paralelas de sections via Gemini Flash (likely/deep-dive/tricky/questions-to-ask/mindset)
-- ATS analysis e CV rewrite são server actions separadas, disparadas pelo user na tela ATS
+- Stage A: company research via Gemini 2.5 Flash + `googleSearchRetrieval` (single-call, JSON output via prompt — Gemini não permite grounding + responseSchema simultâneos)
+- Stage B: 5 chamadas paralelas de sections via Gemini 3.1 Flash Lite (likely/deep-dive/tricky/questions-to-ask/mindset)
+- ATS analysis e CV rewrite são server actions separadas via Gemini 3.1 Flash Lite, disparadas pelo user na tela ATS
 
 ---
 
@@ -135,8 +134,8 @@ CSS vars em `globals.css`: `--prep-red/--prep-yellow/--prep-green` (consumidas v
 - `Failed to find Server Action <hash>`: cliente em sessão antiga referencia action ID que não existe no novo bundle. Hard refresh resolve. Não é um bug nosso — comportamento esperado do Next.js 15 com versionamento de actions.
 
 ### AI rate limits
-- Anthropic Sonnet org limit: 30k input tokens/min. As 5 chamadas paralelas de sections em série batiam isso → **migrado para Gemini Flash** (PR #19, ajustado para `gemini-3.1-flash-lite-preview` em PR #21).
-- CV rewrite também migrado para Gemini (PR #25).
+- Anthropic Sonnet org limit: 30k input tokens/min — não se aplica mais. Toda a IA agora roda no Gemini.
+- Histórico: PR #19 migrou sections de Sonnet → Gemini Flash, PR #25 migrou CV rewrite, e a Sprint 1 (pós-PR #27) migrou ATS + company intel também. Anthropic SDK foi removido das deps.
 
 ### Schema limits
 - Real Claude/Gemini responses excedem limites Zod restritivos. Histórico de bumps:

@@ -2,17 +2,24 @@ import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-
 import { env } from "@/lib/env";
 import {
   prepSectionSchema,
+  atsAnalysisSchema,
+  companyIntelSchema,
   cvRewriteSchema,
   type PrepSection,
+  type AtsAnalysis,
+  type CompanyIntel,
   type CvRewrite,
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
-// Sections (5 parallel calls in Stage B) blew through Sonnet's 30k input
-// tokens/min limit. Gemini 3.1 Flash Lite (preview) has much higher rate
-// limits, lower cost, lower latency. JSON schema-constrained output works
-// comparably for these structured sections.
+// Default model for structured-output tasks (sections, ATS, CV rewrite).
+// Lighter / cheaper / higher rate limits than the Sonnet path we replaced.
 const MODEL_ID = "gemini-3.1-flash-lite-preview";
+
+// Model used for company intel — needs Google Search grounding, which the
+// flash-lite preview does not support. 2.5-flash is the lightest model that
+// supports `googleSearchRetrieval` + ample reasoning for research synthesis.
+const GROUNDED_MODEL_ID = "gemini-2.5-flash";
 
 /** JSON Schema mirror of prepSectionSchema for Gemini responseSchema. */
 const sectionResponseSchema: Schema = {
@@ -300,6 +307,305 @@ export async function generateCvRewrite(params: {
   if (!parsed.success) {
     throw new GeminiResponseError(
       `Gemini cv-rewrite failed schema validation: ${parsed.error.message}`,
+      text,
+    );
+  }
+  return parsed.data;
+}
+
+// ---------------------------- ATS Analysis -----------------------------
+
+const atsResponseSchema: Schema = {
+  type: SchemaType.OBJECT,
+  required: ["score", "title_match", "keyword_analysis", "top_fixes", "overall_assessment"],
+  properties: {
+    score: { type: SchemaType.INTEGER },
+    title_match: {
+      type: SchemaType.OBJECT,
+      required: ["cv_title", "jd_title", "match_score"],
+      properties: {
+        cv_title: { type: SchemaType.STRING },
+        jd_title: { type: SchemaType.STRING },
+        match_score: { type: SchemaType.INTEGER },
+      },
+    },
+    keyword_analysis: {
+      type: SchemaType.OBJECT,
+      required: ["critical", "high", "medium"],
+      properties: {
+        critical: {
+          type: SchemaType.ARRAY,
+          items: keywordItemGeminiSchema(),
+        },
+        high: {
+          type: SchemaType.ARRAY,
+          items: keywordItemGeminiSchema(),
+        },
+        medium: {
+          type: SchemaType.ARRAY,
+          items: keywordItemGeminiSchema(),
+        },
+      },
+    },
+    top_fixes: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        required: [
+          "priority",
+          "gap",
+          "original_cv_language",
+          "jd_language",
+          "suggested_rewrite",
+        ],
+        properties: {
+          priority: { type: SchemaType.INTEGER },
+          gap: { type: SchemaType.STRING },
+          original_cv_language: { type: SchemaType.STRING },
+          jd_language: { type: SchemaType.STRING },
+          suggested_rewrite: { type: SchemaType.STRING },
+        },
+      },
+    },
+    overall_assessment: { type: SchemaType.STRING },
+  },
+};
+
+function keywordItemGeminiSchema(): Schema {
+  return {
+    type: SchemaType.OBJECT,
+    required: ["keyword", "found"],
+    properties: {
+      keyword: { type: SchemaType.STRING },
+      found: { type: SchemaType.BOOLEAN },
+      context: { type: SchemaType.STRING },
+    },
+  };
+}
+
+const MOCK_ATS: AtsAnalysis = {
+  score: 73,
+  title_match: {
+    cv_title: "Head of Procurement LATAM",
+    jd_title: "Senior Director, AI Procurement",
+    match_score: 55,
+  },
+  keyword_analysis: {
+    critical: [{ keyword: "agentic AI", found: false }],
+    high: [{ keyword: "touchless P2P", found: false }],
+    medium: [{ keyword: "rapid prototyping", found: false }],
+  },
+  top_fixes: [
+    {
+      priority: 1,
+      gap: "Missing: agentic AI",
+      original_cv_language: "digital tools",
+      jd_language: "agentic AI",
+      suggested_rewrite:
+        "Deployed agentic AI workflows for sourcing across LATAM, automating tail spend and reducing cycle time 40%.",
+    },
+  ],
+  overall_assessment:
+    "Mock assessment: strong domain experience but CV vocabulary lags JD by 2-3 years on AI-specific terminology.",
+};
+
+export async function generateAtsAnalysis(params: {
+  system: string;
+  user: string;
+}): Promise<AtsAnalysis> {
+  if (process.env.MOCK_ANTHROPIC === "1") {
+    return MOCK_ATS;
+  }
+  if (!env.GOOGLE_API_KEY) {
+    throw new Error("GOOGLE_API_KEY is not set");
+  }
+
+  const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
+  const model = client.getGenerativeModel({
+    model: MODEL_ID,
+    systemInstruction: params.system,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: atsResponseSchema,
+      maxOutputTokens: 4096,
+      temperature: 0.3,
+    },
+  });
+
+  const start = Date.now();
+  console.log("[gemini] ats starting");
+  const result = await model.generateContent(params.user);
+  const text = result.response.text();
+  console.log(`[gemini] ats completed in ${Date.now() - start}ms`);
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (err) {
+    throw new GeminiResponseError(
+      `Gemini ats returned non-JSON: ${err instanceof Error ? err.message : String(err)}`,
+      text,
+    );
+  }
+
+  const parsed = atsAnalysisSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new GeminiResponseError(
+      `Gemini ats failed schema validation: ${parsed.error.message}`,
+      text,
+    );
+  }
+  return parsed.data;
+}
+
+// ---------------------------- Company Intel -----------------------------
+
+const MOCK_COMPANY_INTEL: CompanyIntel = {
+  overview:
+    "Mock Co is a $3B specialty chemicals company headquartered in Columbus, OH, private-equity owned by Apollo Global Management.",
+  recent_developments: [
+    {
+      headline: "IPO filed March 2026",
+      why_it_matters:
+        "Signals a liquidity event — leadership is under shareholder pressure to accelerate AI and cost transformation.",
+    },
+  ],
+  key_people: [
+    {
+      name: "Jane Doe",
+      role: "Chief Procurement Officer",
+      background_snippet: "Ex-Bayer, joined 2024 to lead procurement transformation.",
+    },
+  ],
+  culture_signals: ["fast-paced", "sponsor-owned speed"],
+  strategic_context:
+    "Specialty chemicals is consolidating; the PE sponsor is targeting a 2027 exit and needs EBITDA expansion via operational efficiency.",
+  questions_this_creates: [
+    "How does the IPO timeline affect the procurement transformation roadmap?",
+  ],
+};
+
+/**
+ * Strip markdown code fences (```json ... ``` or ``` ... ```) from a string.
+ * Gemini sometimes wraps JSON output in fences when grounding is enabled and
+ * responseSchema is not (Gemini blocks combining the two).
+ */
+function stripCodeFences(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed.startsWith("```")) {
+    return trimmed
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```\s*$/i, "")
+      .trim();
+  }
+  return trimmed;
+}
+
+/**
+ * Extract the first balanced JSON object from a string. Useful when the model
+ * mixes prose around the JSON despite our prompt asking for JSON only.
+ */
+function extractJsonObject(text: string): string | null {
+  const start = text.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (c === "\\") {
+      escape = true;
+      continue;
+    }
+    if (c === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (c === "{") depth++;
+    else if (c === "}") {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+/**
+ * Generate company intel via Gemini with Google Search grounding. Returns
+ * `null` when the model produces nothing useful — pipeline treats this as
+ * "skipped" and continues. Throws on hard errors (network, schema fail).
+ *
+ * Gemini does not allow `googleSearchRetrieval` AND `responseSchema` in the
+ * same call, so we ask for JSON via prompt and parse leniently.
+ */
+export async function generateCompanyIntel(params: {
+  system: string;
+  user: string;
+}): Promise<CompanyIntel | null> {
+  if (process.env.MOCK_ANTHROPIC === "1") {
+    return MOCK_COMPANY_INTEL;
+  }
+  if (!env.GOOGLE_API_KEY) {
+    throw new Error("GOOGLE_API_KEY is not set");
+  }
+
+  const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
+  // SDK types for grounding tools are loose across versions — cast to a
+  // permissive shape so older typings still compile.
+  const groundingTool = { googleSearchRetrieval: {} } as unknown as never;
+  const model = client.getGenerativeModel({
+    model: GROUNDED_MODEL_ID,
+    systemInstruction: params.system,
+    tools: [groundingTool],
+    generationConfig: {
+      maxOutputTokens: 4096,
+      temperature: 0.4,
+    },
+  });
+
+  const start = Date.now();
+  console.log("[gemini] company-intel starting");
+  let text = "";
+  try {
+    const result = await model.generateContent(params.user);
+    text = result.response.text();
+  } catch (err) {
+    throw new GeminiResponseError(
+      `Gemini company-intel call failed: ${err instanceof Error ? err.message : String(err)}`,
+      "",
+    );
+  }
+  console.log(`[gemini] company-intel completed in ${Date.now() - start}ms`);
+
+  const stripped = stripCodeFences(text);
+  const jsonStr = stripped.startsWith("{")
+    ? stripped
+    : extractJsonObject(stripped);
+
+  if (!jsonStr) {
+    console.warn("[gemini] company-intel produced no parseable JSON; skipping");
+    return null;
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(jsonStr);
+  } catch (err) {
+    throw new GeminiResponseError(
+      `Gemini company-intel returned non-JSON: ${err instanceof Error ? err.message : String(err)}`,
+      text,
+    );
+  }
+
+  const parsed = companyIntelSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new GeminiResponseError(
+      `Gemini company-intel failed schema validation: ${parsed.error.message}`,
       text,
     );
   }

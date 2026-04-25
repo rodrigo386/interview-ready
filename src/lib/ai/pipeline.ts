@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import {
+  generateSection,
   generateCompanyIntel,
-  ClaudeResponseError,
-} from "@/lib/ai/anthropic";
-import { generateSection, GeminiResponseError } from "@/lib/ai/gemini";
+  GeminiResponseError,
+} from "@/lib/ai/gemini";
 import { buildCompanyResearchPrompt } from "@/lib/ai/prompts/company-research";
 import {
   buildSectionPrompt,
@@ -183,9 +183,6 @@ async function generateOne(
 }
 
 function formatReason(reason: unknown): string {
-  if (reason instanceof ClaudeResponseError) {
-    return `${reason.message}\n\nRAW RESPONSE:\n${reason.rawResponse}`;
-  }
   if (reason instanceof GeminiResponseError) {
     return `${reason.message}\n\nRAW RESPONSE:\n${reason.rawResponse}`;
   }
@@ -196,7 +193,7 @@ function formatReason(reason: unknown): string {
 }
 
 function formatIntelError(err: unknown): string {
-  if (err instanceof ClaudeResponseError) {
+  if (err instanceof GeminiResponseError) {
     return `${err.message}\n\nRAW RESPONSE:\n${err.rawResponse}`;
   }
   if (err instanceof Error) {
