@@ -49,11 +49,11 @@ OUTPUT FORMAT — return ONLY valid JSON matching this exact shape, no prose, no
 
 Quality rules:
 - overview: 2-3 sentences (max 2000 chars). Mention size/stage/ownership if knowable.
-- recent_developments: 3-6 items, ALL from the last 6 months (after ${cutoffLabel}). Order most-impactful first. If a date is in the headline, prefer keeping it (e.g., "Acquired X in March ${currentYear}"). source_url is optional but recommended.
+- recent_developments: 3-6 items, ALL from the last 6 months (after ${cutoffLabel}). Order most-impactful first. If a date is in the headline, prefer keeping it (e.g., "Acquired X in March ${currentYear}"). source_url is optional — if you don't have a real URL, OMIT THE FIELD ENTIRELY (do not write null, do not write empty string, do not write a placeholder).
 - key_people: 2-4 executives relevant to the hiring chain. CEO/CPO/CHRO/hiring manager if identifiable. Include a 1-line background that gives the candidate something to reference.
 - culture_signals: 3-6 short phrases ("aggressive shipping cadence", "PE-owned speed + accountability"). No fillers like "team-oriented".
 - strategic_context: 2-3 sentences. Industry pressures, competitive position, strategic bets.
-- questions_this_creates: 2-4 specific questions that prove the candidate did this research.
+- questions_this_creates: 2-4 specific questions that prove the candidate did this research. Each question MUST be at most 400 characters — keep them tight, one specific topic each.
 
 If searches return nothing useful (fresh/tiny/private company, generic results), return JSON with mostly-empty arrays and a short overview based on whatever is verifiable. DO NOT make things up. Empty arrays are acceptable. NEVER fabricate dates, names, or events.
 

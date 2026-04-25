@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { cleanJobDescription } from "@/lib/ai/gemini";
 
 const urlSchema = z
   .string()
@@ -61,20 +62,31 @@ export async function fetchJdFromUrl(
 
   const raw = (await res.text()).trim();
   // Jina Reader returns markdown with a small header; strip front matter.
-  const text = raw
+  const stripped = raw
     .replace(/^Title:.*\nURL Source:.*\n(Markdown Content:.*?\n)?/im, "")
     .trim();
 
-  if (text.length < MIN_TEXT_CHARS) {
+  if (stripped.length < MIN_TEXT_CHARS) {
     return {
       error:
         "A página não tem texto suficiente para gerar um prep. Cole o texto da vaga em vez disso.",
     };
   }
 
+  // Best-effort AI cleanup: strip cookie banners, navigation, legal footer.
+  // Failures fall back to the raw text inside cleanJobDescription itself.
+  const cleaned = await cleanJobDescription(stripped);
+
+  if (cleaned.length < MIN_TEXT_CHARS) {
+    return {
+      error:
+        "Depois de limpar a página, sobrou pouco conteúdo. Cole o texto da vaga em vez disso.",
+    };
+  }
+
   return {
     jd: {
-      text: text.slice(0, MAX_TEXT_CHARS),
+      text: cleaned.slice(0, MAX_TEXT_CHARS),
       url,
     },
   };

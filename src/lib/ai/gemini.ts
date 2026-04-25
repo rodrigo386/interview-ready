@@ -458,6 +458,68 @@ export async function generateAtsAnalysis(params: {
   return parsed.data;
 }
 
+// ---------------------------- JD Cleanup -------------------------------
+
+/**
+ * Strip non-JD chrome from a careers-page extraction (cookie banners,
+ * navigation, legal footer, "Apply now" CTAs, etc.) and return only the
+ * description that's relevant to the candidate. Returns the input verbatim
+ * if cleanup fails or the model API is unavailable — callers should not
+ * rely on cleanup, just treat it as a best-effort improvement.
+ */
+export async function cleanJobDescription(rawText: string): Promise<string> {
+  const trimmed = rawText.trim();
+  if (trimmed.length < 400) return trimmed;
+  if (process.env.MOCK_ANTHROPIC === "1") return trimmed;
+  if (!env.GOOGLE_API_KEY) return trimmed;
+
+  // Guard against giant inputs — Gemini Flash Lite has a wide context window
+  // but we don't want to spend tokens on absurd payloads.
+  const truncated = trimmed.slice(0, 60_000);
+
+  const system = `You receive raw text scraped from a careers page that contains a job description plus website chrome (cookie banners, navigation, footer, related jobs, legal links, "Apply now" buttons, social share, etc.).
+
+Return ONLY the job description content the candidate cares about: role title (if present), responsibilities, requirements, qualifications, "about the role", "what you'll do", "what you'll bring", team/company section if it's substantive (one paragraph), benefits if listed.
+
+REMOVE: cookie consent text, "We use cookies" banners, accept/reject buttons, navigation menus, "Related jobs", "Job ID", "Apply now" CTAs that aren't part of the description, social share text, "Sign in to LinkedIn" prompts, footer links (Privacy Policy, Terms, Cookie Policy), copyright, breadcrumb trails, "Tell us about yourself" widgets, equal-opportunity boilerplate longer than 1 sentence, salary disclaimers longer than 1 sentence.
+
+PRESERVE the meaningful structure: keep headings (## or "Responsibilities:"), keep bullet points (with - or *), keep paragraph breaks. Output plain text / lightweight markdown only.
+
+Output rules:
+- Return only the cleaned text. No preamble, no explanation, no code fences.
+- Preserve language (Portuguese stays Portuguese, English stays English).
+- If the input is already clean / mostly JD content, return it almost unchanged.
+- If the input has no recognizable job description, return the original text verbatim — do not invent content.`;
+
+  try {
+    const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
+    const model = client.getGenerativeModel({
+      model: MODEL_ID,
+      systemInstruction: system,
+      generationConfig: {
+        maxOutputTokens: 8192,
+        temperature: 0.1,
+      },
+    });
+    const start = Date.now();
+    console.log(`[gemini] jd-cleanup starting (${truncated.length} chars in)`);
+    const result = await model.generateContent(truncated);
+    const cleaned = result.response.text().trim();
+    console.log(
+      `[gemini] jd-cleanup completed in ${Date.now() - start}ms (${cleaned.length} chars out)`,
+    );
+    // Sanity: if the cleaner returned something absurdly short, prefer the
+    // original to avoid losing legitimate JD content.
+    if (cleaned.length < 200) return trimmed;
+    return cleaned;
+  } catch (err) {
+    console.warn(
+      `[gemini] jd-cleanup failed: ${err instanceof Error ? err.message : String(err)} — using raw text`,
+    );
+    return trimmed;
+  }
+}
+
 // ---------------------------- Company Intel -----------------------------
 
 const MOCK_COMPANY_INTEL: CompanyIntel = {
