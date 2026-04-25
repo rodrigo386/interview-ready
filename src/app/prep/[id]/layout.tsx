@@ -6,6 +6,7 @@ import { PrepShellProvider } from "@/components/prep/PrepShellProvider";
 import { PrepStepperBound } from "@/components/prep/PrepStepperBound";
 import { PrepBreadcrumb } from "@/components/prep/PrepBreadcrumb";
 import { PrepSidebar } from "@/components/prep/PrepSidebar";
+import { MobileStepNav } from "@/components/prep/MobileStepNav";
 import { computeServerCompleted } from "@/lib/prep/step-state";
 import { PrepSkeleton } from "@/components/prep/PrepSkeleton";
 import { PrepFailed } from "@/components/prep/PrepFailed";
@@ -65,8 +66,9 @@ export default async function PrepLayout({
         </div>
         <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
           <PrepSidebar />
-          <main className="min-w-0">{children}</main>
+          <main className="min-w-0 pb-20 lg:pb-0">{children}</main>
         </div>
+        <MobileStepNav />
       </div>
     </PrepShellProvider>
   );
