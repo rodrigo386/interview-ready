@@ -37,6 +37,24 @@ export function SignupForm() {
         <Input id="email" name="email" type="email" required className="mt-1" />
       </div>
       <div>
+        <label htmlFor="cpfCnpj" className="block text-sm text-zinc-300">
+          CPF ou CNPJ
+        </label>
+        <Input
+          id="cpfCnpj"
+          name="cpfCnpj"
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="Apenas números"
+          required
+          className="mt-1"
+        />
+        <p className="mt-1 text-xs text-zinc-500">
+          Necessário para emitir cobranças (Asaas).
+        </p>
+      </div>
+      <div>
         <label htmlFor="password" className="block text-sm text-zinc-300">
           Senha
         </label>

@@ -8,6 +8,13 @@ const schema = z.object({
   email: z.string().email("E-mail inválido"),
   password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
   fullName: z.string().min(1, "Informe seu nome"),
+  cpfCnpj: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/[^0-9]/g, ""))
+    .refine((v) => v.length === 11 || v.length === 14, {
+      message: "CPF (11 dígitos) ou CNPJ (14 dígitos) inválido",
+    }),
 });
 
 export type SignupState = {
@@ -33,6 +40,7 @@ export async function signup(
     email: formData.get("email"),
     password: formData.get("password"),
     fullName: formData.get("fullName"),
+    cpfCnpj: formData.get("cpfCnpj"),
   });
 
   if (!parsed.success) {
@@ -50,6 +58,17 @@ export async function signup(
     if (error) {
       console.error("[signup] supabase signUp error:", error.message, error);
       return { error: mapSupabaseError(error.message) };
+    }
+
+    // Persist CPF on the profile row created by the auth.users trigger.
+    if (data.user) {
+      const { error: cpfErr } = await supabase
+        .from("profiles")
+        .update({ cpf_cnpj: parsed.data.cpfCnpj })
+        .eq("id", data.user.id);
+      if (cpfErr) {
+        console.warn("[signup] cpf_cnpj update failed:", cpfErr.message);
+      }
     }
 
     // If email confirmation is required, Supabase returns user but no session.
