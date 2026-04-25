@@ -66,7 +66,7 @@ export type AtsKeyword = z.infer<typeof atsKeywordSchema>;
 export type AtsFix = z.infer<typeof atsFixSchema>;
 
 export const companyIntelSchema = z.object({
-  overview: z.string().min(20).max(600),
+  overview: z.string().min(20).max(2000),
   recent_developments: z
     .array(
       z.object({

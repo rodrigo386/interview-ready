@@ -418,7 +418,7 @@ const companyIntelToolSchema = {
     "questions_this_creates",
   ],
   properties: {
-    overview: { type: "string" as const, minLength: 20, maxLength: 600 },
+    overview: { type: "string" as const, minLength: 20, maxLength: 2000 },
     recent_developments: {
       type: "array" as const,
       maxItems: 6,
