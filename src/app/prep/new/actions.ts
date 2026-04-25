@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { checkQuota, type ProfileBilling } from "@/lib/billing/quota";
 import { createPrepInputSchema } from "./schema";
 
 export type CreatePrepState = {
@@ -37,6 +38,26 @@ export async function createPrep(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Você precisa estar logado pra criar um prep." };
+
+  // Quota gate.
+  const { data: billingProfile } = await supabase
+    .from("profiles")
+    .select(
+      "subscription_status, preps_used_this_month, preps_reset_at, prep_credits",
+    )
+    .eq("id", user.id)
+    .single();
+
+  const billing: ProfileBilling = {
+    subscription_status: (billingProfile as { subscription_status?: ProfileBilling["subscription_status"] } | null)?.subscription_status ?? "none",
+    preps_used_this_month: (billingProfile as { preps_used_this_month?: number } | null)?.preps_used_this_month ?? 0,
+    preps_reset_at: (billingProfile as { preps_reset_at?: string } | null)?.preps_reset_at ?? new Date().toISOString(),
+    prep_credits: (billingProfile as { prep_credits?: number } | null)?.prep_credits ?? 0,
+  };
+  const quota = checkQuota(billing, new Date());
+  if (!quota.allowed) {
+    return { error: "quota_exceeded" };
+  }
 
   // Duplicate-JD check: same user + same JD fingerprint = same prep.
   // We hash all the user's existing JDs and compare; for typical users (<50
@@ -100,6 +121,28 @@ export async function createPrep(
   if (insertError || !session) {
     console.error("[createPrep] insert failed:", insertError);
     return { error: "Could not save your prep session. Please try again." };
+  }
+
+  // Quota consumption.
+  if (quota.mode === "credit") {
+    await supabase
+      .from("profiles")
+      .update({ prep_credits: billing.prep_credits - 1 })
+      .eq("id", user.id);
+  } else if (quota.mode === "reset") {
+    await supabase
+      .from("profiles")
+      .update({
+        preps_used_this_month: 1,
+        preps_reset_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+  } else {
+    // pro or free: increment counter (free for enforcement, pro for analytics).
+    await supabase
+      .from("profiles")
+      .update({ preps_used_this_month: billing.preps_used_this_month + 1 })
+      .eq("id", user.id);
   }
 
   await runGenerationInline(session.id);
