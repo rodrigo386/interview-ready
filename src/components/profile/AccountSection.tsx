@@ -1,15 +1,13 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useProfileShell } from "./ProfileShellProvider";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
 import { PlanCard } from "@/components/billing/PlanCard";
-import { BillingHistoryList } from "@/components/billing/BillingHistoryList";
 import { changePassword, deleteAccount } from "@/app/(app)/profile/actions";
 
-export function AccountSection() {
-  // useProfileShell still consumed downstream (PlanCard reads it). We keep
-  // the hook reference here even though we don't read fields directly.
+export function AccountSection({ billingHistory }: { billingHistory: ReactNode }) {
   useProfileShell();
 
   return (
@@ -21,11 +19,7 @@ export function AccountSection() {
 
       <section className="space-y-2">
         <h2 className="text-lg font-semibold text-text-primary">Histórico de pagamentos</h2>
-        {/* @ts-expect-error Async Server Component used inside a client tree.
-            The page route is a server component; AccountSection is client.
-            Keeping the import here is the spec contract; if your team prefers
-            strict typing, hoist BillingHistoryList up to account/page.tsx. */}
-        <BillingHistoryList />
+        {billingHistory}
       </section>
 
       <section className="space-y-2">
