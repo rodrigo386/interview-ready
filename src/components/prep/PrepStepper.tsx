@@ -68,12 +68,12 @@ export function PrepStepper({
             >
               <div
                 data-testid={`stepper-segment-${step}`}
-                className={`h-2 rounded-pill transition-all ${bg} group-hover:opacity-80 group-focus-visible:ring-2 group-focus-visible:ring-orange-500 group-focus-visible:ring-offset-2`}
+                className={`h-3 rounded-pill transition-all md:h-2 ${bg} group-hover:opacity-80 group-focus-visible:ring-2 group-focus-visible:ring-orange-500 group-focus-visible:ring-offset-2`}
               />
               {isCurrent && (
                 <span
                   aria-hidden
-                  className="absolute right-0 top-1 h-4 w-4 -translate-y-1/2 rounded-full border-[3px] border-white bg-orange-500 shadow-[0_0_0_4px_rgba(241,90,36,0.18)]"
+                  className="absolute right-0 top-1.5 h-4 w-4 -translate-y-1/2 rounded-full border-[3px] border-white bg-orange-500 shadow-[0_0_0_4px_rgba(241,90,36,0.18)] md:top-1"
                 />
               )}
               <span
