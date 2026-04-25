@@ -39,7 +39,7 @@ export default async function AskPage({
 
   return (
     <div className="space-y-6">
-      <SuccessBanner />
+      <SuccessBanner sessionId={id} />
       <header>
         <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-green-700">
           Passo 5 · Suas perguntas pro entrevistador
