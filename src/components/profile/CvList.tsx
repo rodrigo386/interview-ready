@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { mergeCvs } from "@/lib/profile/cv-merge";
 import type { AiRewriteRow, UploadedCvRow } from "@/lib/profile/types";
@@ -34,9 +35,9 @@ export async function CvList() {
     return (
       <p className="rounded-md border border-dashed border-border p-6 text-center text-sm text-text-secondary">
         Você ainda não tem CVs.{" "}
-        <a href="/prep/new" className="text-brand-600 underline">
+        <Link href="/prep/new" className="text-brand-600 underline">
           Criar meu primeiro prep
-        </a>
+        </Link>
         .
       </p>
     );
