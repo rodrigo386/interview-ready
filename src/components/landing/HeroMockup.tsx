@@ -9,55 +9,55 @@ const QUESTIONS = [
 export function HeroMockup() {
   return (
     <div aria-hidden className="relative mx-auto mt-14 w-full max-w-3xl">
-      <div className="absolute -inset-x-6 -top-3 -bottom-3 rounded-3xl bg-gradient-to-br from-zinc-900 to-zinc-950" />
+      <div className="absolute -inset-x-6 -top-3 -bottom-3 rounded-3xl bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-zinc-900 dark:to-zinc-950" />
 
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-[#15161B] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
-        <div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900/40 px-4 py-2.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
-          <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
-          <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
-          <span className="ml-3 truncate text-xs text-zinc-500">
+      <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-bg shadow-[0_30px_80px_-20px_rgba(0,0,0,0.18)] dark:border-zinc-800">
+        <div className="flex items-center gap-2 border-b border-neutral-200 bg-neutral-50/60 px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <span className="h-2.5 w-2.5 rounded-full bg-neutral-300 dark:bg-zinc-700" />
+          <span className="h-2.5 w-2.5 rounded-full bg-neutral-300 dark:bg-zinc-700" />
+          <span className="h-2.5 w-2.5 rounded-full bg-neutral-300 dark:bg-zinc-700" />
+          <span className="ml-3 truncate text-xs text-text-tertiary">
             prepavaga.com.br/prep/exemplo
           </span>
         </div>
 
         <div className="grid gap-0 md:grid-cols-[1.05fr_1fr]">
-          <div className="border-b border-zinc-800 p-5 md:border-b-0 md:border-r">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+          <div className="border-b border-neutral-200 p-5 md:border-b-0 md:border-r dark:border-zinc-800">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
               O que você manda
             </p>
 
-            <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+            <div className="mt-3 rounded-lg border border-neutral-200 bg-bg p-3 dark:border-zinc-800">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-800 text-[10px] font-bold text-zinc-300">
+                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-neutral-100 text-[10px] font-bold text-text-secondary dark:bg-zinc-800 dark:text-zinc-300">
                   PDF
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-zinc-200">
+                  <p className="truncate text-xs font-medium text-text-primary">
                     seu-curriculo.pdf
                   </p>
-                  <p className="text-[10px] text-zinc-500">2 páginas · 184 KB</p>
+                  <p className="text-[10px] text-text-tertiary">2 páginas · 184 KB</p>
                 </div>
-                <span className="text-[10px] text-zinc-500">✓</span>
+                <span className="text-[10px] text-text-tertiary">✓</span>
               </div>
             </div>
 
-            <div className="mt-2.5 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+            <div className="mt-2.5 rounded-lg border border-neutral-200 bg-bg p-3 dark:border-zinc-800">
               <div className="flex items-center gap-2.5">
-                <span aria-hidden className="text-zinc-500">🔗</span>
+                <span aria-hidden className="text-text-tertiary">🔗</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-zinc-200">
+                  <p className="truncate text-xs font-medium text-text-primary">
                     techcorp.com/careers/123
                   </p>
-                  <p className="text-[10px] text-zinc-500">
+                  <p className="text-[10px] text-text-tertiary">
                     Gerente de Operações Sênior · Pleno → Sênior
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="mt-5 flex items-center gap-3 text-[10px] text-zinc-500">
-              <span className="motion-safe:animate-[pulseDot_1.6s_ease-in-out_infinite]">●</span>
+            <div className="mt-5 flex items-center gap-3 text-[10px] text-text-tertiary">
+              <span className="text-brand-600 motion-safe:animate-[pulseDot_1.6s_ease-in-out_infinite]">●</span>
               <span>Lendo CV · Pesquisando empresa · Cruzando requisitos…</span>
             </div>
 
@@ -77,7 +77,7 @@ export function HeroMockup() {
                   <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[8px] font-bold text-white">
                     ✓
                   </span>
-                  <span className="text-[11px] text-zinc-300">{s.label}</span>
+                  <span className="text-[11px] text-text-secondary">{s.label}</span>
                 </div>
               ))}
             </div>
@@ -85,30 +85,30 @@ export function HeroMockup() {
 
           <div className="p-5">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
                 O que você recebe
               </p>
-              <span className="rounded-full bg-brand-600/15 px-2 py-0.5 text-[10px] font-semibold text-brand-500">
+              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-500">
                 Pronto em 18 min
               </span>
             </div>
 
-            <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
-              <p className="text-xs font-semibold text-zinc-100">
+            <div className="mt-3 rounded-lg border border-neutral-200 bg-bg p-3 dark:border-zinc-800">
+              <p className="text-xs font-semibold text-text-primary">
                 TechCorp · Gerente de Operações Sênior
               </p>
-              <p className="mt-0.5 text-[10px] text-zinc-500">
+              <p className="mt-0.5 text-[10px] text-text-tertiary">
                 Dossiê de preparação · 5 etapas · 18 min de leitura
               </p>
 
               <div className="mt-3 flex items-center gap-3">
                 <Gauge value={91} />
                 <div className="text-[11px]">
-                  <p className="font-semibold text-zinc-200">ATS Score</p>
-                  <p className="text-zinc-500">
+                  <p className="font-semibold text-text-primary">ATS Score</p>
+                  <p className="text-text-tertiary">
                     Seu CV vs. essa vaga ·{" "}
-                    <span className="text-zinc-400 line-through">72</span>{" "}
-                    <span className="font-semibold text-emerald-400">→ 91</span>
+                    <span className="line-through">72</span>{" "}
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">→ 91</span>
                   </p>
                 </div>
               </div>
@@ -118,18 +118,18 @@ export function HeroMockup() {
               {QUESTIONS.map((q, i) => (
                 <li
                   key={q}
-                  className="relative flex items-start gap-2.5 overflow-hidden rounded-md border border-zinc-800 bg-zinc-900/30 px-2.5 py-2"
+                  className="relative flex items-start gap-2.5 overflow-hidden rounded-md border border-neutral-200 bg-bg px-2.5 py-2 dark:border-zinc-800"
                 >
-                  <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-600/20 text-[9px] font-bold text-brand-500">
+                  <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[9px] font-bold text-brand-700 dark:bg-brand-900/30 dark:text-brand-500">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-200">{q}</span>
+                  <span className="min-w-0 flex-1 truncate text-[11px] text-text-primary">{q}</span>
                   <span
                     aria-hidden
                     className="pointer-events-none absolute inset-y-0 -left-full w-full motion-safe:animate-[sweep_8s_ease-in-out_infinite]"
                     style={{
                       background:
-                        "linear-gradient(90deg, transparent 0%, rgba(234,88,12,0.18) 50%, transparent 100%)",
+                        "linear-gradient(90deg, transparent 0%, rgba(234,88,12,0.16) 50%, transparent 100%)",
                       animationDelay: `${i * 0.6}s`,
                     }}
                   />
@@ -137,9 +137,9 @@ export function HeroMockup() {
               ))}
             </ul>
 
-            <div className="mt-3 flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-[10px] text-zinc-500">
+            <div className="mt-3 flex items-center justify-between rounded-md border border-neutral-200 bg-bg px-3 py-2 text-[10px] text-text-tertiary dark:border-zinc-800">
               <span>Visão geral · ATS · Prováveis · Aprofundamento · Você pergunta</span>
-              <span className="text-emerald-400">● online</span>
+              <span className="text-emerald-600 dark:text-emerald-400">● online</span>
             </div>
           </div>
         </div>
@@ -180,7 +180,7 @@ function Gauge({ value }: { value: number }) {
           r={radius}
           fill="none"
           strokeWidth="6"
-          className="stroke-zinc-800"
+          className="stroke-neutral-200 dark:stroke-zinc-800"
         />
         <circle
           cx="40"
@@ -194,7 +194,7 @@ function Gauge({ value }: { value: number }) {
           className="stroke-emerald-500 motion-safe:animate-[gaugeFill_4s_ease-out_infinite]"
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-base font-semibold text-zinc-100">
+      <span className="absolute inset-0 flex items-center justify-center text-base font-semibold text-text-primary">
         {value}
       </span>
     </div>
