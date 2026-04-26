@@ -19,13 +19,22 @@ export default function TermsPage() {
 
       <Section number="1." title="Quem somos">
         <p>
-          A PrepaVAGA é operada pela <strong>IAgentics</strong>, empresa com sede no Brasil, que
-          oferece um software como serviço (SaaS) para gerar dossiês personalizados de preparação
+          A PrepaVAGA é operada pela <strong className="text-text-primary">PROAICIRCLE
+          CONSULTORIA EMPRESARIAL LTDA</strong> (nome fantasia: <em>Pro AI Circle</em>),
+          inscrita no CNPJ sob o nº <strong className="text-text-primary">62.805.016/0001-29</strong>,
+          com sede na Rua Pais Leme, 215, Conjunto 1713, Pinheiros, São Paulo/SP, CEP 05.424-150.
+        </p>
+        <p>
+          Oferecemos um software como serviço (SaaS) que gera dossiês personalizados de preparação
           para entrevistas, combinando inteligência artificial, análise de currículos e pesquisa
           pública sobre empresas.
         </p>
         <p>
-          Para falar com a gente: <a className="text-brand-600 underline-offset-4 hover:underline" href="mailto:contato@prepavaga.com.br">contato@prepavaga.com.br</a>.
+          Para falar com a gente:{" "}
+          <a className="text-brand-600 underline-offset-4 hover:underline" href="mailto:contato@prepavaga.com.br">
+            contato@prepavaga.com.br
+          </a>
+          .
         </p>
       </Section>
 
@@ -162,11 +171,11 @@ export default function TermsPage() {
 
       <Section number="9." title="Limitação de responsabilidade">
         <p>
-          Na máxima extensão permitida pela lei, a PrepaVAGA e a IAgentics não respondem por: (i)
-          decisões de contratação tomadas por terceiros; (ii) eventuais imprecisões em dados
-          gerados pela IA; (iii) indisponibilidade temporária do serviço por manutenção, falha de
-          terceiros (Asaas, Supabase, Google) ou força maior; (iv) danos indiretos, lucros
-          cessantes ou perda de oportunidade.
+          Na máxima extensão permitida pela lei, a PrepaVAGA e a PROAICIRCLE Ltda não respondem
+          por: (i) decisões de contratação tomadas por terceiros; (ii) eventuais imprecisões em
+          dados gerados pela IA; (iii) indisponibilidade temporária do serviço por manutenção,
+          falha de terceiros (Asaas, Supabase, Google) ou força maior; (iv) danos indiretos,
+          lucros cessantes ou perda de oportunidade.
         </p>
         <p>
           Em qualquer hipótese, nossa responsabilidade total fica limitada ao valor pago por você
@@ -193,8 +202,9 @@ export default function TermsPage() {
           Dados (LGPD).
         </p>
         <p>
-          Fica eleito o foro da comarca da sede da IAgentics para dirimir eventuais controvérsias,
-          ressalvado o direito do consumidor de propor ação em seu próprio domicílio.
+          Fica eleito o <strong className="text-text-primary">Foro Central da Comarca de São
+          Paulo/SP</strong> para dirimir eventuais controvérsias, ressalvado o direito do
+          consumidor de propor ação em seu próprio domicílio.
         </p>
       </Section>
 

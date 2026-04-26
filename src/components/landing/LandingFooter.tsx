@@ -45,11 +45,11 @@ export function LandingFooter() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-neutral-200 pt-6 text-xs text-text-tertiary md:flex-row md:items-center dark:border-zinc-800">
           <p>
-            © {year} PrepaVAGA · IAgentics · Feito com{" "}
+            © {year} PrepaVAGA · operado por PROAICIRCLE Ltda · CNPJ 62.805.016/0001-29 · Feito com{" "}
             <span aria-hidden className="text-brand-600">
               ♥
             </span>{" "}
-            no Brasil.
+            em São Paulo.
           </p>
           <p className="font-medium">prepavaga.com.br</p>
         </div>

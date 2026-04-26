@@ -140,6 +140,11 @@ export default function LgpdPage() {
           O DPO é a pessoa responsável por receber e responder às suas solicitações LGPD.
         </p>
         <p>
+          Controlador: <strong className="text-text-primary">PROAICIRCLE CONSULTORIA EMPRESARIAL
+          LTDA</strong> · CNPJ 62.805.016/0001-29 · Rua Pais Leme, 215, Conj. 1713, Pinheiros,
+          São Paulo/SP, CEP 05.424-150.
+        </p>
+        <p>
           E-mail:{" "}
           <a className="text-brand-600 underline-offset-4 hover:underline" href="mailto:privacidade@prepavaga.com.br">
             privacidade@prepavaga.com.br

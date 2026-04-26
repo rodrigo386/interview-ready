@@ -19,9 +19,15 @@ export default function PrivacyPage() {
 
       <Section number="1." title="Quem é o controlador dos seus dados">
         <p>
-          A <strong className="text-text-primary">IAgentics</strong> é a controladora dos dados
-          pessoais coletados pela PrepaVAGA. Para exercer seus direitos LGPD ou tirar dúvidas sobre
-          privacidade, fale com nosso encarregado pela proteção de dados (DPO):{" "}
+          A controladora dos dados pessoais coletados pela PrepaVAGA é a{" "}
+          <strong className="text-text-primary">PROAICIRCLE CONSULTORIA EMPRESARIAL LTDA</strong>
+          {" "}(nome fantasia: <em>Pro AI Circle</em>), CNPJ{" "}
+          <strong className="text-text-primary">62.805.016/0001-29</strong>, com sede na Rua Pais
+          Leme, 215, Conjunto 1713, Pinheiros, São Paulo/SP, CEP 05.424-150.
+        </p>
+        <p>
+          Para exercer seus direitos LGPD ou tirar dúvidas sobre privacidade, fale com nosso
+          encarregado pela proteção de dados (DPO):{" "}
           <a className="text-brand-600 underline-offset-4 hover:underline" href="mailto:privacidade@prepavaga.com.br">
             privacidade@prepavaga.com.br
           </a>
