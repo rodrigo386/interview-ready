@@ -25,7 +25,15 @@ export const metadata: Metadata = {
     title: "PrepaVAGA · Seu coach de carreira com IA",
     description:
       "Dossiê completo para sua próxima entrevista em minutos. Pesquisa da empresa, CV reescrito e roteiros personalizados. A primeira prep é grátis.",
-    images: ["/brand/og-image.png"],
+    type: "website",
+    locale: "pt_BR",
+    siteName: "PrepaVAGA",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PrepaVAGA · Seu coach de carreira com IA",
+    description:
+      "Dossiê completo para sua próxima entrevista em minutos. Pesquisa da empresa, CV reescrito e roteiros personalizados. A primeira prep é grátis.",
   },
 };
 
