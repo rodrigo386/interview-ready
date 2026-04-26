@@ -40,7 +40,7 @@ export function Hero() {
             }
           >
             <p>
-              Cole o link da vaga e seu CV. Em 20 minutos, você recebe um dossiê personalizado:
+              Cole o link da vaga e seu CV. Em minutos, você recebe um dossiê personalizado:
               empresa pesquisada em tempo real, CV reescrito pra ATS, e roteiros prontos pra cada
               pergunta da entrevista.
             </p>
