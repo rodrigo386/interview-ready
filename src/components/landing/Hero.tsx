@@ -130,85 +130,185 @@ function BackdropPattern() {
   );
 }
 
+type CvSpec = {
+  pos: string;
+  rotate: string;
+  accent: "brand" | "neutral";
+  size: "sm" | "md" | "lg";
+  float: "A" | "B" | "C" | "D" | "E";
+  duration: string;
+  delay: string;
+  enter: string;
+};
+
+const CVS: CvSpec[] = [
+  {
+    pos: "left-[3%] top-[18%]",
+    rotate: "-rotate-[14deg]",
+    accent: "brand",
+    size: "sm",
+    float: "A",
+    duration: "8s",
+    delay: "-2s",
+    enter: "0.1s",
+  },
+  {
+    pos: "left-[8%] top-[44%]",
+    rotate: "-rotate-[8deg]",
+    accent: "brand",
+    size: "md",
+    float: "B",
+    duration: "7s",
+    delay: "-1s",
+    enter: "0.25s",
+  },
+  {
+    pos: "left-[13%] top-[70%]",
+    rotate: "rotate-[6deg]",
+    accent: "neutral",
+    size: "sm",
+    float: "C",
+    duration: "9s",
+    delay: "-3s",
+    enter: "0.4s",
+  },
+  {
+    pos: "right-[4%] top-[14%]",
+    rotate: "rotate-[12deg]",
+    accent: "neutral",
+    size: "sm",
+    float: "D",
+    duration: "8.5s",
+    delay: "-1.5s",
+    enter: "0.55s",
+  },
+  {
+    pos: "right-[8%] top-[34%]",
+    rotate: "rotate-[7deg]",
+    accent: "brand",
+    size: "md",
+    float: "E",
+    duration: "7.5s",
+    delay: "0s",
+    enter: "0.35s",
+  },
+  {
+    pos: "right-[3%] top-[58%]",
+    rotate: "-rotate-[5deg]",
+    accent: "brand",
+    size: "lg",
+    float: "A",
+    duration: "10s",
+    delay: "-4s",
+    enter: "0.6s",
+  },
+  {
+    pos: "right-[16%] top-[78%]",
+    rotate: "rotate-[3deg]",
+    accent: "neutral",
+    size: "sm",
+    float: "C",
+    duration: "9.5s",
+    delay: "-2.5s",
+    enter: "0.75s",
+  },
+  {
+    pos: "left-[18%] top-[10%]",
+    rotate: "rotate-[18deg]",
+    accent: "neutral",
+    size: "sm",
+    float: "D",
+    duration: "11s",
+    delay: "-3.5s",
+    enter: "0.85s",
+  },
+];
+
 function FlyingCvs() {
   return (
     <>
-      <MiniCv
-        className="left-[5%] top-[44%] motion-safe:animate-[cvFloatLeft_7s_ease-in-out_infinite,cvIn_1s_ease-out_0.2s_both] md:block"
-        rotate="-rotate-[10deg]"
-        accent="brand"
-      />
-      <MiniCv
-        className="right-[6%] top-[26%] motion-safe:animate-[cvFloatRight_8s_ease-in-out_infinite,cvIn_1s_ease-out_0.4s_both] md:block"
-        rotate="rotate-[8deg]"
-        accent="neutral"
-      />
-      <MiniCv
-        className="right-[14%] top-[60%] motion-safe:animate-[cvFloatMid_9s_ease-in-out_infinite,cvIn_1s_ease-out_0.7s_both] md:block"
-        rotate="rotate-[-4deg]"
-        accent="brand"
-        size="sm"
-      />
+      {CVS.map((cv, i) => (
+        <MiniCv key={i} spec={cv} />
+      ))}
       <style>{`
         @keyframes cvIn {
-          0% { transform: translateY(24px) scale(0.92); opacity: 0; }
+          0% { transform: translateY(28px) scale(0.9); opacity: 0; }
           100% { transform: translateY(0) scale(1); opacity: 1; }
         }
-        @keyframes cvFloatLeft {
-          0%, 100% { transform: translateY(0) rotate(-10deg); }
-          50% { transform: translateY(-14px) rotate(-7deg); }
+        @keyframes cvFloatA {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(6px, -16px); }
         }
-        @keyframes cvFloatRight {
-          0%, 100% { transform: translateY(0) rotate(8deg); }
-          50% { transform: translateY(-18px) rotate(11deg); }
+        @keyframes cvFloatB {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-8px, -14px); }
         }
-        @keyframes cvFloatMid {
-          0%, 100% { transform: translateY(0) rotate(-4deg); }
-          50% { transform: translateY(-10px) rotate(-1deg); }
+        @keyframes cvFloatC {
+          0%, 100% { transform: translate(0, 0); }
+          33% { transform: translate(10px, -10px); }
+          66% { transform: translate(-4px, -18px); }
+        }
+        @keyframes cvFloatD {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-12px, -22px); }
+        }
+        @keyframes cvFloatE {
+          0%, 100% { transform: translate(0, 0); }
+          25% { transform: translate(-6px, -8px); }
+          75% { transform: translate(8px, -16px); }
         }
       `}</style>
     </>
   );
 }
 
-function MiniCv({
-  className,
-  rotate,
-  accent,
-  size = "md",
-}: {
-  className: string;
-  rotate: string;
-  accent: "brand" | "neutral";
-  size?: "sm" | "md";
-}) {
-  const dims = size === "sm" ? "w-14 h-[4.5rem]" : "w-16 h-[5.5rem]";
-  const avatarBg = accent === "brand" ? "bg-brand-600" : "bg-neutral-300";
+function MiniCv({ spec }: { spec: CvSpec }) {
+  const dims =
+    spec.size === "sm"
+      ? "w-12 h-[3.75rem]"
+      : spec.size === "lg"
+        ? "w-[4.5rem] h-[6rem]"
+        : "w-16 h-[5.25rem]";
+  const avatarBg = spec.accent === "brand" ? "bg-brand-600" : "bg-neutral-300";
   return (
     <div
       aria-hidden
       className={
-        "pointer-events-none absolute hidden rounded-md border border-neutral-200 bg-white p-1.5 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.18)] dark:border-zinc-700 dark:bg-zinc-900 " +
+        "pointer-events-none absolute hidden rounded-md border border-neutral-200 bg-white p-1.5 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.18)] motion-safe:opacity-0 motion-safe:animate-[cvIn_1s_ease-out_both] dark:border-zinc-700 dark:bg-zinc-900 md:block " +
         dims +
         " " +
-        rotate +
+        spec.rotate +
         " " +
-        className
+        spec.pos
       }
+      style={{
+        animationDelay: spec.enter,
+      }}
     >
-      <div className="flex items-center gap-1">
-        <span className={`h-2.5 w-2.5 rounded-full ${avatarBg}`} />
-        <div className="flex-1 space-y-0.5">
-          <span className="block h-[3px] w-full rounded-full bg-neutral-300 dark:bg-zinc-700" />
-          <span className="block h-[2px] w-3/4 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+      <div
+        className="h-full motion-safe:animate-[cvFloat_7s_ease-in-out_infinite]"
+        style={{
+          animationName: `cvFloat${spec.float}`,
+          animationDuration: spec.duration,
+          animationDelay: spec.delay,
+          animationIterationCount: "infinite",
+          animationTimingFunction: "ease-in-out",
+        }}
+      >
+        <div className="flex items-center gap-1">
+          <span className={`h-2.5 w-2.5 rounded-full ${avatarBg}`} />
+          <div className="flex-1 space-y-0.5">
+            <span className="block h-[3px] w-full rounded-full bg-neutral-300 dark:bg-zinc-700" />
+            <span className="block h-[2px] w-3/4 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+          </div>
         </div>
-      </div>
-      <div className="mt-1.5 space-y-1">
-        <span className="block h-[2px] w-full rounded-full bg-neutral-200 dark:bg-zinc-800" />
-        <span className="block h-[2px] w-5/6 rounded-full bg-neutral-200 dark:bg-zinc-800" />
-        <span className="block h-[2px] w-4/6 rounded-full bg-neutral-200 dark:bg-zinc-800" />
-        <span className="block h-[2px] w-full rounded-full bg-neutral-200 dark:bg-zinc-800" />
-        <span className="block h-[2px] w-3/5 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+        <div className="mt-1.5 space-y-1">
+          <span className="block h-[2px] w-full rounded-full bg-neutral-200 dark:bg-zinc-800" />
+          <span className="block h-[2px] w-5/6 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+          <span className="block h-[2px] w-4/6 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+          <span className="block h-[2px] w-full rounded-full bg-neutral-200 dark:bg-zinc-800" />
+          <span className="block h-[2px] w-3/5 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+        </div>
       </div>
     </div>
   );
