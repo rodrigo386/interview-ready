@@ -35,6 +35,10 @@ Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-25.
 | Deploy | Railway (Dockerfile, Node 20 Alpine, `node server.js`) |
 | Hosting | Railway service `facccb47-595b-4fd5-8272-dd54354043be` |
 
+### Email transacional
+
+Auth emails (confirmação, magic link, reset de senha) saem via SMTP custom configurado em **Authentication → Emails → SMTP Settings** do painel Supabase. Recomendamos Resend (free tier 3k/mês). Templates PT-BR prontos pra colar e runbook completo em `docs/email-setup.md`. Sem SMTP custom, o default do Supabase é rate-limited (~3/h) e cai em spam.
+
 ### Rate limiting
 
 Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyIntel, fetchJdFromUrl) passam por `rateLimit()` em `src/lib/ratelimit.ts` (Upstash Ratelimit + Redis, sliding window). Limites por usuário: createPrep 5/h, ATS/CV/intel 10/h, fetchJd 30/h. Sem `UPSTASH_REDIS_REST_URL`+`UPSTASH_REDIS_REST_TOKEN`, o helper falha aberto (não bloqueia) — evita travar a app se Upstash cair.
