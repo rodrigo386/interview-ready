@@ -2,17 +2,17 @@ const STEPS = [
   {
     number: "01",
     title: "Você manda CV + link da vaga",
-    body: "Upload do PDF e cole o link. Gupy, LinkedIn, Catho, Infojobs — qualquer lugar.",
+    body: "Upload do PDF, ou cole o texto. Link de Gupy, LinkedIn, Catho — extraímos a descrição completa.",
   },
   {
     number: "02",
-    title: "Nossa IA faz o trabalho de um coach",
-    body: "Lemos seu CV linha por linha, pesquisamos a empresa, cruzamos com os requisitos da vaga e geramos os roteiros com sua história.",
+    title: "A IA faz o trabalho do coach",
+    body: "Lemos seu CV, pesquisamos a empresa em tempo real, cruzamos requisitos e geramos roteiros usando sua história.",
   },
   {
     number: "03",
-    title: "Você recebe seu dossiê em 20 minutos",
-    body: "PDF pronto para ler no celular ou imprimir. Volte ao painel quantas vezes quiser por 30 dias.",
+    title: "Dossiê pronto em 20 minutos",
+    body: "5 telas no painel ou PDF pra ler offline. Volte quantas vezes quiser por 30 dias.",
   },
 ];
 
@@ -20,22 +20,25 @@ export function HowItWorks() {
   return (
     <section
       id="como-funciona"
-      className="bg-surface py-20 scroll-mt-20"
+      className="border-t border-neutral-200 bg-bg py-20 scroll-mt-20 md:py-24 dark:border-zinc-800"
     >
       <div className="mx-auto max-w-6xl px-6">
-        <h2 className="text-center text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
-          Como funciona
-        </h2>
-        <div className="mt-14 grid gap-10 md:grid-cols-3">
+        <div className="max-w-2xl">
+          <p className="text-sm font-semibold text-brand-600">Como funciona</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
+            Três passos. Você no controle.
+          </h2>
+        </div>
+
+        <div className="mt-12 grid gap-4 md:grid-cols-3">
           {STEPS.map((s) => (
-            <div key={s.number}>
-              <div className="text-5xl font-bold text-brand-600">{s.number}</div>
-              <h3 className="mt-4 text-xl font-semibold text-text-primary">
-                {s.title}
-              </h3>
-              <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-                {s.body}
-              </p>
+            <div
+              key={s.number}
+              className="rounded-xl border border-neutral-200 bg-bg p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-zinc-800"
+            >
+              <div className="text-3xl font-semibold text-brand-600">{s.number}</div>
+              <h3 className="mt-4 text-lg font-semibold text-text-primary">{s.title}</h3>
+              <p className="mt-2 text-sm leading-[1.55] text-text-secondary">{s.body}</p>
             </div>
           ))}
         </div>

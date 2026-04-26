@@ -2,11 +2,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { Hero } from "@/components/landing/Hero";
-import { Comparison } from "@/components/landing/Comparison";
+import { UseCases } from "@/components/landing/UseCases";
 import { HowItWorks } from "@/components/landing/HowItWorks";
-import { WhatYouGet } from "@/components/landing/WhatYouGet";
+import { Features } from "@/components/landing/Features";
 import { Founder } from "@/components/landing/Founder";
 import { FAQ } from "@/components/landing/FAQ";
+import { PricingChips } from "@/components/landing/PricingChips";
 import { FinalCta } from "@/components/landing/FinalCta";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
@@ -17,7 +18,6 @@ export default async function LandingPage() {
     const { data } = await supabase.auth.getUser();
     user = data.user;
   } catch {
-    // Unauthenticated state — fall through to landing
     user = null;
   }
 
@@ -28,12 +28,13 @@ export default async function LandingPage() {
   return (
     <>
       <LandingNavbar />
-      <main>
+      <main className="bg-bg">
         <Hero />
-        <Comparison />
+        <UseCases />
         <HowItWorks />
-        <WhatYouGet />
+        <Features />
         <Founder />
+        <PricingChips />
         <FAQ />
         <FinalCta />
       </main>
