@@ -34,7 +34,7 @@ export function LandingFooter() {
           <div>
             <Logo variant="horizontal" size={28} />
             <p className="mt-4 max-w-xs text-sm leading-[1.55] text-text-secondary">
-              Coach de carreira com IA. Em 20 minutos, dossiê completo da sua próxima vaga.
+              Coach de carreira com IA. Em minutos, dossiê completo da sua próxima vaga.
             </p>
           </div>
           <FooterColumn title="Produto" links={PRODUTO} />
@@ -45,7 +45,7 @@ export function LandingFooter() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-neutral-200 pt-6 text-xs text-text-tertiary md:flex-row md:items-center dark:border-zinc-800">
           <p>
-            © {year} PrepaVAGA · IAgentics — Feito com{" "}
+            © {year} PrepaVAGA · IAgentics · Feito com{" "}
             <span aria-hidden className="text-brand-600">
               ♥
             </span>{" "}

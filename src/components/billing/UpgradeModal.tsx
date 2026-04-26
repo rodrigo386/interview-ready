@@ -76,7 +76,7 @@ export function UpgradeModal({
             <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-ink-3">
               Avulso
             </p>
-            <h4 className="mt-1 text-lg font-bold text-ink">1 prep — R$ 10</h4>
+            <h4 className="mt-1 text-lg font-bold text-ink">1 prep · R$ 10</h4>
             <p className="text-sm text-ink-2">Pague só este prep, sem mensalidade.</p>
             <Button
               type="button"

@@ -20,7 +20,7 @@ export function PlanBadge({
     return (
       <Link
         href="/profile/account"
-        aria-label="Plano Pro — gerenciar assinatura"
+        aria-label="Plano Pro, gerenciar assinatura"
         className="inline-flex items-center gap-1.5 rounded-pill border border-green-soft bg-green-soft px-2.5 py-1 text-xs font-semibold text-green-700 transition hover:bg-green-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300"
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
@@ -37,7 +37,7 @@ export function PlanBadge({
   return (
     <Link
       href="/pricing"
-      aria-label={`Plano Free — ${remaining} prep${remaining === 1 ? "" : "s"} restante${remaining === 1 ? "" : "s"}. Ver planos.`}
+      aria-label={`Plano Free, ${remaining} prep${remaining === 1 ? "" : "s"} restante${remaining === 1 ? "" : "s"}. Ver planos.`}
       className="inline-flex items-center gap-1.5 rounded-pill border border-orange-soft bg-orange-soft px-2.5 py-1 text-xs font-semibold text-orange-700 transition hover:bg-orange-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300"
     >
       <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500" />

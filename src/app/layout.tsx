@@ -18,13 +18,13 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "PrepaVaga — Seu coach de carreira com IA",
+  title: "PrepaVAGA · Seu coach de carreira com IA",
   description:
-    "Dossiê completo para sua próxima entrevista em 20 minutos. Pesquisa da empresa, CV reescrito e roteiros personalizados. Por R$ 49.",
+    "Dossiê completo para sua próxima entrevista em minutos. Pesquisa da empresa, CV reescrito e roteiros personalizados. A primeira prep é grátis.",
   openGraph: {
-    title: "PrepaVaga — Seu coach de carreira com IA",
+    title: "PrepaVAGA · Seu coach de carreira com IA",
     description:
-      "Dossiê completo para sua próxima entrevista em 20 minutos. Pesquisa da empresa, CV reescrito e roteiros personalizados. Por R$ 49.",
+      "Dossiê completo para sua próxima entrevista em minutos. Pesquisa da empresa, CV reescrito e roteiros personalizados. A primeira prep é grátis.",
     images: ["/brand/og-image.png"],
   },
 };

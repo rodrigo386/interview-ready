@@ -114,7 +114,7 @@ export function JobDescriptionPicker({
           </div>
           <p className="text-xs text-ink-3">
             Funciona melhor com páginas públicas (sem login). LinkedIn e Gupy
-            podem falhar — se isso acontecer, use &quot;Colar texto&quot;.
+            podem falhar. Se isso acontecer, use &quot;Colar texto&quot;.
           </p>
           {error && (
             <p role="alert" className="text-sm text-red-500">

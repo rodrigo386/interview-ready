@@ -54,10 +54,10 @@ export function PrepStepper({
             ? "bg-orange-500"
             : "bg-line";
           const label = isCompleted
-            ? `Etapa ${step} concluída — ${STEP_LABELS[step]}`
+            ? `Etapa ${step} concluída · ${STEP_LABELS[step]}`
             : isCurrent
-            ? `Etapa ${step} atual — ${STEP_LABELS[step]}`
-            : `Ir para etapa ${step} — ${STEP_LABELS[step]}`;
+            ? `Etapa ${step} atual · ${STEP_LABELS[step]}`
+            : `Ir para etapa ${step} · ${STEP_LABELS[step]}`;
           return (
             <Link
               key={step}

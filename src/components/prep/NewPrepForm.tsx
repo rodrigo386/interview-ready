@@ -83,7 +83,7 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
             </p>
             <p className="mt-1 text-ink-2">
               Encontramos um prep idêntico pra <strong>{state.duplicate.companyName}</strong>
-              {" — "}
+              {" · "}
               {state.duplicate.jobTitle}. Reaproveite o existente em vez de gerar de novo.
             </p>
             <Link

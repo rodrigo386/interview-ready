@@ -63,7 +63,7 @@ export function PrepCard({
           </span>
         </div>
         <span className="mt-1 text-text-tertiary" aria-hidden>
-          {open ? "–" : "+"}
+          {open ? "-" : "+"}
         </span>
       </button>
 

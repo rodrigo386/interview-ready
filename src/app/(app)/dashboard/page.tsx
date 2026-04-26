@@ -113,7 +113,7 @@ export default async function DashboardPage({
             Prepare sua primeira vaga
           </h1>
           <p className="mt-3 max-w-md text-sm text-text-secondary">
-            Em 20 minutos, você recebe o dossiê completo da vaga: empresa, CV, roteiros.
+            Em minutos, você recebe o dossiê completo da vaga: empresa, CV, roteiros.
           </p>
           <Link href="/prep/new" className="mt-8">
             <Button size="lg">Criar meu primeiro prep</Button>

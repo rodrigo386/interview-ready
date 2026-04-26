@@ -2,7 +2,7 @@ const STEPS = [
   {
     number: "01",
     title: "Você manda CV + link da vaga",
-    body: "Upload do PDF, ou cole o texto. Link de Gupy, LinkedIn, Catho — extraímos a descrição completa.",
+    body: "Upload do PDF, ou cole o texto. Link de Gupy, LinkedIn, Catho: extraímos a descrição completa.",
   },
   {
     number: "02",
@@ -11,7 +11,7 @@ const STEPS = [
   },
   {
     number: "03",
-    title: "Dossiê pronto em 20 minutos",
+    title: "Dossiê pronto em minutos",
     body: "5 telas no painel ou PDF pra ler offline. Volte quantas vezes quiser por 30 dias.",
   },
 ];

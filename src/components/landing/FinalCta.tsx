@@ -8,7 +8,7 @@ export function FinalCta() {
           Sua próxima entrevista não precisa ser por sorte.
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-base leading-[1.6] text-text-secondary">
-          Comece grátis. Sem cartão. A primeira prep sai em 20 minutos.
+          Comece grátis. Sem cartão. A primeira prep sai em minutos.
         </p>
         <div className="mt-8 flex justify-center">
           <Link

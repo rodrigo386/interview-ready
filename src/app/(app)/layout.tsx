@@ -116,7 +116,7 @@ export default async function DashboardLayout({
     <div className="min-h-screen">
       <header className="border-b border-border bg-bg">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/dashboard" aria-label="PrepaVaga — ir para o painel">
+          <Link href="/dashboard" aria-label="PrepaVAGA, ir para o painel">
             <Logo variant="horizontal" size={32} />
           </Link>
           <div className="flex items-center gap-3">

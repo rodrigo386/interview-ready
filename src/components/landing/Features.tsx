@@ -13,7 +13,7 @@ const BLOCKS: FeatureBlock[] = [
   {
     eyebrow: "01 · Inteligência sobre a empresa",
     title: "Pesquisa em tempo real, não no que o modelo lembra de 2023.",
-    body: "Notícias dos últimos 6 meses, contexto estratégico, perguntas inteligentes pra você levantar — geradas com Google Search grounding em cima da realidade atual da empresa.",
+    body: "Notícias dos últimos 6 meses, contexto estratégico e perguntas inteligentes pra você levantar, geradas com Google Search grounding em cima da realidade atual da empresa.",
     quote: "Me poupou 3 horas de Glassdoor + Google News.",
     attribution: "Rodrigo, fundador",
     visual: <CompanyIntelMock />,
@@ -28,8 +28,8 @@ const BLOCKS: FeatureBlock[] = [
   },
   {
     eyebrow: "03 · Roteiros STAR personalizados",
-    title: "15 perguntas — prováveis, difíceis, e o que o gestor vai cobrar.",
-    body: "Cada pergunta vem com estrutura STAR (Situação → Tarefa → Ação → Resultado) usando casos reais do seu CV. Não é resposta pronta — é o esqueleto pra você adaptar com naturalidade.",
+    title: "15 perguntas: prováveis, difíceis e o que o gestor vai cobrar.",
+    body: "Cada pergunta vem com estrutura STAR (Situação, Tarefa, Ação, Resultado) usando casos reais do seu CV. Não é resposta pronta. É o esqueleto pra você adaptar com naturalidade.",
     quote: "É o coach que eu queria ter tido nas minhas próprias transições.",
     attribution: "Rodrigo, fundador",
     visual: <QuestionsMock />,
@@ -79,7 +79,7 @@ export function Features() {
                       &ldquo;{b.quote}&rdquo;
                     </blockquote>
                     <figcaption className="mt-2 text-xs text-text-tertiary">
-                      — {b.attribution}
+                      {b.attribution}
                     </figcaption>
                   </figure>
                 </div>
@@ -115,7 +115,7 @@ function CompanyIntelMock() {
       </div>
       <ul className="mt-3 space-y-2.5 text-xs">
         {[
-          "Fechou rodada Series C em mar/2026 — foco LATAM",
+          "Fechou rodada Series C em mar/2026, com foco em LATAM",
           "Reestruturação no time de Operações regional",
           "Investimento em automação anunciado: R$120M",
         ].map((n) => (

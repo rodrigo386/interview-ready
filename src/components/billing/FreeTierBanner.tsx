@@ -16,7 +16,7 @@ export function FreeTierBanner({
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-orange-soft px-4 py-3 text-sm">
       <p className="text-ink-2">
-        ⚡ Plano <strong>Free</strong> —{" "}
+        ⚡ Plano <strong>Free</strong>:{" "}
         {remaining > 0
           ? `${remaining} prep${remaining === 1 ? "" : "s"} restante${remaining === 1 ? "" : "s"}.`
           : "Limite atingido."}{" "}

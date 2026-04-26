@@ -13,7 +13,7 @@ export function CvRewriteFailed({
   return (
     <div className="mt-8 rounded-md border border-red-900 bg-red-950/30 p-5">
       <h3 className="text-sm font-semibold text-red-200">
-        🎯 CV otimizado para ATS — falhou
+        🎯 CV otimizado para ATS: falhou
       </h3>
       <p className="mt-2 text-sm text-red-300">
         Algo deu errado ao gerar a reescrita. Tente novamente.

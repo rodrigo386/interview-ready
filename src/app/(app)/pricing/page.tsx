@@ -43,7 +43,7 @@ export default function PricingPage() {
             <li className="flex gap-2">
               <span aria-hidden className="text-green-700">✓</span>
               <span>
-                <strong>Preps ilimitados</strong> — quantas vagas você quiser por mês
+                <strong>Preps ilimitados</strong>: quantas vagas você quiser por mês
               </span>
             </li>
             <li className="flex gap-2">
@@ -74,7 +74,7 @@ export default function PricingPage() {
 
           <div className="mt-7">
             <CheckoutButton kind="pro_subscription">
-              Assinar Pro — R$ 30/mês
+              Assinar Pro · R$ 30/mês
             </CheckoutButton>
           </div>
           <p className="mt-2 text-[11px] text-ink-3">
@@ -102,7 +102,7 @@ export default function PricingPage() {
             <li className="flex gap-2">
               <span aria-hidden className="text-green-700">✓</span>
               <span>
-                <strong>1 prep completo</strong> — todas as 5 etapas
+                <strong>1 prep completo</strong>: todas as 5 etapas
               </span>
             </li>
             <li className="flex gap-2">
@@ -121,7 +121,7 @@ export default function PricingPage() {
 
           <div className="mt-7">
             <CheckoutButton kind="prep_purchase" variant="ghost">
-              Comprar 1 prep — R$ 10
+              Comprar 1 prep · R$ 10
             </CheckoutButton>
           </div>
           <p className="mt-2 text-[11px] text-ink-3">

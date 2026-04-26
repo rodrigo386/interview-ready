@@ -41,7 +41,7 @@ export function Hero() {
           >
             <p>
               Cole o link da vaga e seu CV. Em minutos, você recebe um dossiê personalizado:
-              empresa pesquisada em tempo real, CV reescrito pra ATS, e roteiros prontos pra cada
+              empresa pesquisada em tempo real, CV reescrito pra ATS e roteiros prontos pra cada
               pergunta da entrevista.
             </p>
           </div>

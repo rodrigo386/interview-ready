@@ -22,7 +22,7 @@ export function PrepFailed({
         </h1>
         <p className="mt-2 text-sm text-red-300">
           Algo deu errado ao chamar a IA. O botão Tentar novamente reaproveita o
-          mesmo CV e a mesma descrição da vaga — não precisa colar de novo.
+          mesmo CV e a mesma descrição da vaga. Não precisa colar de novo.
         </p>
         {errorMessage && <ErrorDetails raw={errorMessage} />}
       </div>

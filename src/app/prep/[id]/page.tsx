@@ -4,7 +4,7 @@ import { companyIntelSchema } from "@/lib/ai/schemas";
 import { Tela1Visual } from "@/components/prep/Tela1Visual";
 
 export const metadata: Metadata = {
-  title: "Prep — PrepaVaga",
+  title: "Prep · PrepaVAGA",
 };
 
 export default async function PrepHomePage({

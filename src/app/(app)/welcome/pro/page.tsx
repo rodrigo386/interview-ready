@@ -24,12 +24,12 @@ const BENEFITS: { icon: string; title: string; body: string }[] = [
   {
     icon: "🎯",
     title: "Roteiros personalizados",
-    body: "Perguntas básicas, aprofundamento e o que você pergunta — adaptados ao seu CV e à empresa.",
+    body: "Perguntas básicas, aprofundamento e o que você pergunta, todos adaptados ao seu CV e à empresa.",
   },
   {
     icon: "📥",
     title: "Exportação em PDF",
-    body: "Leve seu prep impresso pra qualquer lugar — offline e pronto pra revisar antes da entrevista.",
+    body: "Leve seu prep impresso pra qualquer lugar: offline e pronto pra revisar antes da entrevista.",
   },
 ];
 
@@ -78,7 +78,7 @@ export default async function WelcomeProPage() {
         </p>
         {!isPro && (
           <p className="mx-auto mt-3 max-w-xl rounded-md border border-orange-soft bg-orange-soft/60 px-4 py-2 text-sm text-orange-700 dark:border-orange-900 dark:bg-orange-950/30 dark:text-orange-300">
-            Estamos confirmando seu pagamento com o Asaas — pode levar alguns segundos. Recarregue a página caso o badge ainda apareça como Free.
+            Estamos confirmando seu pagamento com o Asaas. Pode levar alguns segundos. Recarregue a página caso o badge ainda apareça como Free.
           </p>
         )}
       </div>

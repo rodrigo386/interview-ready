@@ -5,7 +5,7 @@ import { CheckoutButton } from "./CheckoutButton";
 import { CancelSubscriptionDialog } from "./CancelSubscriptionDialog";
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -21,7 +21,7 @@ export function PlanCard() {
     return (
       <div className="rounded-md border border-border p-4">
         <p className="text-sm text-text-primary">
-          Plano <strong>Pro</strong> — renova em {formatDate(data.subscriptionRenewsAt)}
+          Plano <strong>Pro</strong>. Renova em {formatDate(data.subscriptionRenewsAt)}.
         </p>
         {data.prepCredits > 0 && (
           <p className="mt-1 text-xs text-text-tertiary">
@@ -66,7 +66,7 @@ export function PlanCard() {
   return (
     <div className="rounded-md border border-border p-4">
       <p className="text-sm text-text-primary">
-        Plano <strong>Free</strong> — 1 prep a cada 30 dias.
+        Plano <strong>Free</strong>: 1 prep a cada 30 dias.
       </p>
       {data.prepCredits > 0 && (
         <p className="mt-1 text-xs text-text-tertiary">
@@ -75,8 +75,8 @@ export function PlanCard() {
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <CheckoutButton kind="pro_subscription">Assinar Pro — R$ 30/mês</CheckoutButton>
-        <CheckoutButton kind="prep_purchase" variant="ghost">Comprar 1 prep — R$ 10</CheckoutButton>
+        <CheckoutButton kind="pro_subscription">Assinar Pro · R$ 30/mês</CheckoutButton>
+        <CheckoutButton kind="prep_purchase" variant="ghost">Comprar 1 prep · R$ 10</CheckoutButton>
       </div>
     </div>
   );

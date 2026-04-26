@@ -6,7 +6,7 @@ type UseCase = {
 const ITEMS: UseCase[] = [
   {
     title: "Próxima entrevista marcada",
-    body: "Você tem dias, não semanas. Caia pronto na sala — empresa lida, CV revisado, perguntas roteirizadas.",
+    body: "Você tem dias, não semanas. Caia pronto na sala: empresa lida, CV revisado, perguntas roteirizadas.",
   },
   {
     title: "Mudança de área",
@@ -18,7 +18,7 @@ const ITEMS: UseCase[] = [
   },
   {
     title: "Volta ao mercado",
-    body: "Depois de uma pausa — maternidade, sabbatical, transição — recupere a fluência de entrevista em uma sessão.",
+    body: "Depois de uma pausa (maternidade, sabbatical, transição), recupere a fluência de entrevista em uma sessão.",
   },
   {
     title: "Primeiro emprego de impacto",

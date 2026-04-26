@@ -18,7 +18,7 @@ export function LandingNavbar() {
   return (
     <header className="sticky top-0 z-40 h-14 border-b border-neutral-200 bg-bg/85 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80">
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
-        <Link href="/" aria-label="PrepaVAGA — início" className="flex items-center">
+        <Link href="/" aria-label="PrepaVAGA, ir para o início" className="flex items-center">
           <Logo variant="horizontal" size={26} />
         </Link>
 

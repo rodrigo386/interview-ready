@@ -20,7 +20,7 @@ export function CompanyIntelSection({
         Sobre a empresa
       </h2>
       <p className="mt-1 text-sm text-text-secondary">
-        Pesquisa sobre {companyName} — use estes fatos nas suas respostas.
+        Pesquisa sobre {companyName}. Use estes fatos nas suas respostas.
       </p>
       <div className="mt-6">
         <CompanyIntelCards intel={intel} />

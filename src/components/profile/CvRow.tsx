@@ -27,7 +27,7 @@ export function CvRow({
   const [pending, startTransition] = useTransition();
 
   const isUpload = cv.origin === "upload";
-  const title = isUpload ? cv.displayName : `${cv.companyName} — ${cv.jobTitle}`;
+  const title = isUpload ? cv.displayName : `${cv.companyName} · ${cv.jobTitle}`;
   const timestamp = isUpload ? cv.createdAt : cv.updatedAt;
   const downloadHref = isUpload
     ? `/api/cv/${cv.id}/download`
