@@ -6,12 +6,15 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+      # Use staging Supabase if secrets are set; otherwise placeholders so the
+      # build doesn't fail Zod validation on env. The smoke E2E tolerates
+      # placeholder values (auth call is wrapped in try/catch on the landing).
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role' }}
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       MOCK_ANTHROPIC: "1"
     steps:
@@ -46,8 +49,12 @@ jobs:
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: E2E tests
-        run: pnpm exec playwright test
+      - name: E2E smoke (public pages, no DB needed)
+        run: pnpm exec playwright test --project=smoke
+
+      - name: E2E auth (full signup + prep flow, requires staging Supabase)
+        if: ${{ env.NEXT_PUBLIC_SUPABASE_URL != 'https://placeholder.supabase.co' }}
+        run: pnpm exec playwright test --project=auth
 
       - name: Upload Playwright report on failure
         if: failure()

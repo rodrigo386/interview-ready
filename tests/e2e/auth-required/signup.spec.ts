@@ -8,6 +8,7 @@ test("signup with email lands on dashboard empty state", async ({ page }) => {
 
   await page.getByLabel("Nome completo").fill("E2E Tester");
   await page.getByLabel("E-mail").fill(uniqueEmail);
+  await page.getByLabel(/CPF/i).fill("12345678909");
   await page.getByLabel("Senha").fill("testpassword123");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
 

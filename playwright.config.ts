@@ -14,7 +14,16 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "smoke",
+      testMatch: /smoke\/.*\.spec\.ts$/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "auth",
+      testMatch: /auth-required\/.*\.spec\.ts$/,
+      use: { ...devices["Desktop Chrome"] },
+    },
   ],
   webServer: {
     command: `pnpm exec next start -p ${PORT}`,

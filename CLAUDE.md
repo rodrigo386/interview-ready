@@ -294,7 +294,7 @@ Em ordem cronológica, mais recente embaixo:
 - **Export PDF resumo:** layout minimalista (sem cores).
 - **`@napi-rs/canvas` warnings** continuam no boot Railway (cosmético — polyfill resolve).
 - **2 lint warnings** em `src/lib/ai/prompts/section-generator.ts` — pré-existentes.
-- **E2E `prep-flow.spec.ts`** escafoldado mas precisa dev server rodando — falha em CI.
+- **E2E em CI**: smoke tests (`tests/e2e/smoke/`) rodam sempre via GitHub Actions e cobrem páginas públicas (landing, signup, login, /termos, /privacidade, /lgpd, /icon.svg, /opengraph-image). Auth flow tests (`tests/e2e/auth-required/`) só rodam quando `STAGING_SUPABASE_URL` é setada como GitHub secret — projeto Supabase staging precisa ter email confirmation **OFF**. Especificações: `pnpm test:e2e:smoke` ou `pnpm test:e2e:auth`. Test fixtures usam CPF `12345678909` (formato válido, não precisa ser real).
 - **`server-only` package** não está no `node_modules` real (Next 15 não re-exporta). Vitest aliasa pra stub vazio (`vitest.server-only-stub.ts`). Production funciona porque Next bundler resolve antes.
 
 ---
