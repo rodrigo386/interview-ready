@@ -5,7 +5,6 @@ import { Hero } from "@/components/landing/Hero";
 import { UseCases } from "@/components/landing/UseCases";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Features } from "@/components/landing/Features";
-import { Founder } from "@/components/landing/Founder";
 import { FAQ } from "@/components/landing/FAQ";
 import { PricingChips } from "@/components/landing/PricingChips";
 import { FinalCta } from "@/components/landing/FinalCta";
@@ -33,7 +32,6 @@ export default async function LandingPage() {
         <UseCases />
         <HowItWorks />
         <Features />
-        <Founder />
         <PricingChips />
         <FAQ />
         <FinalCta />

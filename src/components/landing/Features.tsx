@@ -106,18 +106,18 @@ function CompanyIntelMock() {
     <MockShell>
       <div className="flex items-center gap-2.5 border-b border-neutral-200 pb-3 dark:border-zinc-800">
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-xs font-bold text-white">
-          B
+          T
         </span>
-        <p className="text-sm font-semibold text-text-primary">Bayer S.A.</p>
+        <p className="text-sm font-semibold text-text-primary">TechCorp</p>
         <span className="ml-auto rounded-full border border-neutral-200 bg-bg px-2 py-0.5 text-[10px] text-text-tertiary dark:border-zinc-800">
           últimos 6 meses
         </span>
       </div>
       <ul className="mt-3 space-y-2.5 text-xs">
         {[
-          "Fechou aquisição em Crop Science (mar/2026)",
-          "Reestruturação no time de Procurement LATAM",
-          "Investimento em digital agriculture: R$200M anunciados",
+          "Fechou rodada Series C em mar/2026 — foco LATAM",
+          "Reestruturação no time de Operações regional",
+          "Investimento em automação anunciado: R$120M",
         ].map((n) => (
           <li key={n} className="flex items-start gap-2">
             <span aria-hidden className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-text-tertiary" />
@@ -156,7 +156,7 @@ function AtsMock() {
       <div className="mt-4 space-y-2 text-xs">
         {[
           { tag: "Crítico", body: "Adicionar 'category management' como heading", tone: "red" },
-          { tag: "Alto", body: "Quantificar resultado em R$ no projeto Bayer", tone: "yellow" },
+          { tag: "Alto", body: "Quantificar resultado em R$ no projeto da fintech", tone: "yellow" },
           { tag: "Médio", body: "Trocar 'responsável por' por 'liderou'", tone: "neutral" },
         ].map((iss) => (
           <div
@@ -207,7 +207,7 @@ function QuestionsMock() {
       </p>
       <div className="mt-4 space-y-2">
         {[
-          { label: "S", body: "Contrato global com Cargill expirando, 18% acima do mercado." },
+          { label: "S", body: "Contrato global com fornecedor estratégico, 18% acima do mercado." },
           { label: "T", body: "Renegociar sem trocar fornecedor (lock-in regulatório)." },
           { label: "A", body: "Benchmark com 4 outros, leverage volume 3-anos, MOQ flex." },
           { label: "R", body: "Save de R$14.2M no ano 1, NPS supplier mantido em 8.4." },
@@ -235,7 +235,7 @@ function AskMock() {
       </div>
       <ul className="space-y-2.5 text-xs">
         {[
-          "Como o time de Procurement se conecta com a estratégia digital de Crop Science?",
+          "Como o time de Operações se conecta com a estratégia digital da empresa?",
           "Quem foi a última pessoa a sair desse cargo? Por quê?",
           "Quais 3 KPIs eu seria cobrado nos primeiros 90 dias?",
           "Como a reestruturação anunciada afeta esse role no curto prazo?",

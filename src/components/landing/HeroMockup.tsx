@@ -1,73 +1,169 @@
+const QUESTIONS = [
+  "Como você lideraria um time de 8 pessoas em SLA crítico?",
+  "Conte uma decisão difícil que tomou com dados incompletos.",
+  "Por que sair da sua área atual agora?",
+  "Como mediria sucesso nos primeiros 90 dias?",
+  "O que sabe sobre nossa expansão para LATAM?",
+];
+
 export function HeroMockup() {
   return (
-    <div
-      aria-hidden
-      className="relative mx-auto mt-16 w-full max-w-3xl"
-    >
-      <div className="absolute -inset-x-6 -top-2 -bottom-2 rounded-3xl bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-zinc-900 dark:to-zinc-950" />
-      <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-bg shadow-[0_12px_40px_-12px_rgba(0,0,0,0.18)] dark:border-zinc-800">
-        <div className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-bg px-5 py-3 dark:border-zinc-800">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-xs font-bold text-white">
-              B
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-text-primary">
-                Bayer S.A.
-              </p>
-              <p className="truncate text-xs text-text-tertiary">
-                Procurement Manager · Pleno → Sênior
-              </p>
-            </div>
-          </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-green-soft bg-green-soft px-2.5 py-1 text-xs font-semibold text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
-            Concluído
+    <div aria-hidden className="relative mx-auto mt-14 w-full max-w-3xl">
+      <div className="absolute -inset-x-6 -top-3 -bottom-3 rounded-3xl bg-gradient-to-br from-zinc-900 to-zinc-950" />
+
+      <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-[#15161B] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+        <div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900/40 px-4 py-2.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+          <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+          <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
+          <span className="ml-3 truncate text-xs text-zinc-500">
+            prepavaga.com.br/prep/exemplo
           </span>
         </div>
 
-        <div className="grid gap-5 p-5 sm:grid-cols-[auto_1fr]">
-          <div className="flex flex-col items-center justify-center rounded-xl border border-neutral-200 px-6 py-5 dark:border-zinc-800">
-            <Gauge value={91} />
-            <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-              ATS Score
+        <div className="grid gap-0 md:grid-cols-[1.05fr_1fr]">
+          <div className="border-b border-zinc-800 p-5 md:border-b-0 md:border-r">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              O que você manda
             </p>
-            <p className="mt-1 text-xs text-text-secondary">
-              <span className="text-text-tertiary line-through">72</span>{" "}
-              <span className="font-semibold text-green-700 dark:text-green-300">→ 91</span>
-            </p>
-          </div>
 
-          <ul className="flex flex-col gap-2 text-sm">
-            {[
-              "Por que sair de compras pra estratégia agora?",
-              "Como você lidaria com um fornecedor estratégico que falhou?",
-              "Conte uma negociação que economizou >R$10M.",
-              "Como mede sucesso de um time de procurement?",
-              "O que sabe sobre o pipeline de Crop Science da Bayer?",
-            ].map((q, i) => (
-              <li
-                key={q}
-                className="flex items-start gap-3 rounded-lg border border-neutral-200 bg-bg px-3 py-2 dark:border-zinc-800"
-              >
-                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[10px] font-bold text-brand-600 dark:bg-brand-900/30">
-                  {String(i + 1).padStart(2, "0")}
+            <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-800 text-[10px] font-bold text-zinc-300">
+                  PDF
                 </span>
-                <span className="min-w-0 flex-1 truncate text-text-primary">{q}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium text-zinc-200">
+                    seu-curriculo.pdf
+                  </p>
+                  <p className="text-[10px] text-zinc-500">2 páginas · 184 KB</p>
+                </div>
+                <span className="text-[10px] text-zinc-500">✓</span>
+              </div>
+            </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50/60 px-5 py-3 text-xs text-text-tertiary dark:border-zinc-800 dark:bg-zinc-950/40">
-          <div className="flex items-center gap-3">
-            <span>5 etapas</span>
-            <span aria-hidden>·</span>
-            <span>18 min de leitura</span>
+            <div className="mt-2.5 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+              <div className="flex items-center gap-2.5">
+                <span aria-hidden className="text-zinc-500">🔗</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium text-zinc-200">
+                    techcorp.com/careers/123
+                  </p>
+                  <p className="text-[10px] text-zinc-500">
+                    Gerente de Operações Sênior · Pleno → Sênior
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center gap-3 text-[10px] text-zinc-500">
+              <span className="motion-safe:animate-[pulseDot_1.6s_ease-in-out_infinite]">●</span>
+              <span>Lendo CV · Pesquisando empresa · Cruzando requisitos…</span>
+            </div>
+
+            <div className="mt-5 grid gap-2">
+              {[
+                { label: "CV lido", delay: "0s" },
+                { label: "Notícias dos últimos 6 meses", delay: "1.2s" },
+                { label: "ATS · 91 / 100", delay: "2.4s" },
+                { label: "15 perguntas com roteiros", delay: "3.6s" },
+                { label: "Você pergunta · 8 ideias", delay: "4.8s" },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  className="flex items-center gap-2 motion-safe:opacity-0 motion-safe:animate-[stepIn_6s_ease-out_infinite]"
+                  style={{ animationDelay: s.delay }}
+                >
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[8px] font-bold text-white">
+                    ✓
+                  </span>
+                  <span className="text-[11px] text-zinc-300">{s.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <span className="font-medium text-text-secondary">prepavaga.com.br</span>
+
+          <div className="p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                O que você recebe
+              </p>
+              <span className="rounded-full bg-brand-600/15 px-2 py-0.5 text-[10px] font-semibold text-brand-500">
+                Pronto em 18 min
+              </span>
+            </div>
+
+            <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+              <p className="text-xs font-semibold text-zinc-100">
+                TechCorp · Gerente de Operações Sênior
+              </p>
+              <p className="mt-0.5 text-[10px] text-zinc-500">
+                Dossiê de preparação · 5 etapas · 18 min de leitura
+              </p>
+
+              <div className="mt-3 flex items-center gap-3">
+                <Gauge value={91} />
+                <div className="text-[11px]">
+                  <p className="font-semibold text-zinc-200">ATS Score</p>
+                  <p className="text-zinc-500">
+                    Seu CV vs. essa vaga ·{" "}
+                    <span className="text-zinc-400 line-through">72</span>{" "}
+                    <span className="font-semibold text-emerald-400">→ 91</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <ul className="mt-3 space-y-1.5">
+              {QUESTIONS.map((q, i) => (
+                <li
+                  key={q}
+                  className="relative flex items-start gap-2.5 overflow-hidden rounded-md border border-zinc-800 bg-zinc-900/30 px-2.5 py-2"
+                >
+                  <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-600/20 text-[9px] font-bold text-brand-500">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-200">{q}</span>
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 -left-full w-full motion-safe:animate-[sweep_8s_ease-in-out_infinite]"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, transparent 0%, rgba(234,88,12,0.18) 50%, transparent 100%)",
+                      animationDelay: `${i * 0.6}s`,
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-3 flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-[10px] text-zinc-500">
+              <span>Visão geral · ATS · Prováveis · Aprofundamento · Você pergunta</span>
+              <span className="text-emerald-400">● online</span>
+            </div>
+          </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes pulseDot {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
+        }
+        @keyframes stepIn {
+          0% { opacity: 0; transform: translateY(4px); }
+          8%, 80% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0.4; transform: translateY(0); }
+        }
+        @keyframes sweep {
+          0% { left: -100%; }
+          50%, 100% { left: 100%; }
+        }
+        @keyframes gaugeFill {
+          0% { stroke-dashoffset: 201.06; }
+          25%, 100% { stroke-dashoffset: 18.1; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -75,9 +171,8 @@ export function HeroMockup() {
 function Gauge({ value }: { value: number }) {
   const radius = 32;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (value / 100) * circumference;
   return (
-    <div className="relative h-20 w-20">
+    <div className="relative h-16 w-16 shrink-0">
       <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
         <circle
           cx="40"
@@ -85,7 +180,7 @@ function Gauge({ value }: { value: number }) {
           r={radius}
           fill="none"
           strokeWidth="6"
-          className="stroke-neutral-200 dark:stroke-zinc-800"
+          className="stroke-zinc-800"
         />
         <circle
           cx="40"
@@ -95,11 +190,11 @@ function Gauge({ value }: { value: number }) {
           strokeWidth="6"
           strokeLinecap="round"
           strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="stroke-green-500"
+          strokeDashoffset={circumference - (value / 100) * circumference}
+          className="stroke-emerald-500 motion-safe:animate-[gaugeFill_4s_ease-out_infinite]"
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-xl font-semibold text-text-primary">
+      <span className="absolute inset-0 flex items-center justify-center text-base font-semibold text-zinc-100">
         {value}
       </span>
     </div>
