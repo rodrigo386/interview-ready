@@ -2,16 +2,14 @@ import Link from "next/link";
 
 export function FreeTierBanner({
   prepsUsedThisMonth,
-  prepsResetAt,
   credits,
 }: {
   prepsUsedThisMonth: number;
-  prepsResetAt: string;
+  prepsResetAt?: string;
   credits: number;
 }) {
-  const resetMs = new Date(prepsResetAt).getTime() + 30 * 24 * 60 * 60 * 1000;
-  const daysLeft = Math.max(0, Math.ceil((resetMs - Date.now()) / (24 * 60 * 60 * 1000)));
-  const remaining = Math.max(0, 1 - prepsUsedThisMonth) + credits;
+  const freeRemaining = Math.max(0, 1 - prepsUsedThisMonth);
+  const remaining = freeRemaining + credits;
 
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-orange-soft px-4 py-3 text-sm">
@@ -19,9 +17,9 @@ export function FreeTierBanner({
         ⚡ Plano <strong>Free</strong>:{" "}
         {remaining > 0
           ? `${remaining} prep${remaining === 1 ? "" : "s"} restante${remaining === 1 ? "" : "s"}.`
-          : "Limite atingido."}{" "}
-        {prepsUsedThisMonth >= 1 && credits === 0 && daysLeft > 0 && (
-          <span className="text-ink-3">Próximo grátis em {daysLeft} {daysLeft === 1 ? "dia" : "dias"}.</span>
+          : "Você já usou sua prep grátis."}{" "}
+        {prepsUsedThisMonth >= 1 && credits === 0 && (
+          <span className="text-ink-3">Assine Pro ou compre uma prep avulsa pra continuar.</span>
         )}
       </p>
       <Link

@@ -9,7 +9,7 @@ Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-25.
 **PrepaVAGA** (codinome interno: InterviewReady) é uma plataforma SaaS PT-BR que transforma uma descrição de vaga + CV em um kit de preparação personalizado para entrevistas (5 etapas: Visão geral, ATS, Perguntas básicas, Aprofundamento, Você pergunta).
 
 - Tagline: "Walk into every interview like you already work there."
-- Modelo: freemium em BRL — **Free 1 prep/30d** · **Pro R$30/mês ilimitado** (promo de lançamento, preço cheio R$50) · **Per-use R$10 = 1 prep avulso**
+- Modelo: freemium em BRL · **Free 1 prep grátis vitalícia (concedida no cadastro)** · **Pro R$30/mês ilimitado** (promo de lançamento, preço cheio R$50) · **Per-use R$10 = 1 prep avulso**. CPF é coletado e validado no signup (obrigatório).
 - Gateway de pagamento: **Asaas** (sandbox + production), checkout hosted (PCI scope = zero)
 - Idioma do conteúdo gerado: **PT-BR** (mesmo se CV/JD vierem em inglês)
 - Spec completa: `ARCHITECTURE.md`

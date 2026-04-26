@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const PLANS = [
-  { label: "1ª prep grátis", sub: "a cada 30 dias" },
+  { label: "1ª prep grátis", sub: "ao criar sua conta" },
   { label: "R$10 por uso", sub: "1 prep avulso" },
   { label: "R$30/mês", sub: "ilimitado · promo R$50" },
 ];

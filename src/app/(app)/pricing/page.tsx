@@ -43,7 +43,7 @@ export default function PricingPage() {
             <li className="flex gap-2">
               <span aria-hidden className="text-green-700">✓</span>
               <span>
-                <strong>Preps ilimitados</strong>: quantas vagas você quiser por mês
+                <strong>Preps ilimitados</strong>: quantas vagas você quiser, sem limite
               </span>
             </li>
             <li className="flex gap-2">

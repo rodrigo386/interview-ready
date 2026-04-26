@@ -103,7 +103,6 @@ export default async function DashboardPage({
         {showFreeTierBanner && (
           <FreeTierBanner
             prepsUsedThisMonth={billing.preps_used_this_month ?? 0}
-            prepsResetAt={billing.preps_reset_at ?? new Date().toISOString()}
             credits={billing.prep_credits ?? 0}
           />
         )}

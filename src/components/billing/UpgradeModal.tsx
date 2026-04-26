@@ -10,12 +10,10 @@ export function UpgradeModal({
   open,
   onClose,
   onCheckout,
-  daysToReset,
 }: {
   open: boolean;
   onClose: () => void;
   onCheckout: (kind: Kind) => void;
-  daysToReset?: number;
 }) {
   const [pendingKind, setPendingKind] = useState<Kind | null>(null);
 
@@ -47,13 +45,11 @@ export function UpgradeModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-xl font-bold text-text-primary">
-          Você atingiu o limite do plano Free
+          Você já usou sua prep grátis
         </h3>
-        {typeof daysToReset === "number" && daysToReset > 0 && (
-          <p className="mt-2 text-sm text-text-secondary">
-            Próximo prep grátis em ~{daysToReset} {daysToReset === 1 ? "dia" : "dias"}.
-          </p>
-        )}
+        <p className="mt-2 text-sm text-text-secondary">
+          Sua prep grátis vem 1 vez por conta. Pra continuar, assine o Pro ou compre uma prep avulsa.
+        </p>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-orange-500 bg-orange-soft p-4">
             <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-orange-700">

@@ -4,13 +4,11 @@ export function PlanBadge({
   tier,
   subscriptionStatus,
   prepsUsedThisMonth,
-  prepsResetAt,
   prepCredits,
 }: {
   tier: "free" | "pro" | "team";
   subscriptionStatus: "active" | "overdue" | "canceled" | "expired" | "none" | null;
   prepsUsedThisMonth: number;
-  prepsResetAt: string;
   prepCredits: number;
 }) {
   const isPro =
@@ -29,9 +27,7 @@ export function PlanBadge({
     );
   }
 
-  const resetMs = new Date(prepsResetAt).getTime() + 30 * 24 * 60 * 60 * 1000;
-  const cycleElapsed = Date.now() >= resetMs;
-  const freeRemaining = cycleElapsed ? 1 : Math.max(0, 1 - prepsUsedThisMonth);
+  const freeRemaining = Math.max(0, 1 - prepsUsedThisMonth);
   const remaining = freeRemaining + prepCredits;
 
   return (

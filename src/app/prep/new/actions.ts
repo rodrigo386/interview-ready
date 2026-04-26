@@ -129,16 +129,8 @@ export async function createPrep(
       .from("profiles")
       .update({ prep_credits: billing.prep_credits - 1 })
       .eq("id", user.id);
-  } else if (quota.mode === "reset") {
-    await supabase
-      .from("profiles")
-      .update({
-        preps_used_this_month: 1,
-        preps_reset_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
   } else {
-    // pro or free: increment counter (free for enforcement, pro for analytics).
+    // pro or free: increment lifetime counter (free enforces 0→1 cap; pro is analytics).
     await supabase
       .from("profiles")
       .update({ preps_used_this_month: billing.preps_used_this_month + 1 })

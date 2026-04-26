@@ -124,7 +124,6 @@ export default async function DashboardLayout({
               tier={billing.tier}
               subscriptionStatus={billing.subscription_status}
               prepsUsedThisMonth={billing.preps_used_this_month}
-              prepsResetAt={billing.preps_reset_at}
               prepCredits={billing.prep_credits}
             />
             <ThemeToggle />

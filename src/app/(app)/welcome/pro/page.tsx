@@ -9,7 +9,7 @@ const BENEFITS: { icon: string; title: string; body: string }[] = [
   {
     icon: "∞",
     title: "Preps ilimitados",
-    body: "Sem limite de 1 prep a cada 30 dias. Prepare quantas vagas quiser.",
+    body: "Sem o limite da prep única do plano Free. Prepare quantas vagas quiser.",
   },
   {
     icon: "🔍",

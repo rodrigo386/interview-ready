@@ -66,7 +66,7 @@ export function PlanCard() {
   return (
     <div className="rounded-md border border-border p-4">
       <p className="text-sm text-text-primary">
-        Plano <strong>Free</strong>: 1 prep a cada 30 dias.
+        Plano <strong>Free</strong>: 1 prep grátis no cadastro.
       </p>
       {data.prepCredits > 0 && (
         <p className="mt-1 text-xs text-text-tertiary">

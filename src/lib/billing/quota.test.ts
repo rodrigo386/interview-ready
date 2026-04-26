@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkQuota, type ProfileBilling } from "./quota";
 
-const NOW = new Date("2026-04-25T12:00:00Z");
+const NOW = new Date("2026-04-26T12:00:00Z");
 
 function profile(overrides: Partial<ProfileBilling> = {}): ProfileBilling {
   return {
@@ -29,7 +29,7 @@ describe("checkQuota", () => {
     expect(res).toEqual({ allowed: true, mode: "free" });
   });
 
-  it("free with 1 used and no credits is blocked", () => {
+  it("free with 1 used and no credits is blocked (no monthly reset)", () => {
     const res = checkQuota(profile({ preps_used_this_month: 1 }), NOW);
     expect(res).toEqual({ allowed: false, mode: "block" });
   });
@@ -39,12 +39,12 @@ describe("checkQuota", () => {
     expect(res).toEqual({ allowed: true, mode: "credit" });
   });
 
-  it("preps_reset_at older than 30 days unlocks reset mode", () => {
+  it("preps_reset_at is ignored (lifetime quota, not 30-day cycle)", () => {
     const res = checkQuota(
-      profile({ preps_used_this_month: 5, preps_reset_at: "2026-03-01T00:00:00Z" }),
+      profile({ preps_used_this_month: 5, preps_reset_at: "2025-01-01T00:00:00Z" }),
       NOW,
     );
-    expect(res).toEqual({ allowed: true, mode: "reset" });
+    expect(res).toEqual({ allowed: false, mode: "block" });
   });
 
   it("canceled status with usage is blocked", () => {
