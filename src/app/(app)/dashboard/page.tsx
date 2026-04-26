@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { reconcileBillingFromAsaas } from "@/lib/billing/reconcile";
 import { Button } from "@/components/ui/Button";
 import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
 import { DeletePrepButton } from "@/components/prep/DeletePrepButton";
@@ -46,12 +49,27 @@ const STATUS: Record<
   },
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  const params = (await searchParams) ?? {};
+  if (params.billing === "ok") {
+    try {
+      const admin = createAdminClient();
+      await reconcileBillingFromAsaas(user.id, admin, "full");
+    } catch (err) {
+      console.warn("[dashboard] post-checkout reconcile failed:", err);
+    }
+    redirect("/dashboard");
+  }
 
   const { data: sessions } = await supabase
     .from("prep_sessions")
