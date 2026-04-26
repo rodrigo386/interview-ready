@@ -118,7 +118,8 @@ export async function POST(req: Request) {
     }
   }
 
-  const successUrl = `${appUrl()}/dashboard?billing=ok`;
+  const proSuccessUrl = `${appUrl()}/welcome/pro`;
+  const oneOffSuccessUrl = `${appUrl()}/dashboard?billing=ok`;
 
   if (parsed.kind === "pro_subscription") {
     const sub = await asaas.createSubscription({
@@ -132,7 +133,7 @@ export async function POST(req: Request) {
         kind: "pro_subscription",
         userId: p.id,
       }),
-      callback: { successUrl, autoRedirect: true },
+      callback: { successUrl: proSuccessUrl, autoRedirect: true },
     });
     await supabase
       .from("profiles")
@@ -159,7 +160,7 @@ export async function POST(req: Request) {
       userId: p.id,
       nano: nano(),
     }),
-    callback: { successUrl, autoRedirect: true },
+    callback: { successUrl: oneOffSuccessUrl, autoRedirect: true },
   });
   const checkoutUrl = pay.invoiceUrl ?? pay.bankSlipUrl;
   if (!checkoutUrl) {
