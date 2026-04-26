@@ -35,12 +35,17 @@ Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-25.
 | Deploy | Railway (Dockerfile, Node 20 Alpine, `node server.js`) |
 | Hosting | Railway service `facccb47-595b-4fd5-8272-dd54354043be` |
 
+### Rate limiting
+
+Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyIntel, fetchJdFromUrl) passam por `rateLimit()` em `src/lib/ratelimit.ts` (Upstash Ratelimit + Redis, sliding window). Limites por usuário: createPrep 5/h, ATS/CV/intel 10/h, fetchJd 30/h. Sem `UPSTASH_REDIS_REST_URL`+`UPSTASH_REDIS_REST_TOKEN`, o helper falha aberto (não bloqueia) — evita travar a app se Upstash cair.
+
 ### Env vars obrigatórias (Railway)
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - `GOOGLE_API_KEY` — **OBRIGATÓRIO** para todas as chamadas de IA (sections, ATS, company intel, CV rewrite, JD cleanup). Sem ele, geração quebra com `"GOOGLE_API_KEY is not set"`. Get em https://aistudio.google.com/apikey
 - `ASAAS_API_KEY` — sandbox/prod API key do Asaas (formato `$aact_...`). Sem ele, todo checkout/cancel falha com `"ASAAS_API_KEY is not set"`.
 - `ASAAS_WEBHOOK_TOKEN` — token arbitrário (recomendo 32 chars). Tem que bater com o header `asaas-access-token` configurado no painel Asaas.
 - `ASAAS_BASE_URL` — `https://sandbox.asaas.com/api/v3` (sandbox) ou `https://api.asaas.com/v3` (prod). Tem default de sandbox no schema. **Não setar como string vazia** (Zod rejeita).
+- `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` — opcionais. Habilitam rate limit em produção. Sem eles, o helper `rateLimit()` falha aberto (sem bloqueio).
 - `MOCK_ANTHROPIC=1` — kill switch global de AI nos tests (nome legado, vale para Gemini agora)
 
 ### Setup Asaas (sandbox)

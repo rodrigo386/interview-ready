@@ -22,6 +22,15 @@ const schema = z.object({
     .string()
     .url()
     .default("https://sandbox.asaas.com/api/v3"),
+  // Upstash for rate limiting. Optional: when missing, ratelimit fails open.
+  UPSTASH_REDIS_REST_URL: z
+    .union([z.string().url(), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
+  UPSTASH_REDIS_REST_TOKEN: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
 });
 
 type Env = z.infer<typeof schema>;
@@ -38,6 +47,8 @@ function parseOrThrow(): Env {
     ASAAS_API_KEY: process.env.ASAAS_API_KEY,
     ASAAS_WEBHOOK_TOKEN: process.env.ASAAS_WEBHOOK_TOKEN,
     ASAAS_BASE_URL: process.env.ASAAS_BASE_URL,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
   if (!result.success) {
     console.error("Invalid environment variables:", result.error.flatten().fieldErrors);

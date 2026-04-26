@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { buildAtsAnalyzerPrompt } from "@/lib/ai/prompts/ats-analyzer";
 import { generateAtsAnalysis, GeminiResponseError } from "@/lib/ai/gemini";
+import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 
 export async function runAtsAnalysis(sessionId: string) {
   const supabase = await createClient();
@@ -26,6 +27,19 @@ export async function runAtsAnalysis(sessionId: string) {
 
   // Guard against concurrent clicks only; allow re-run after complete/failed.
   if (session.ats_status === "generating") {
+    revalidatePath(`/prep/${sessionId}`);
+    return;
+  }
+
+  const rl = await rateLimit(`user:${user.id}`, LIMITS.ats);
+  if (!rl.success) {
+    await supabase
+      .from("prep_sessions")
+      .update({
+        ats_status: "failed",
+        ats_error_message: `Muitas análises ATS em pouco tempo. Tente novamente em ${formatResetPhrase(rl.reset)}.`,
+      })
+      .eq("id", sessionId);
     revalidatePath(`/prep/${sessionId}`);
     return;
   }

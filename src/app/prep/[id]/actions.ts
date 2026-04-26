@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { generateCompanyIntel, GeminiResponseError } from "@/lib/ai/gemini";
 import { buildCompanyResearchPrompt } from "@/lib/ai/prompts/company-research";
+import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 
 export async function deletePrep(id: string) {
   const supabase = await createClient();
@@ -39,6 +40,19 @@ export async function rerunCompanyIntel(id: string) {
 
   if (error || !session) redirect("/dashboard");
   if (session.company_intel_status === "researching") {
+    revalidatePath(`/prep/${id}`);
+    return;
+  }
+
+  const rl = await rateLimit(`user:${user.id}`, LIMITS.companyIntel);
+  if (!rl.success) {
+    await supabase
+      .from("prep_sessions")
+      .update({
+        company_intel_status: "failed",
+        company_intel_error: `Muitas pesquisas de empresa em pouco tempo. Tente novamente em ${formatResetPhrase(rl.reset)}.`,
+      })
+      .eq("id", id);
     revalidatePath(`/prep/${id}`);
     return;
   }

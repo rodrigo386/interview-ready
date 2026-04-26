@@ -2,6 +2,8 @@
 
 import { z } from "zod";
 import { cleanJobDescription } from "@/lib/ai/gemini";
+import { createClient } from "@/lib/supabase/server";
+import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 
 const urlSchema = z
   .string()
@@ -36,6 +38,17 @@ export async function fetchJdFromUrl(
     };
   }
   const url = parsed.data;
+
+  // Rate limit (per user; falls back to anon IP-less identifier if not logged in).
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  const identifier = auth.user ? `user:${auth.user.id}` : "anon";
+  const rl = await rateLimit(identifier, LIMITS.fetchJd);
+  if (!rl.success) {
+    return {
+      error: `Muitas buscas de URL seguidas. Tente novamente em ${formatResetPhrase(rl.reset)}.`,
+    };
+  }
 
   let res: Response;
   try {

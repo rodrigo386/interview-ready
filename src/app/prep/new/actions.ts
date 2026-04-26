@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { checkQuota, type ProfileBilling } from "@/lib/billing/quota";
+import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { createPrepInputSchema } from "./schema";
 
 export type CreatePrepState = {
@@ -38,6 +39,14 @@ export async function createPrep(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Você precisa estar logado pra criar um prep." };
+
+  // Rate limit gate (per user, applied before quota so abusers don't burn DB queries).
+  const rl = await rateLimit(`user:${user.id}`, LIMITS.createPrep);
+  if (!rl.success) {
+    return {
+      error: `Muitas preps em pouco tempo. Tente novamente em ${formatResetPhrase(rl.reset)}.`,
+    };
+  }
 
   // Quota gate.
   const { data: billingProfile } = await supabase

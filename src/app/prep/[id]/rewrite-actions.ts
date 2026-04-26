@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { buildCvRewritePrompt } from "@/lib/ai/prompts/cv-rewriter";
 import { generateCvRewrite, GeminiResponseError } from "@/lib/ai/gemini";
 import { atsAnalysisSchema } from "@/lib/ai/schemas";
+import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 
 export async function runCvRewrite(sessionId: string): Promise<void> {
   const supabase = await createClient();
@@ -31,6 +32,19 @@ export async function runCvRewrite(sessionId: string): Promise<void> {
   }
 
   if (session.cv_rewrite_status === "generating") {
+    revalidatePath(`/prep/${sessionId}`);
+    return;
+  }
+
+  const rl = await rateLimit(`user:${user.id}`, LIMITS.cvRewrite);
+  if (!rl.success) {
+    await supabase
+      .from("prep_sessions")
+      .update({
+        cv_rewrite_status: "failed",
+        cv_rewrite_error: `Muitas reescritas de CV em pouco tempo. Tente novamente em ${formatResetPhrase(rl.reset)}.`,
+      })
+      .eq("id", sessionId);
     revalidatePath(`/prep/${sessionId}`);
     return;
   }
