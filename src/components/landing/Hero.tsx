@@ -16,10 +16,10 @@ export function Hero() {
       <BackdropPattern />
       <FlyingCvs />
 
-      <div className="relative mx-auto max-w-6xl px-6 pt-24 pb-12 md:pt-32 md:pb-16">
+      <div className="relative mx-auto max-w-6xl px-5 pt-20 pb-10 sm:px-6 md:pt-32 md:pb-16">
         <div className="mx-auto max-w-3xl text-center">
           <h1
-            className="font-serif font-normal tracking-tight text-text-primary leading-[1.02] text-5xl sm:text-6xl md:text-7xl"
+            className="font-serif font-normal tracking-tight text-text-primary leading-[1.02] text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl"
             aria-label={HEADLINE}
           >
             <span aria-hidden>{typed}</span>
@@ -70,9 +70,9 @@ export function Hero() {
           >
             <Link
               href="/signup"
-              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-7 py-3.5 text-base font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+              className="inline-flex max-w-full items-center gap-2 rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 sm:px-7 sm:py-3.5 sm:text-base"
             >
-              Preparar minha próxima vaga
+              <span className="truncate">Preparar minha próxima vaga</span>
               <span aria-hidden>→</span>
             </Link>
             <p className="text-xs text-text-tertiary">Sem cartão. Primeira prep grátis.</p>

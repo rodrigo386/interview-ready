@@ -58,7 +58,7 @@ export function HeroMockup() {
 
             <div className="mt-5 flex items-center gap-3 text-[10px] text-text-tertiary">
               <span className="text-brand-600 motion-safe:animate-[pulseDot_1.6s_ease-in-out_infinite]">●</span>
-              <span>Lendo CV · Pesquisando empresa · Cruzando requisitos…</span>
+              <span className="truncate">Lendo CV · Pesquisando empresa · Cruzando requisitos…</span>
             </div>
 
             <div className="mt-5 grid gap-2">
@@ -137,9 +137,12 @@ export function HeroMockup() {
               ))}
             </ul>
 
-            <div className="mt-3 flex items-center justify-between rounded-md border border-neutral-200 bg-bg px-3 py-2 text-[10px] text-text-tertiary dark:border-zinc-800">
-              <span>Visão geral · ATS · Prováveis · Aprofundamento · Você pergunta</span>
-              <span className="text-emerald-600 dark:text-emerald-400">● online</span>
+            <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-neutral-200 bg-bg px-3 py-2 text-[10px] text-text-tertiary dark:border-zinc-800">
+              <span className="min-w-0 flex-1 truncate">
+                <span className="hidden sm:inline">Visão geral · ATS · Prováveis · Aprofundamento · Você pergunta</span>
+                <span className="sm:hidden">5 etapas no painel</span>
+              </span>
+              <span className="shrink-0 text-emerald-600 dark:text-emerald-400">● online</span>
             </div>
           </div>
         </div>
