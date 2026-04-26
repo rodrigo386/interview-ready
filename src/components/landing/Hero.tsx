@@ -14,7 +14,7 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-neutral-200 bg-bg dark:border-zinc-800">
       <BackdropPattern />
-      <CursorDecor />
+      <FlyingCvs />
 
       <div className="relative mx-auto max-w-6xl px-6 pt-24 pb-12 md:pt-32 md:pb-16">
         <div className="mx-auto max-w-3xl text-center">
@@ -130,46 +130,86 @@ function BackdropPattern() {
   );
 }
 
-function CursorDecor() {
+function FlyingCvs() {
   return (
     <>
-      <svg
-        aria-hidden
-        className="pointer-events-none absolute left-[6%] top-[42%] hidden h-10 w-10 text-text-tertiary motion-safe:animate-[cursorLeft_1.2s_ease-out_0.2s_both] md:block"
-        viewBox="0 0 24 24"
-        fill="none"
-      >
-        <path
-          d="M5 3.5 L5 18 L9.5 14 L12.5 20.5 L15 19.5 L12 13 L18 13 Z"
-          stroke="currentColor"
-          strokeWidth="1.4"
-          strokeLinejoin="round"
-          fill="rgba(255,255,255,0.6)"
-        />
-      </svg>
-      <svg
-        aria-hidden
-        className="pointer-events-none absolute right-[7%] top-[26%] hidden h-9 w-9 motion-safe:animate-[cursorRight_1.2s_ease-out_0.4s_both] md:block"
-        viewBox="0 0 24 24"
-      >
-        <path
-          d="M5 3.5 L5 18 L9.5 14 L12.5 20.5 L15 19.5 L12 13 L18 13 Z"
-          fill="#EA580C"
-          stroke="#FFFFFF"
-          strokeWidth="0.8"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <MiniCv
+        className="left-[5%] top-[44%] motion-safe:animate-[cvFloatLeft_7s_ease-in-out_infinite,cvIn_1s_ease-out_0.2s_both] md:block"
+        rotate="-rotate-[10deg]"
+        accent="brand"
+      />
+      <MiniCv
+        className="right-[6%] top-[26%] motion-safe:animate-[cvFloatRight_8s_ease-in-out_infinite,cvIn_1s_ease-out_0.4s_both] md:block"
+        rotate="rotate-[8deg]"
+        accent="neutral"
+      />
+      <MiniCv
+        className="right-[14%] top-[60%] motion-safe:animate-[cvFloatMid_9s_ease-in-out_infinite,cvIn_1s_ease-out_0.7s_both] md:block"
+        rotate="rotate-[-4deg]"
+        accent="brand"
+        size="sm"
+      />
       <style>{`
-        @keyframes cursorLeft {
-          0% { transform: translate(-32px, 32px); opacity: 0; }
-          100% { transform: translate(0, 0); opacity: 1; }
+        @keyframes cvIn {
+          0% { transform: translateY(24px) scale(0.92); opacity: 0; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
         }
-        @keyframes cursorRight {
-          0% { transform: translate(32px, 32px); opacity: 0; }
-          100% { transform: translate(0, 0); opacity: 1; }
+        @keyframes cvFloatLeft {
+          0%, 100% { transform: translateY(0) rotate(-10deg); }
+          50% { transform: translateY(-14px) rotate(-7deg); }
+        }
+        @keyframes cvFloatRight {
+          0%, 100% { transform: translateY(0) rotate(8deg); }
+          50% { transform: translateY(-18px) rotate(11deg); }
+        }
+        @keyframes cvFloatMid {
+          0%, 100% { transform: translateY(0) rotate(-4deg); }
+          50% { transform: translateY(-10px) rotate(-1deg); }
         }
       `}</style>
     </>
+  );
+}
+
+function MiniCv({
+  className,
+  rotate,
+  accent,
+  size = "md",
+}: {
+  className: string;
+  rotate: string;
+  accent: "brand" | "neutral";
+  size?: "sm" | "md";
+}) {
+  const dims = size === "sm" ? "w-14 h-[4.5rem]" : "w-16 h-[5.5rem]";
+  const avatarBg = accent === "brand" ? "bg-brand-600" : "bg-neutral-300";
+  return (
+    <div
+      aria-hidden
+      className={
+        "pointer-events-none absolute hidden rounded-md border border-neutral-200 bg-white p-1.5 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.18)] dark:border-zinc-700 dark:bg-zinc-900 " +
+        dims +
+        " " +
+        rotate +
+        " " +
+        className
+      }
+    >
+      <div className="flex items-center gap-1">
+        <span className={`h-2.5 w-2.5 rounded-full ${avatarBg}`} />
+        <div className="flex-1 space-y-0.5">
+          <span className="block h-[3px] w-full rounded-full bg-neutral-300 dark:bg-zinc-700" />
+          <span className="block h-[2px] w-3/4 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+        </div>
+      </div>
+      <div className="mt-1.5 space-y-1">
+        <span className="block h-[2px] w-full rounded-full bg-neutral-200 dark:bg-zinc-800" />
+        <span className="block h-[2px] w-5/6 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+        <span className="block h-[2px] w-4/6 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+        <span className="block h-[2px] w-full rounded-full bg-neutral-200 dark:bg-zinc-800" />
+        <span className="block h-[2px] w-3/5 rounded-full bg-neutral-200 dark:bg-zinc-800" />
+      </div>
+    </div>
   );
 }

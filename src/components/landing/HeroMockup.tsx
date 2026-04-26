@@ -89,7 +89,7 @@ export function HeroMockup() {
                 O que você recebe
               </p>
               <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-500">
-                Pronto em 18 min
+                Pronto em minutos
               </span>
             </div>
 
