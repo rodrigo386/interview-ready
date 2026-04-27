@@ -1,16 +1,17 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { HeroMockup } from "./HeroMockup";
 
 const HEADLINE = "Entre pronto. Saia contratado.";
 const CHIPS = ["1ª prep grátis", "R$30/mês ilimitado"];
 
-export function Hero() {
-  const typed = useTypewriter(HEADLINE, 38);
-  const done = typed.length === HEADLINE.length;
+const CHAR_STAGGER_MS = 32;
+const HEADLINE_TOTAL_MS = HEADLINE.length * CHAR_STAGGER_MS;
+const SUB_DELAY_MS = HEADLINE_TOTAL_MS + 100;
+const CHIPS_DELAY_MS = SUB_DELAY_MS + 200;
+const CTA_DELAY_MS = CHIPS_DELAY_MS + 200;
+const MOCKUP_DELAY_MS = CTA_DELAY_MS + 250;
 
+export function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-neutral-200 bg-bg dark:border-zinc-800">
       <BackdropPattern />
@@ -18,26 +19,21 @@ export function Hero() {
 
       <div className="relative mx-auto max-w-6xl px-5 pt-20 pb-10 sm:px-6 md:pt-32 md:pb-16">
         <div className="mx-auto max-w-3xl text-center">
-          <h1
-            className="font-serif font-normal tracking-tight text-text-primary leading-[1.02] text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl"
-            aria-label={HEADLINE}
-          >
-            <span aria-hidden>{typed}</span>
-            <span
-              aria-hidden
-              className={
-                "ml-0.5 inline-block w-[0.06em] -translate-y-[0.05em] bg-brand-600 align-middle " +
-                (done ? "h-[0.85em] motion-safe:animate-[caretBlink_1s_steps(2,start)_infinite]" : "h-[0.85em]")
-              }
-              style={{ verticalAlign: "-0.05em" }}
-            />
+          <h1 className="font-serif font-normal tracking-tight text-text-primary leading-[1.02] text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl">
+            {HEADLINE.split("").map((char, i) => (
+              <span
+                key={i}
+                className="motion-safe:opacity-0 motion-safe:animate-[heroCharIn_320ms_ease-out_forwards]"
+                style={{ animationDelay: `${i * CHAR_STAGGER_MS}ms` }}
+              >
+                {char}
+              </span>
+            ))}
           </h1>
 
           <div
-            className={
-              "mx-auto mt-7 max-w-xl text-base leading-[1.6] text-text-secondary md:text-lg motion-safe:transition-all motion-safe:duration-700 " +
-              (done ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2")
-            }
+            className="mx-auto mt-7 max-w-xl text-base leading-[1.6] text-text-secondary md:text-lg motion-safe:opacity-0 motion-safe:animate-[heroFadeUp_700ms_ease-out_forwards]"
+            style={{ animationDelay: `${SUB_DELAY_MS}ms` }}
           >
             <p>
               Cole o link da vaga e seu CV. Em minutos, você recebe um dossiê personalizado:
@@ -47,10 +43,8 @@ export function Hero() {
           </div>
 
           <div
-            className={
-              "mt-7 flex flex-wrap items-center justify-center gap-2 motion-safe:transition-all motion-safe:duration-700 motion-safe:delay-150 " +
-              (done ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2")
-            }
+            className="mt-7 flex flex-wrap items-center justify-center gap-2 motion-safe:opacity-0 motion-safe:animate-[heroFadeUp_700ms_ease-out_forwards]"
+            style={{ animationDelay: `${CHIPS_DELAY_MS}ms` }}
           >
             {CHIPS.map((c) => (
               <span
@@ -63,10 +57,8 @@ export function Hero() {
           </div>
 
           <div
-            className={
-              "mt-9 flex flex-col items-center justify-center gap-3 motion-safe:transition-all motion-safe:duration-700 motion-safe:delay-300 " +
-              (done ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2")
-            }
+            className="mt-9 flex flex-col items-center justify-center gap-3 motion-safe:opacity-0 motion-safe:animate-[heroFadeUp_700ms_ease-out_forwards]"
+            style={{ animationDelay: `${CTA_DELAY_MS}ms` }}
           >
             <Link
               href="/signup"
@@ -80,40 +72,25 @@ export function Hero() {
         </div>
 
         <div
-          className={
-            "motion-safe:transition-all motion-safe:duration-1000 motion-safe:delay-500 " +
-            (done ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6")
-          }
+          className="motion-safe:opacity-0 motion-safe:animate-[heroFadeUp_900ms_ease-out_forwards]"
+          style={{ animationDelay: `${MOCKUP_DELAY_MS}ms` }}
         >
           <HeroMockup />
         </div>
       </div>
 
       <style>{`
-        @keyframes caretBlink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
+        @keyframes heroCharIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes heroFadeUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </section>
   );
-}
-
-function useTypewriter(text: string, speedMs: number): string {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    if (i >= text.length) return;
-    const reduce =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
-      setI(text.length);
-      return;
-    }
-    const t = setTimeout(() => setI((v) => v + 1), speedMs);
-    return () => clearTimeout(t);
-  }, [i, text, speedMs]);
-  return text.slice(0, i);
 }
 
 function BackdropPattern() {
@@ -142,86 +119,14 @@ type CvSpec = {
 };
 
 const CVS: CvSpec[] = [
-  {
-    pos: "left-[3%] top-[18%]",
-    rotate: "-rotate-[14deg]",
-    accent: "brand",
-    size: "sm",
-    float: "A",
-    duration: "8s",
-    delay: "-2s",
-    enter: "0.1s",
-  },
-  {
-    pos: "left-[8%] top-[44%]",
-    rotate: "-rotate-[8deg]",
-    accent: "brand",
-    size: "md",
-    float: "B",
-    duration: "7s",
-    delay: "-1s",
-    enter: "0.25s",
-  },
-  {
-    pos: "left-[13%] top-[70%]",
-    rotate: "rotate-[6deg]",
-    accent: "neutral",
-    size: "sm",
-    float: "C",
-    duration: "9s",
-    delay: "-3s",
-    enter: "0.4s",
-  },
-  {
-    pos: "right-[4%] top-[14%]",
-    rotate: "rotate-[12deg]",
-    accent: "neutral",
-    size: "sm",
-    float: "D",
-    duration: "8.5s",
-    delay: "-1.5s",
-    enter: "0.55s",
-  },
-  {
-    pos: "right-[8%] top-[34%]",
-    rotate: "rotate-[7deg]",
-    accent: "brand",
-    size: "md",
-    float: "E",
-    duration: "7.5s",
-    delay: "0s",
-    enter: "0.35s",
-  },
-  {
-    pos: "right-[3%] top-[58%]",
-    rotate: "-rotate-[5deg]",
-    accent: "brand",
-    size: "lg",
-    float: "A",
-    duration: "10s",
-    delay: "-4s",
-    enter: "0.6s",
-  },
-  {
-    pos: "right-[16%] top-[78%]",
-    rotate: "rotate-[3deg]",
-    accent: "neutral",
-    size: "sm",
-    float: "C",
-    duration: "9.5s",
-    delay: "-2.5s",
-    enter: "0.75s",
-  },
-  {
-    pos: "left-[18%] top-[10%]",
-    rotate: "rotate-[18deg]",
-    accent: "neutral",
-    size: "sm",
-    float: "D",
-    duration: "11s",
-    delay: "-3.5s",
-    enter: "0.85s",
-  },
+  { pos: "left-[3%] top-[18%]", rotate: "-rotate-[14deg]", accent: "brand", size: "sm", float: "A", duration: "8s", delay: "-2s", enter: "0.1s" },
+  { pos: "left-[8%] top-[44%]", rotate: "-rotate-[8deg]", accent: "brand", size: "md", float: "B", duration: "7s", delay: "-1s", enter: "0.25s" },
+  { pos: "left-[13%] top-[70%]", rotate: "rotate-[6deg]", accent: "neutral", size: "sm", float: "C", duration: "9s", delay: "-3s", enter: "0.4s" },
+  { pos: "right-[4%] top-[14%]", rotate: "rotate-[12deg]", accent: "neutral", size: "sm", float: "D", duration: "8.5s", delay: "-1.5s", enter: "0.55s" },
+  { pos: "right-[8%] top-[34%]", rotate: "rotate-[7deg]", accent: "brand", size: "md", float: "E", duration: "7.5s", delay: "0s", enter: "0.35s" },
+  { pos: "right-[3%] top-[58%]", rotate: "-rotate-[5deg]", accent: "brand", size: "lg", float: "A", duration: "10s", delay: "-4s", enter: "0.6s" },
+  { pos: "right-[16%] top-[78%]", rotate: "rotate-[3deg]", accent: "neutral", size: "sm", float: "C", duration: "9.5s", delay: "-2.5s", enter: "0.75s" },
+  { pos: "left-[18%] top-[10%]", rotate: "rotate-[18deg]", accent: "neutral", size: "sm", float: "D", duration: "11s", delay: "-3.5s", enter: "0.85s" },
 ];
 
 function FlyingCvs() {
