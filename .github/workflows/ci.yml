@@ -56,6 +56,10 @@ jobs:
         if: ${{ env.NEXT_PUBLIC_SUPABASE_URL != 'https://placeholder.supabase.co' }}
         run: pnpm exec playwright test --project=auth
 
+      - name: Cleanup stale E2E test users (>1 day old, best-effort)
+        if: ${{ always() && env.NEXT_PUBLIC_SUPABASE_URL != 'https://placeholder.supabase.co' }}
+        run: node scripts/cleanup-e2e-users.mjs
+
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v4
