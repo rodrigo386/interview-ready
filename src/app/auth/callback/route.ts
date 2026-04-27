@@ -3,12 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { env } from "@/lib/env";
 
 function resolveBase(request: NextRequest): string {
-  // Prefer the configured public URL; behind Railway request.url shows
-  // the internal 0.0.0.0:8080. Fall back to x-forwarded-host if unset.
-  if (env.NEXT_PUBLIC_APP_URL) return env.NEXT_PUBLIC_APP_URL;
+  // Prefer the actual host the user is on (x-forwarded-host behind Railway's
+  // proxy). This way prepavaga.com.br stays prepavaga.com.br even if the
+  // NEXT_PUBLIC_APP_URL env still points to the railway.app fallback.
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   const proto = request.headers.get("x-forwarded-proto") ?? "https";
   if (host) return `${proto}://${host}`;
+  if (env.NEXT_PUBLIC_APP_URL) return env.NEXT_PUBLIC_APP_URL;
   return new URL(request.url).origin;
 }
 

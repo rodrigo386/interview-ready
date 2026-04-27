@@ -29,7 +29,13 @@ function nano(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function appUrl(): string {
+function appUrl(req: Request): string {
+  // Prefer the request's actual host so the Asaas callback returns the user
+  // to the same domain they started checkout from (e.g. prepavaga.com.br
+  // even when NEXT_PUBLIC_APP_URL still points to the railway.app fallback).
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const proto = req.headers.get("x-forwarded-proto") ?? "https";
+  if (host) return `${proto}://${host}`;
   return env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 }
 
@@ -118,8 +124,8 @@ export async function POST(req: Request) {
     }
   }
 
-  const proSuccessUrl = `${appUrl()}/welcome/pro`;
-  const oneOffSuccessUrl = `${appUrl()}/dashboard?billing=ok`;
+  const proSuccessUrl = `${appUrl(req)}/welcome/pro`;
+  const oneOffSuccessUrl = `${appUrl(req)}/dashboard?billing=ok`;
 
   if (parsed.kind === "pro_subscription") {
     const sub = await asaas.createSubscription({
