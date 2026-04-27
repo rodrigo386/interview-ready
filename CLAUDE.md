@@ -35,9 +35,13 @@ Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-25.
 | Deploy | Railway (Dockerfile, Node 20 Alpine, `node server.js`) |
 | Hosting | Railway service `facccb47-595b-4fd5-8272-dd54354043be` |
 
-### Email transacional
+### Runbooks de produção
 
-Auth emails (confirmação, magic link, reset de senha) saem via SMTP custom configurado em **Authentication → Emails → SMTP Settings** do painel Supabase. Recomendamos Resend (free tier 3k/mês). Templates PT-BR prontos pra colar e runbook completo em `docs/email-setup.md`. Sem SMTP custom, o default do Supabase é rate-limited (~3/h) e cai em spam.
+Tarefas que são **só dashboard + env vars** (sem código) têm runbook próprio:
+
+- **`docs/email-setup.md`** — Resend + Supabase Auth SMTP, com templates PT-BR prontos pra colar (Confirm signup, Magic Link, Reset Password, Change Email). Sem isso, default do Supabase é rate-limited (~3/h).
+- **`docs/asaas-production.md`** — sandbox → produção: criar conta PJ no Asaas, KYB com docs do CNPJ 62.805.016/0001-29, gerar API key prod, configurar webhook prod, trocar `ASAAS_BASE_URL`+`ASAAS_API_KEY`+`ASAAS_WEBHOOK_TOKEN` no Railway, teste com cobrança real Pix/cartão.
+- **`docs/custom-domain.md`** — Cloudflare DNS + Railway custom domain pra `prepavaga.com.br`: comprar no Registro.br, nameservers Cloudflare, CNAME apex+www apontando pra Railway (DNS only, sem proxy laranja), SSL auto via Let's Encrypt, redirect www→apex, atualizar `NEXT_PUBLIC_APP_URL` + Site URL Supabase + domínio Asaas, sitemap.ts + robots.ts opcionais.
 
 ### Rate limiting
 
