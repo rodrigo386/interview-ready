@@ -17,10 +17,11 @@ type BillingShape = {
   preps_used_this_month: number;
   preps_reset_at: string;
   prep_credits: number;
+  is_admin: boolean;
 };
 
 const PROFILE_COLS =
-  "avatar_url, avatar_updated_at, tier, subscription_status, asaas_subscription_id, preps_used_this_month, preps_reset_at, prep_credits";
+  "avatar_url, avatar_updated_at, tier, subscription_status, asaas_subscription_id, preps_used_this_month, preps_reset_at, prep_credits, is_admin";
 
 export default async function DashboardLayout({
   children,
@@ -43,6 +44,7 @@ export default async function DashboardLayout({
     preps_used_this_month: 0,
     preps_reset_at: new Date().toISOString(),
     prep_credits: 0,
+    is_admin: false,
   };
 
   try {
@@ -65,6 +67,7 @@ export default async function DashboardLayout({
         preps_used_this_month: p.preps_used_this_month ?? 0,
         preps_reset_at: p.preps_reset_at ?? new Date().toISOString(),
         prep_credits: p.prep_credits ?? 0,
+        is_admin: p.is_admin ?? false,
       };
     }
   } catch (err) {
@@ -74,8 +77,10 @@ export default async function DashboardLayout({
   // Self-heal: webhook may not have delivered. If user has a subscription on
   // Asaas but our DB still shows them as not active/overdue, reconcile from
   // Asaas API. Once reconciliation succeeds, status flips to active and this
-  // branch is skipped on subsequent renders.
+  // branch is skipped on subsequent renders. Admins skip — they're permanent
+  // Pro by policy and have no Asaas subscription to reconcile against.
   const looksStale =
+    !billing.is_admin &&
     !!billing.asaas_subscription_id &&
     billing.subscription_status !== "active" &&
     billing.subscription_status !== "overdue";
@@ -99,6 +104,7 @@ export default async function DashboardLayout({
             preps_used_this_month: p.preps_used_this_month ?? billing.preps_used_this_month,
             preps_reset_at: p.preps_reset_at ?? billing.preps_reset_at,
             prep_credits: p.prep_credits ?? billing.prep_credits,
+            is_admin: p.is_admin ?? billing.is_admin,
           };
         }
       }
@@ -131,6 +137,7 @@ export default async function DashboardLayout({
               email={user.email!}
               avatarUrl={resolvedAvatarUrl}
               logoutAction={logout}
+              isAdmin={billing.is_admin}
             />
           </div>
         </div>

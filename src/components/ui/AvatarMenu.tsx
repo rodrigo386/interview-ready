@@ -8,10 +8,12 @@ export function AvatarMenu({
   email,
   avatarUrl,
   logoutAction,
+  isAdmin = false,
 }: {
   email: string;
   avatarUrl: string;
   logoutAction: () => Promise<void>;
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,6 +63,19 @@ export function AvatarMenu({
           >
             Meu perfil
           </Link>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between px-3 py-2 text-sm font-medium text-brand-700 hover:bg-line dark:text-brand-500"
+            >
+              Admin
+              <span aria-hidden className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
+                ⚡
+              </span>
+            </Link>
+          )}
           <form action={logoutAction}>
             <button
               type="submit"
