@@ -43,6 +43,10 @@ Tarefas que são **só dashboard + env vars** (sem código) têm runbook própri
 - **`docs/asaas-production.md`** — sandbox → produção: criar conta PJ no Asaas, KYB com docs do CNPJ 62.805.016/0001-29, gerar API key prod, configurar webhook prod, trocar `ASAAS_BASE_URL`+`ASAAS_API_KEY`+`ASAAS_WEBHOOK_TOKEN` no Railway, teste com cobrança real Pix/cartão.
 - **`docs/custom-domain.md`** — Cloudflare DNS + Railway custom domain pra `prepavaga.com.br`: comprar no Registro.br, nameservers Cloudflare, CNAME apex+www apontando pra Railway (DNS only, sem proxy laranja), SSL auto via Let's Encrypt, redirect www→apex, atualizar `NEXT_PUBLIC_APP_URL` + Site URL Supabase + domínio Asaas, sitemap.ts + robots.ts opcionais.
 
+### Admin
+
+`profiles.is_admin = true` marca operadores. Admins (a) bypassam quota e reconcile, (b) ganham `tier=pro` + `subscription_status=active` permanentes (sem `asaas_subscription_id`), (c) veem o link "Admin" no AvatarMenu, (d) acessam `/admin` com KPIs (total users, MRR estimado, signups/preps por janela, ativação 30d, falhas) e tabelas (últimos cadastros, preps, pagamentos, preps falhadas). Helpers: `requireAdmin()` em `src/lib/admin/auth.ts`, `getAdminOverview()` em `src/lib/admin/metrics.ts`. Layout `/admin` separado da app shell. Migration 0011 introduziu o flag e promoveu `rgoalves@gmail.com`.
+
 ### Rate limiting
 
 Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyIntel, fetchJdFromUrl) passam por `rateLimit()` em `src/lib/ratelimit.ts` (Upstash Ratelimit + Redis, sliding window). Limites por usuário: createPrep 5/h, ATS/CV/intel 10/h, fetchJd 30/h. Sem `UPSTASH_REDIS_REST_URL`+`UPSTASH_REDIS_REST_TOKEN`, o helper falha aberto (não bloqueia) — evita travar a app se Upstash cair.
