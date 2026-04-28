@@ -35,7 +35,7 @@ Tempo total: ~30 minutos. Não precisa código. Tudo em dashboard.
 1. Painel Supabase → projeto `reslmtzofwczxrswulca` → **Authentication** → **Emails** → aba **SMTP Settings**.
 2. Toggle **Enable Custom SMTP** = ON.
 3. Preencher:
-   - **Sender email**: `nao-responda@prepavaga.com.br`
+   - **Sender email**: `nao-responda@prepavaga.com.br` ⚠️ **APEX**, sem `send.` no meio. A API key do Resend é restrita ao domínio que você verificou (apex). Se botar `nao-responda@send.prepavaga.com.br`, dá erro 550 "API key is not authorized to send emails from send.prepavaga.com.br".
    - **Sender name**: `PrepaVAGA`
    - **Host**: `smtp.resend.com`
    - **Port**: `465`
