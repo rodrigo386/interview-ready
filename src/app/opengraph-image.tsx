@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
 export const contentType = "image/png";
 export const size = { width: 1200, height: 630 };
 export const alt =
@@ -8,9 +7,16 @@ export const alt =
 
 export default async function OpengraphImage() {
   const [interRegular, interBold] = await Promise.all([
-    fetchFont("https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50ojIw2boKoduKmMEVuLyfMZg.ttf"),
-    fetchFont("https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50ojIw2boKoduKmMEVuI6fMZg.ttf"),
+    fetchFontSafe("https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50ojIw2boKoduKmMEVuLyfMZg.ttf"),
+    fetchFontSafe("https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50ojIw2boKoduKmMEVuI6fMZg.ttf"),
   ]);
+  const fonts =
+    interRegular && interBold
+      ? [
+          { name: "Inter", data: interRegular, style: "normal" as const, weight: 400 as const },
+          { name: "Inter", data: interBold, style: "normal" as const, weight: 700 as const },
+        ]
+      : undefined;
 
   return new ImageResponse(
     (
@@ -63,12 +69,14 @@ export default async function OpengraphImage() {
           </svg>
           <div
             style={{
+              display: "flex",
               fontSize: 28,
               fontWeight: 700,
               letterSpacing: "-0.02em",
             }}
           >
-            Prepa<span style={{ color: "#EA580C" }}>VAGA</span>
+            <span>Prepa</span>
+            <span style={{ color: "#EA580C" }}>VAGA</span>
           </div>
         </div>
 
@@ -142,10 +150,7 @@ export default async function OpengraphImage() {
     ),
     {
       ...size,
-      fonts: [
-        { name: "Inter", data: interRegular, style: "normal", weight: 400 },
-        { name: "Inter", data: interBold, style: "normal", weight: 700 },
-      ],
+      ...(fonts ? { fonts } : {}),
     },
   );
 }
@@ -201,8 +206,12 @@ function MiniCv({
   );
 }
 
-async function fetchFont(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Font fetch failed: ${url}`);
-  return res.arrayBuffer();
+async function fetchFontSafe(url: string): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(url, { cache: "force-cache" });
+    if (!res.ok) return null;
+    return await res.arrayBuffer();
+  } catch {
+    return null;
+  }
 }

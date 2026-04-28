@@ -17,7 +17,10 @@ const instrumentSerif = Instrument_Serif({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "PrepaVAGA · Seu coach de carreira com IA",
   description:
     "Dossiê completo para sua próxima entrevista em minutos. Pesquisa da empresa, CV reescrito e roteiros personalizados. A primeira prep é grátis.",
