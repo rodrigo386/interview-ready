@@ -1,6 +1,19 @@
 # CLAUDE.md — PrepaVAGA / InterviewReady
 
-Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-25.
+Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-27.
+
+## 0. Estado atual — produção ao vivo
+
+PrepaVAGA está **em produção** desde 2026-04-27 em `https://prepavaga.com.br`. Todos os bloqueadores de go-live foram concluídos:
+
+- ✅ Domínio custom (Cloudflare DNS + Railway Let's Encrypt + middleware 308 www→apex)
+- ✅ Resend SMTP transacional + 4 templates PT-BR + Confirm email ON
+- ✅ Asaas em produção (CNPJ PROAICIRCLE Ltda verificado, webhook ao vivo, validação end-to-end com R$10 cartão + estorno)
+- ✅ Páginas legais (`/termos`, `/privacidade`, `/lgpd`)
+- ✅ Rate limit Upstash · OG image dinâmico · Admin role + dashboard expandido
+- ✅ Custom domain workflow (DNS-only, sem proxy laranja na Cloudflare — proxy quebra SSL do Railway)
+
+Próximas alavancas são pós-launch (analytics, Sentry, sitemap, welcome email).
 
 ---
 
@@ -45,7 +58,19 @@ Tarefas que são **só dashboard + env vars** (sem código) têm runbook própri
 
 ### Admin
 
-`profiles.is_admin = true` marca operadores. Admins (a) bypassam quota e reconcile, (b) ganham `tier=pro` + `subscription_status=active` permanentes (sem `asaas_subscription_id`), (c) veem o link "Admin" no AvatarMenu, (d) acessam `/admin` com KPIs (total users, MRR estimado, signups/preps por janela, ativação 30d, falhas) e tabelas (últimos cadastros, preps, pagamentos, preps falhadas). Helpers: `requireAdmin()` em `src/lib/admin/auth.ts`, `getAdminOverview()` em `src/lib/admin/metrics.ts`. Layout `/admin` separado da app shell. Migration 0011 introduziu o flag e promoveu `rgoalves@gmail.com`.
+`profiles.is_admin = true` marca operadores. Admins (a) bypassam quota e reconcile, (b) ganham `tier=pro` + `subscription_status=active` permanentes (sem `asaas_subscription_id`), (c) veem o link "Admin ⚡" no AvatarMenu, (d) acessam `/admin` com sidebar nav (lg+) ou pill nav horizontal (mobile). Migration 0011 introduziu o flag e promoveu `rgoalves@gmail.com`.
+
+**6 páginas:**
+- `/admin` — KPIs (12 cards: total users, MRR, receita 30d, ativação, etc.) + 4 tabelas de atividade recente.
+- `/admin/users` — tabela paginada (50/pág) com busca por e-mail + filtro Free/Pro + **botão Excluir** com confirmação. `deleteUserAction` em `src/app/admin/actions.ts` bloqueia self-delete e admin-on-admin (cascateia profile → preps → cvs → payments via FK).
+- `/admin/metrics` — gráficos SVG puros (sem chart lib) com séries diárias para 7/30/90d: cadastros, preps geradas, receita R$, preps falhadas. `getHistoricalSeries()` em `src/lib/admin/timeseries.ts` faz bucketing diário via Map.
+- `/admin/payments` — 100 transações mais recentes com filtro status + kind, total de receita confirmada.
+- `/admin/preps` — 100 preps mais recentes com filtro de status, badges separados pra geração/ATS/intel/CV rewrite.
+- `/admin/health` — 8 KPIs de falhas (amarelos quando >0) + listas de erros das 4 etapas de IA + preps travadas (>30min em pending/generating) + log de webhooks Asaas das últimas 24h.
+
+**Charts**: `src/components/admin/charts.tsx` com `LineChart` + `BarChart` em SVG puro (grid 4-linha, axis labels, tooltips via `<title>`, brand-orange default). Sem dep nova no bundle.
+
+**Helpers**: `requireAdmin()` em `src/lib/admin/auth.ts`, `getAdminOverview()` em `src/lib/admin/metrics.ts`, `getHistoricalSeries()` em `src/lib/admin/timeseries.ts`.
 
 ### Rate limiting
 
@@ -56,7 +81,7 @@ Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyInte
 - `GOOGLE_API_KEY` — **OBRIGATÓRIO** para todas as chamadas de IA (sections, ATS, company intel, CV rewrite, JD cleanup). Sem ele, geração quebra com `"GOOGLE_API_KEY is not set"`. Get em https://aistudio.google.com/apikey
 - `ASAAS_API_KEY` — sandbox/prod API key do Asaas (formato `$aact_...`). Sem ele, todo checkout/cancel falha com `"ASAAS_API_KEY is not set"`.
 - `ASAAS_WEBHOOK_TOKEN` — token arbitrário (recomendo 32 chars). Tem que bater com o header `asaas-access-token` configurado no painel Asaas.
-- `ASAAS_BASE_URL` — `https://sandbox.asaas.com/api/v3` (sandbox) ou `https://api.asaas.com/v3` (prod). Tem default de sandbox no schema. **Não setar como string vazia** (Zod rejeita).
+- `ASAAS_BASE_URL` — `https://sandbox.asaas.com/api/v3` (sandbox) ou `https://api.asaas.com/v3` (prod). Tem default de sandbox no schema. **Não setar como string vazia** (Zod rejeita). **Em produção: usar `api.asaas.com/v3`.**
 - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` — opcionais. Habilitam rate limit em produção. Sem eles, o helper `rateLimit()` falha aberto (sem bloqueio).
 - `MOCK_ANTHROPIC=1` — kill switch global de AI nos tests (nome legado, vale para Gemini agora)
 
@@ -301,7 +326,11 @@ Em ordem cronológica, mais recente embaixo:
 
 ## 11. Pendências / known gaps
 
-- **Webhook Asaas pode não estar entregando.** Diagnóstico (2026-04-25) mostrou `subscription_events` vazia mesmo após pagamento sandbox confirmado. Verificar painel Asaas → Integrações → Webhooks: URL correta + token bate com `ASAAS_WEBHOOK_TOKEN` + status Ativo + eventos selecionados (`PAYMENT_RECEIVED` mínimo).
+- ~~**Webhook Asaas pode não estar entregando.**~~ Resolvido em prod 2026-04-27. Webhook autenticando, `subscription_events` recebendo eventos. Reconcile (`src/lib/billing/reconcile.ts`) ainda existe como safety net caso o webhook caia.
+- **Host canonical (prepavaga.com.br vs railway.app):** o app respeita `x-forwarded-host` em `auth/callback/route.ts` e `api/billing/checkout/route.ts` — qualquer redirect/successUrl usa o host real da request, não o env var. Isso significa que o app continua funcionando se acessado via outro domínio que aponte pro Railway (útil em testes).
+- **Cloudflare proxy laranja quebra SSL:** os 2 CNAMEs (apex `@` e `www`) PRECISAM ficar **DNS only** (cinza), porque Railway emite seu próprio cert via Let's Encrypt. Proxy ON na Cloudflare causa erro 526 / loop.
+- **Redirect www→apex** é feito em `middleware.ts` com 308 (não Cloudflare Redirect Rules — essas exigem proxy ON). Header `x-forwarded-host` lido primeiro.
+- **Resend sender DEVE ser apex** (`nao-responda@prepavaga.com.br`), NÃO subdomínio (`@send.prepavaga.com.br`). API key restrita ao apex rejeita o subdomínio com 550. Documentado em `docs/email-setup.md`.
 - **Recrutador placeholder** removido na PR #29; Glassdoor também (não há API pública sustentável).
 - **Export PDF resumo:** layout minimalista (sem cores).
 - **`@napi-rs/canvas` warnings** continuam no boot Railway (cosmético — polyfill resolve).
