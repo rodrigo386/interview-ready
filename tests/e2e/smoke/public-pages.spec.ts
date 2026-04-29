@@ -33,17 +33,19 @@ test.describe("Public pages render without auth", () => {
   test("/termos renders all 12 sections", async ({ page }) => {
     await page.goto("/termos");
     await expect(page.getByRole("heading", { name: /Termos de Uso/i })).toBeVisible();
-    await expect(page.getByText(/PROAICIRCLE/)).toBeVisible();
-    await expect(page.getByText(/CNPJ.*62\.805\.016\/0001-29/)).toBeVisible();
-    // Foro reflects user choice (São Paulo/SP)
-    await expect(page.getByText(/Foro Central da Comarca de São Paulo/i)).toBeVisible();
+    // PROAICIRCLE/CNPJ/Foro appear in multiple places (intro, contract section,
+    // footer). `.first()` keeps the assertion strict-mode-safe.
+    await expect(page.getByText(/PROAICIRCLE/).first()).toBeVisible();
+    await expect(page.getByText(/CNPJ.*62\.805\.016\/0001-29/).first()).toBeVisible();
+    await expect(page.getByText(/Foro Central da Comarca de São Paulo/i).first()).toBeVisible();
   });
 
   test("/privacidade identifies the controller and lists LGPD rights", async ({ page }) => {
     await page.goto("/privacidade");
     await expect(page.getByRole("heading", { name: /Política de Privacidade/i })).toBeVisible();
-    await expect(page.getByText(/PROAICIRCLE CONSULTORIA/)).toBeVisible();
-    await expect(page.getByText(/privacidade@prepavaga\.com\.br/i)).toBeVisible();
+    await expect(page.getByText(/PROAICIRCLE CONSULTORIA/).first()).toBeVisible();
+    // Email link appears in multiple sections (controller, DPO, contact).
+    await expect(page.getByText(/privacidade@prepavaga\.com\.br/i).first()).toBeVisible();
     // Section 7 covers art. 18 LGPD rights
     await expect(page.getByRole("heading", { name: /Seus direitos como titular/i })).toBeVisible();
   });
