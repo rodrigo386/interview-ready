@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DeleteUserButton } from "@/components/admin/DeleteUserButton";
+import { GrantProButton } from "@/components/admin/GrantProButton";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export default async function UsersAdminPage({
   let query = sb
     .from("profiles")
     .select(
-      "id, email, full_name, tier, subscription_status, prep_credits, preps_used_this_month, is_admin, created_at, asaas_customer_id",
+      "id, email, full_name, tier, subscription_status, prep_credits, preps_used_this_month, is_admin, created_at, asaas_customer_id, asaas_subscription_id",
       { count: "exact" },
     )
     .order("created_at", { ascending: false });
@@ -49,6 +50,7 @@ export default async function UsersAdminPage({
     is_admin: boolean;
     created_at: string;
     asaas_customer_id: string | null;
+    asaas_subscription_id: string | null;
   }> | null) ?? [];
 
   const total = count ?? 0;
@@ -163,11 +165,20 @@ export default async function UsersAdminPage({
                       })}
                     </td>
                     <td className="px-4 py-3 align-top text-right">
-                      <DeleteUserButton
-                        userId={u.id}
-                        email={u.email}
-                        disabled={u.is_admin}
-                      />
+                      <div className="flex justify-end gap-1.5">
+                        <GrantProButton
+                          userId={u.id}
+                          email={u.email}
+                          tier={u.tier}
+                          isAdmin={u.is_admin}
+                          hasAsaasSubscription={Boolean(u.asaas_subscription_id)}
+                        />
+                        <DeleteUserButton
+                          userId={u.id}
+                          email={u.email}
+                          disabled={u.is_admin}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))
