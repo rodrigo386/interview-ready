@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -20,9 +21,17 @@ export function LoginForm() {
         <Input id="email" name="email" type="email" required className="mt-1" />
       </div>
       <div>
-        <label htmlFor="password" className="block text-sm text-zinc-300">
-          Senha
-        </label>
+        <div className="flex items-baseline justify-between">
+          <label htmlFor="password" className="block text-sm text-zinc-300">
+            Senha
+          </label>
+          <Link
+            href="/forgot-password"
+            className="text-xs text-zinc-400 hover:text-brand hover:underline"
+          >
+            Esqueceu?
+          </Link>
+        </div>
         <Input
           id="password"
           name="password"

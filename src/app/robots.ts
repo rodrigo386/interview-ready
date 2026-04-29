@@ -18,6 +18,8 @@ export default function robots(): MetadataRoute.Robots {
           "/profile/",
           "/prep/",
           "/welcome/",
+          "/forgot-password",
+          "/reset",
         ],
       },
     ],

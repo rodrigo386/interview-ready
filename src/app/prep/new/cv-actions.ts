@@ -73,7 +73,10 @@ export async function uploadCv(
   });
 
   if (insertErr) {
-    console.error("[uploadCv] DB insert failed:", insertErr);
+    // Log only message + code — the full error object echoes the row
+    // payload (parsed_text = entire CV PDF text), which would write CV
+    // PII to Railway logs.
+    console.error("[uploadCv] DB insert failed:", insertErr.message, insertErr.code);
     // Best-effort rollback of storage object.
     await supabase.storage.from(BUCKET).remove([path]);
     return { error: "Couldn't save your CV. Please retry." };

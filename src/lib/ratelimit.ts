@@ -88,6 +88,13 @@ export const LIMITS = {
   cvRewrite: { key: "cvRewrite", limit: 10, windowSeconds: 3600 },
   companyIntel: { key: "companyIntel", limit: 10, windowSeconds: 3600 },
   fetchJd: { key: "fetchJd", limit: 30, windowSeconds: 3600 },
+  // Auth limits — generous enough for legitimate "I mistyped" but kills
+  // credential stuffing / password spraying. Bucket per ip+email so an
+  // attacker rotating IPs still hits per-account limits, and an attacker
+  // hammering one IP across many accounts hits per-IP-prefix limits.
+  authLogin: { key: "authLogin", limit: 10, windowSeconds: 600 },
+  authSignup: { key: "authSignup", limit: 5, windowSeconds: 3600 },
+  passwordReset: { key: "passwordReset", limit: 3, windowSeconds: 600 },
 } as const satisfies Record<string, RateLimitConfig>;
 
 /** Format a Unix-ms reset timestamp into a human-readable PT-BR phrase. */

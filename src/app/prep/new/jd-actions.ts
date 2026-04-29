@@ -39,11 +39,14 @@ export async function fetchJdFromUrl(
   }
   const url = parsed.data;
 
-  // Rate limit (per user; falls back to anon IP-less identifier if not logged in).
+  // Require auth — this server action proxies arbitrary URLs through Jina
+  // and burns Gemini quota on cleanup. Anonymous use was an open abuse vector.
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
-  const identifier = auth.user ? `user:${auth.user.id}` : "anon";
-  const rl = await rateLimit(identifier, LIMITS.fetchJd);
+  if (!auth.user) {
+    return { error: "Faça login para buscar vaga por URL." };
+  }
+  const rl = await rateLimit(`user:${auth.user.id}`, LIMITS.fetchJd);
   if (!rl.success) {
     return {
       error: `Muitas buscas de URL seguidas. Tente novamente em ${formatResetPhrase(rl.reset)}.`,

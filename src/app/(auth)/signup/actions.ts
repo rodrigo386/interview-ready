@@ -1,8 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 
 const schema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -23,9 +26,10 @@ export type SignupState = {
 };
 
 function mapSupabaseError(message: string): string {
-  if (/already registered|already exists/i.test(message)) {
-    return "Já existe uma conta com este e-mail.";
-  }
+  // Note: we deliberately do NOT branch on "already registered" here.
+  // Returning that message reveals account existence (enumeration vector).
+  // Supabase's signUp returns success+pendingConfirmation for already-
+  // registered emails when "Confirm email" is on, which is what we want.
   if (/confirmation email/i.test(message)) {
     return "Cadastro feito, mas o envio do e-mail de confirmação falhou. Entre em contato com o suporte.";
   }
@@ -47,6 +51,18 @@ export async function signup(
     return { error: parsed.error.issues[0].message };
   }
 
+  const hdrs = await headers();
+  const ip =
+    hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    hdrs.get("x-real-ip") ??
+    "anon";
+  const rl = await rateLimit(`signup:${ip}`, LIMITS.authSignup);
+  if (!rl.success) {
+    return {
+      error: `Muitos cadastros deste IP. Tente novamente em ${formatResetPhrase(rl.reset)}.`,
+    };
+  }
+
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.signUp({
@@ -56,13 +72,18 @@ export async function signup(
     });
 
     if (error) {
-      console.error("[signup] supabase signUp error:", error.message, error);
+      // Log only message + status code, never the full error object — it
+      // contains the email payload and other PII that ends up in Railway logs.
+      console.error("[signup] supabase signUp error:", error.message, error.status);
       return { error: mapSupabaseError(error.message) };
     }
 
     // Persist CPF on the profile row created by the auth.users trigger.
+    // cpf_cnpj is in the column-level GRANT denylist for `authenticated`
+    // (migration 0011), so this write must go via admin client.
     if (data.user) {
-      const { error: cpfErr } = await supabase
+      const admin = createAdminClient();
+      const { error: cpfErr } = await admin
         .from("profiles")
         .update({ cpf_cnpj: parsed.data.cpfCnpj })
         .eq("id", data.user.id);
