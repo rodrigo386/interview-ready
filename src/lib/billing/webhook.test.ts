@@ -31,7 +31,12 @@ type DbCalls = {
   upsertPayment: { sql: string; args: unknown[] }[];
 };
 
-function fakeSupabase(opts: { eventInsertConflict?: boolean } = {}) {
+function fakeSupabase(opts: {
+  eventInsertConflict?: boolean;
+  /** Override what `from('profiles').select(...).eq(col, val).single()` returns.
+   *  Used to test the customer-mismatch defense and reverse customer lookup. */
+  profileSelectByCol?: (col: string, val: unknown) => unknown;
+} = {}) {
   const calls: DbCalls = { insertEvent: [], updateProfile: [], upsertPayment: [] };
   const supa = {
     from: (table: string) => ({
@@ -67,8 +72,13 @@ function fakeSupabase(opts: { eventInsertConflict?: boolean } = {}) {
         }),
       }),
       select: () => ({
-        eq: (_col: string, _val: unknown) => ({
-          single: async () => ({ data: { id: "u1" }, error: null }),
+        eq: (col: string, val: unknown) => ({
+          single: async () => {
+            if (opts.profileSelectByCol) {
+              return { data: opts.profileSelectByCol(col, val), error: null };
+            }
+            return { data: { id: "u1", asaas_customer_id: null, prep_credits: 0 }, error: null };
+          },
         }),
       }),
     }),
@@ -123,5 +133,81 @@ describe("dispatchEvent", () => {
     const evt = { event: "SOMETHING_NEW" } as AsaasWebhookEvent;
     const result = await dispatchEvent(evt, "evt_4", supa as never);
     expect(result).toEqual({ handled: false, reason: "unhandled" });
+  });
+
+  describe("customer cross-check (token-leak mitigation)", () => {
+    it("rejects event when externalReference uid doesn't match payment.customer's profile", async () => {
+      // Profile u1 belongs to a different Asaas customer than the event claims.
+      const { supa, calls } = fakeSupabase({
+        profileSelectByCol: (col) =>
+          col === "id"
+            ? { asaas_customer_id: "cus_LEGITIMATE" }
+            : { id: "u1", asaas_customer_id: "cus_LEGITIMATE", prep_credits: 0 },
+      });
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_RECEIVED",
+        payment: {
+          id: "p1",
+          customer: "cus_FORGED",
+          value: 30,
+          status: "RECEIVED",
+          billingType: "PIX",
+          externalReference: "pro:u1",
+        },
+      };
+      const result = await dispatchEvent(evt, "evt_xcheck", supa as never);
+      expect(result.handled).toBe(false);
+      if (!result.handled) {
+        expect(result.reason).toBe("error");
+        expect(result.detail).toMatch(/customer mismatch/i);
+      }
+      expect(calls.upsertPayment.length).toBe(0);
+      expect(calls.updateProfile.length).toBe(0);
+    });
+
+    it("accepts event when customer matches profile.asaas_customer_id", async () => {
+      const { supa, calls } = fakeSupabase({
+        profileSelectByCol: (col) =>
+          col === "id"
+            ? { asaas_customer_id: "cus_OK" }
+            : { id: "u1", asaas_customer_id: "cus_OK", prep_credits: 0 },
+      });
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_RECEIVED",
+        payment: {
+          id: "p2",
+          customer: "cus_OK",
+          value: 30,
+          status: "RECEIVED",
+          billingType: "PIX",
+          externalReference: "pro:u1",
+        },
+      };
+      const result = await dispatchEvent(evt, "evt_xcheck_ok", supa as never);
+      expect(result.handled).toBe(true);
+      expect(calls.upsertPayment.length).toBe(1);
+    });
+
+    it("skips check when profile has no asaas_customer_id yet (first-time customer)", async () => {
+      // First payment scenario: webhook arrives before our checkout had a chance
+      // to persist the customer id. Allow through, no mismatch error.
+      const { supa, calls } = fakeSupabase({
+        profileSelectByCol: () => ({ asaas_customer_id: null, prep_credits: 0 }),
+      });
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_RECEIVED",
+        payment: {
+          id: "p3",
+          customer: "cus_NEW",
+          value: 30,
+          status: "RECEIVED",
+          billingType: "PIX",
+          externalReference: "pro:u1",
+        },
+      };
+      const result = await dispatchEvent(evt, "evt_first", supa as never);
+      expect(result.handled).toBe(true);
+      expect(calls.upsertPayment.length).toBe(1);
+    });
   });
 });

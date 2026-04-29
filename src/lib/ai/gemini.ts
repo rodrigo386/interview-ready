@@ -790,7 +790,8 @@ function stripUrlFields(value: unknown): unknown {
  * Anything else passes through. Returns the original value if it's not an
  * object (schema will then reject it normally).
  */
-function sanitizeCompanyIntel(value: unknown): unknown {
+// Exported for unit tests; not part of the module's public surface.
+export function sanitizeCompanyIntel(value: unknown): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const obj = value as Record<string, unknown>;
   const out: Record<string, unknown> = { ...obj };

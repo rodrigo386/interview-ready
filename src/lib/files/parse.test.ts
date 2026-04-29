@@ -81,4 +81,26 @@ describe("parseCvFile", () => {
     const { text } = await parseCvFile(Buffer.from(dirty, "utf8"), "text/plain");
     expect(text).not.toMatch(/\n{3,}/);
   });
+
+  it("truncates over-long input at MAX_CHARS (80k) — DoS guard for token usage", async () => {
+    // 90k chars → expect 80k after truncation.
+    const huge = "x".repeat(90_000);
+    const { text } = await parseCvFile(Buffer.from(huge, "utf8"), "text/plain");
+    expect(text.length).toBe(80_000);
+  });
+
+  it("rejects PDFs over MAX_PDF_PAGES (50) with a friendly message", async () => {
+    const pdf = await PDFDocument.create();
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+    // 51 pages — just past the cap.
+    for (let i = 0; i < 51; i++) {
+      const page = pdf.addPage([600, 800]);
+      page.drawText("page " + i, { x: 40, y: 760, size: 10, font });
+    }
+    const bigBuf = Buffer.from(await pdf.save());
+    await expect(parseCvFile(bigBuf, "application/pdf")).rejects.toMatchObject({
+      name: "ParseError",
+      message: expect.stringMatching(/51 páginas.*limite é 50/),
+    });
+  }, 30_000);
 });
