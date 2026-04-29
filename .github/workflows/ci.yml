@@ -17,6 +17,11 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role' }}
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       MOCK_ANTHROPIC: "1"
+      # E2E auth tests require a Supabase project with email confirmation OFF
+      # OR a server-side bypass endpoint enabled via E2E_BYPASS_SECRET. Until
+      # one of those is set, the auth project is skipped to keep CI green.
+      # See `tests/e2e/auth-required/_helpers.ts` for the bypass flow.
+      E2E_BYPASS_SECRET: ${{ secrets.E2E_BYPASS_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
@@ -53,11 +58,11 @@ jobs:
         run: pnpm exec playwright test --project=smoke
 
       - name: E2E auth (full signup + prep flow, requires staging Supabase)
-        if: ${{ env.NEXT_PUBLIC_SUPABASE_URL != 'https://placeholder.supabase.co' }}
+        if: ${{ env.NEXT_PUBLIC_SUPABASE_URL != 'https://placeholder.supabase.co' && env.E2E_BYPASS_SECRET != '' }}
         run: pnpm exec playwright test --project=auth
 
       - name: Cleanup stale E2E test users (>1 day old, best-effort)
-        if: ${{ always() && env.NEXT_PUBLIC_SUPABASE_URL != 'https://placeholder.supabase.co' }}
+        if: ${{ always() && env.NEXT_PUBLIC_SUPABASE_URL != 'https://placeholder.supabase.co' && env.E2E_BYPASS_SECRET != '' }}
         run: node scripts/cleanup-e2e-users.mjs
 
       - name: Upload Playwright report on failure

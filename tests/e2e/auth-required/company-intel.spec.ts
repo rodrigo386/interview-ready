@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signUpAndLand } from "./_helpers";
 
 const CV_TEXT = `Rodrigo Costa — 10 years in procurement leadership.
 2019-2022 Bayer LATAM: Head of Digital Procurement Transformation.
@@ -15,15 +16,7 @@ deploy AI Sourcing Agents for autonomous negotiation on tail spend, and drive to
 Qualifications: 10+ years procurement transformation, hands-on AI deployment, PE experience preferred.`;
 
 async function signup(page: import("@playwright/test").Page) {
-  const email = `e2e-intel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
-  await page.goto("/signup");
-  await page.getByLabel("Nome completo").fill("E2E Intel Tester");
-  await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel(/CPF/i).fill("12345678909");
-  await page.getByLabel("Senha").fill("testpassword123");
-  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
-  await page.waitForURL("**/dashboard", { timeout: 15_000 });
-  return email;
+  return signUpAndLand(page, "E2E Intel Tester", "e2e-intel");
 }
 
 test("Sobre a empresa tab renders and deep-links", async ({ page }) => {

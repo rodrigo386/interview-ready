@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { PDFDocument, StandardFonts } from "pdf-lib";
+import { signUpAndLand } from "./_helpers";
 
 const CV_BODY =
   "Rodrigo Costa — 10 years in procurement leadership. " +
@@ -31,15 +32,7 @@ async function makeEmptyPdfBuffer(): Promise<Buffer> {
 }
 
 async function signup(page: import("@playwright/test").Page) {
-  const email = `e2e-upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
-  await page.goto("/signup");
-  await page.getByLabel("Nome completo").fill("E2E Upload Tester");
-  await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel(/CPF/i).fill("12345678909");
-  await page.getByLabel("Senha").fill("testpassword123");
-  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
-  await page.waitForURL("**/dashboard", { timeout: 15_000 });
-  return email;
+  return signUpAndLand(page, "E2E Upload Tester", "e2e-upload");
 }
 
 test("upload PDF, create prep, reuse CV on second prep", async ({ page }) => {

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signUpAndLand } from "./_helpers";
 
 const CV_TEXT = `Rodrigo Costa — 10 years procurement leadership.
 2019-2022 Bayer LATAM: Head of Digital Procurement Transformation.
@@ -14,16 +15,7 @@ deploy AI Sourcing Agents for autonomous negotiation on tail spend, drive touchl
 10+ years procurement transformation required, hands-on AI deployment, PE experience preferred.`;
 
 test("run ATS match shows score and top fixes", async ({ page }) => {
-  const email = `e2e-ats-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
-
-  // Signup + create prep (reuse MOCK path)
-  await page.goto("/signup");
-  await page.getByLabel("Nome completo").fill("E2E ATS Tester");
-  await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel(/CPF/i).fill("12345678909");
-  await page.getByLabel("Senha").fill("testpassword123");
-  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
-  await page.waitForURL("**/dashboard", { timeout: 15_000 });
+  await signUpAndLand(page, "E2E ATS Tester", "e2e-ats");
 
   await page.getByRole("link", { name: /primeiro prep|novo prep/i }).first().click();
   await page.waitForURL("**/prep/new");
