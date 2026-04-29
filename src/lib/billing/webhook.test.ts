@@ -26,48 +26,32 @@ describe("verifyToken", () => {
 });
 
 type DbCalls = {
-  insertEvent: { sql: string; args: unknown[] }[];
-  updateProfile: { sql: string; args: unknown[] }[];
-  upsertPayment: { sql: string; args: unknown[] }[];
+  insertEvent: { args: unknown[] }[];
+  /** All supabase.rpc(name, args) calls captured for assertion. */
+  rpc: { name: string; args: Record<string, unknown> }[];
 };
 
 function fakeSupabase(opts: {
   eventInsertConflict?: boolean;
-  /** Override what `from('profiles').select(...).eq(col, val).single()` returns.
-   *  Used to test the customer-mismatch defense and reverse customer lookup. */
+  /** Override what `from('profiles').select(...).eq(col, val).single()` returns. */
   profileSelectByCol?: (col: string, val: unknown) => unknown;
+  /** Make a specific RPC return an error to test the failure path. */
+  rpcError?: (name: string) => string | null;
 } = {}) {
-  const calls: DbCalls = { insertEvent: [], updateProfile: [], upsertPayment: [] };
+  const calls: DbCalls = { insertEvent: [], rpc: [] };
   const supa = {
     from: (table: string) => ({
       insert: (row: unknown) => ({
         select: () => ({
           single: async () => {
             if (table === "subscription_events") {
-              calls.insertEvent.push({ sql: "insert", args: [row] });
+              calls.insertEvent.push({ args: [row] });
               if (opts.eventInsertConflict) {
                 return { data: null, error: { code: "23505" } };
               }
               return { data: row, error: null };
             }
             return { data: row, error: null };
-          },
-        }),
-        then(resolve: (v: unknown) => void) {
-          resolve({ data: null, error: null });
-        },
-      }),
-      upsert: (row: unknown) => ({
-        then(resolve: (v: unknown) => void) {
-          calls.upsertPayment.push({ sql: "upsert", args: [row] });
-          resolve({ data: null, error: null });
-        },
-      }),
-      update: (patch: unknown) => ({
-        eq: (_col: string, _val: unknown) => ({
-          then(resolve: (v: unknown) => void) {
-            calls.updateProfile.push({ sql: "update", args: [patch] });
-            resolve({ data: null, error: null });
           },
         }),
       }),
@@ -82,6 +66,11 @@ function fakeSupabase(opts: {
         }),
       }),
     }),
+    rpc: async (name: string, args: Record<string, unknown>) => {
+      calls.rpc.push({ name, args });
+      const err = opts.rpcError?.(name);
+      return err ? { data: null, error: { message: err } } : { data: null, error: null };
+    },
   };
   return { supa, calls };
 }
@@ -99,7 +88,7 @@ describe("dispatchEvent", () => {
     if (!result.handled) expect(result.reason).toBe("duplicate");
   });
 
-  it("PAYMENT_RECEIVED with pro:uid sets tier=pro + writes payment", async () => {
+  it("PAYMENT_RECEIVED with pro:uid calls handle_payment_received with kind=pro_subscription", async () => {
     const { supa, calls } = fakeSupabase();
     const evt: AsaasWebhookEvent = {
       event: "PAYMENT_RECEIVED",
@@ -108,14 +97,18 @@ describe("dispatchEvent", () => {
     };
     const result = await dispatchEvent(evt, "evt_2", supa as never);
     expect(result.handled).toBe(true);
-    expect(calls.upsertPayment.length).toBe(1);
-    expect(calls.updateProfile.length).toBe(1);
-    const patch = calls.updateProfile[0].args[0] as Record<string, unknown>;
-    expect(patch.tier).toBe("pro");
-    expect(patch.subscription_status).toBe("active");
+    expect(calls.rpc.length).toBe(1);
+    expect(calls.rpc[0].name).toBe("handle_payment_received");
+    expect(calls.rpc[0].args).toMatchObject({
+      p_user_id: "u1",
+      p_payment_id: "p1",
+      p_kind: "pro_subscription",
+      p_amount_cents: 3000,
+      p_next_due_date: "2026-05-25",
+    });
   });
 
-  it("PAYMENT_RECEIVED with prep:uid:nano increments credits", async () => {
+  it("PAYMENT_RECEIVED with prep:uid:nano calls handle_payment_received with kind=prep_purchase", async () => {
     const { supa, calls } = fakeSupabase();
     const evt: AsaasWebhookEvent = {
       event: "PAYMENT_RECEIVED",
@@ -124,8 +117,30 @@ describe("dispatchEvent", () => {
     };
     const result = await dispatchEvent(evt, "evt_3", supa as never);
     expect(result.handled).toBe(true);
-    const patch = calls.updateProfile[0].args[0] as Record<string, unknown>;
-    expect(patch).toHaveProperty("prep_credits");
+    expect(calls.rpc[0].args).toMatchObject({
+      p_kind: "prep_purchase",
+      p_amount_cents: 1000,
+      // No nextDueDate for prep_purchase.
+      p_next_due_date: null,
+    });
+  });
+
+  it("returns handled=false reason='error' when RPC fails (transactional rollback)", async () => {
+    const { supa, calls } = fakeSupabase({
+      rpcError: (name) => (name === "handle_payment_received" ? "deadlock detected" : null),
+    });
+    const evt: AsaasWebhookEvent = {
+      event: "PAYMENT_RECEIVED",
+      payment: { id: "p1", customer: "c1", value: 30, status: "RECEIVED",
+        billingType: "PIX", externalReference: "pro:u1" },
+    };
+    const result = await dispatchEvent(evt, "evt_rpc_err", supa as never);
+    expect(result.handled).toBe(false);
+    if (!result.handled) {
+      expect(result.reason).toBe("error");
+      expect(result.detail).toMatch(/deadlock/);
+    }
+    expect(calls.rpc.length).toBe(1);
   });
 
   it("unknown event returns handled=false reason='unhandled'", async () => {
@@ -161,8 +176,7 @@ describe("dispatchEvent", () => {
         expect(result.reason).toBe("error");
         expect(result.detail).toMatch(/customer mismatch/i);
       }
-      expect(calls.upsertPayment.length).toBe(0);
-      expect(calls.updateProfile.length).toBe(0);
+      expect(calls.rpc.length).toBe(0);
     });
 
     it("accepts event when customer matches profile.asaas_customer_id", async () => {
@@ -185,7 +199,8 @@ describe("dispatchEvent", () => {
       };
       const result = await dispatchEvent(evt, "evt_xcheck_ok", supa as never);
       expect(result.handled).toBe(true);
-      expect(calls.upsertPayment.length).toBe(1);
+      expect(calls.rpc.length).toBe(1);
+      expect(calls.rpc[0].name).toBe("handle_payment_received");
     });
 
     it("skips check when profile has no asaas_customer_id yet (first-time customer)", async () => {
@@ -207,7 +222,8 @@ describe("dispatchEvent", () => {
       };
       const result = await dispatchEvent(evt, "evt_first", supa as never);
       expect(result.handled).toBe(true);
-      expect(calls.upsertPayment.length).toBe(1);
+      expect(calls.rpc.length).toBe(1);
+      expect(calls.rpc[0].name).toBe("handle_payment_received");
     });
   });
 });

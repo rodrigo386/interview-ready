@@ -107,6 +107,16 @@ export async function dispatchEvent(
   }
 }
 
+// All four handlers below dispatch to SECURITY DEFINER stored procedures
+// (see migration 0013) that wrap each payment/profile pair in a single
+// transaction. Atomicity prevents the historical "user paid but tier
+// stayed free" failure mode where the connection died between two writes.
+//
+// They also use atomic UPDATE expressions for prep_credits
+// (`prep_credits + 1` instead of read-modify-write), eliminating a race
+// between concurrent webhooks that idempotency-by-event-id alone doesn't
+// fully cover.
+
 async function handlePaymentReceived(
   evt: AsaasWebhookEvent,
   userId: string,
@@ -117,41 +127,17 @@ async function handlePaymentReceived(
   const kind = ref?.kind ?? "pro_subscription";
   const cents = Math.round(p.value * 100);
 
-  await supabase.from("payments").upsert(
-    {
-      user_id: userId,
-      asaas_payment_id: p.id,
-      kind,
-      amount_cents: cents,
-      status: "received",
-      billing_method: p.billingType,
-      paid_at: p.paymentDate ?? new Date().toISOString(),
-      raw_payload: p as unknown,
-    },
-    { onConflict: "asaas_payment_id" },
-  );
-
-  if (kind === "pro_subscription") {
-    await supabase
-      .from("profiles")
-      .update({
-        tier: "pro",
-        subscription_status: "active",
-        subscription_renews_at: p.nextDueDate ?? null,
-      })
-      .eq("id", userId);
-  } else {
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("prep_credits")
-      .eq("id", userId)
-      .single();
-    const credits = ((prof as { prep_credits?: number } | null)?.prep_credits ?? 0) + 1;
-    await supabase
-      .from("profiles")
-      .update({ prep_credits: credits })
-      .eq("id", userId);
-  }
+  const { error } = await supabase.rpc("handle_payment_received", {
+    p_user_id: userId,
+    p_payment_id: p.id,
+    p_kind: kind,
+    p_amount_cents: cents,
+    p_billing_method: p.billingType,
+    p_paid_at: p.paymentDate ?? new Date().toISOString(),
+    p_raw_payload: p as unknown,
+    p_next_due_date: kind === "pro_subscription" ? p.nextDueDate ?? null : null,
+  });
+  if (error) return { handled: false, reason: "error", detail: error.message };
   return { handled: true, userId };
 }
 
@@ -160,24 +146,17 @@ async function handlePaymentOverdue(
   userId: string,
   supabase: SupabaseClient,
 ): Promise<DispatchResult> {
-  await supabase
-    .from("payments")
-    .upsert(
-      {
-        user_id: userId,
-        asaas_payment_id: evt.payment!.id,
-        kind: parseExternalReference(evt.payment!.externalReference)?.kind ?? "pro_subscription",
-        amount_cents: Math.round(evt.payment!.value * 100),
-        status: "overdue",
-        billing_method: evt.payment!.billingType,
-        raw_payload: evt.payment as unknown,
-      },
-      { onConflict: "asaas_payment_id" },
-    );
-  await supabase
-    .from("profiles")
-    .update({ subscription_status: "overdue" })
-    .eq("id", userId);
+  const p = evt.payment!;
+  const kind = parseExternalReference(p.externalReference)?.kind ?? "pro_subscription";
+  const { error } = await supabase.rpc("handle_payment_overdue", {
+    p_user_id: userId,
+    p_payment_id: p.id,
+    p_kind: kind,
+    p_amount_cents: Math.round(p.value * 100),
+    p_billing_method: p.billingType,
+    p_raw_payload: p as unknown,
+  });
+  if (error) return { handled: false, reason: "error", detail: error.message };
   return { handled: true, userId };
 }
 
@@ -186,28 +165,14 @@ async function handlePaymentRefunded(
   userId: string,
   supabase: SupabaseClient,
 ): Promise<DispatchResult> {
-  const ref = parseExternalReference(evt.payment!.externalReference);
-  await supabase
-    .from("payments")
-    .update({ status: "refunded" })
-    .eq("asaas_payment_id", evt.payment!.id);
-  if (ref?.kind === "pro_subscription") {
-    await supabase
-      .from("profiles")
-      .update({ tier: "free", subscription_status: "expired" })
-      .eq("id", userId);
-  } else if (ref?.kind === "prep_purchase") {
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("prep_credits")
-      .eq("id", userId)
-      .single();
-    const credits = Math.max(0, ((prof as { prep_credits?: number } | null)?.prep_credits ?? 0) - 1);
-    await supabase
-      .from("profiles")
-      .update({ prep_credits: credits })
-      .eq("id", userId);
-  }
+  const p = evt.payment!;
+  const kind = parseExternalReference(p.externalReference)?.kind ?? null;
+  const { error } = await supabase.rpc("handle_payment_refunded", {
+    p_user_id: userId,
+    p_payment_id: p.id,
+    p_kind: kind,
+  });
+  if (error) return { handled: false, reason: "error", detail: error.message };
   return { handled: true, userId };
 }
 
@@ -216,9 +181,9 @@ async function handleSubscriptionDeleted(
   userId: string,
   supabase: SupabaseClient,
 ): Promise<DispatchResult> {
-  await supabase
-    .from("profiles")
-    .update({ subscription_status: "canceled", tier: "free" })
-    .eq("id", userId);
+  const { error } = await supabase.rpc("handle_subscription_deleted", {
+    p_user_id: userId,
+  });
+  if (error) return { handled: false, reason: "error", detail: error.message };
   return { handled: true, userId };
 }
