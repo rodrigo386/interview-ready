@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { checkQuota, type ProfileBilling } from "@/lib/billing/quota";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { createPrepInputSchema } from "./schema";
@@ -132,15 +133,20 @@ export async function createPrep(
     return { error: "Could not save your prep session. Please try again." };
   }
 
-  // Quota consumption.
+  // Quota consumption. These columns (prep_credits, preps_used_this_month)
+  // are server-managed — `authenticated` has no UPDATE grant on them, so we
+  // write via the admin client. We've already verified ownership via getUser
+  // above and quota state via checkQuota, so privilege escalation isn't a
+  // concern here.
+  const admin = createAdminClient();
   if (quota.mode === "credit") {
-    await supabase
+    await admin
       .from("profiles")
       .update({ prep_credits: billing.prep_credits - 1 })
       .eq("id", user.id);
   } else {
     // pro or free: increment lifetime counter (free enforces 0→1 cap; pro is analytics).
-    await supabase
+    await admin
       .from("profiles")
       .update({ preps_used_this_month: billing.preps_used_this_month + 1 })
       .eq("id", user.id);

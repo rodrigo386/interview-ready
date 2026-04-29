@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { asaas } from "@/lib/billing/asaas";
 import { buildExternalReference } from "@/lib/billing/ids";
 import { PRO_AMOUNT_CENTS, PER_USE_AMOUNT_CENTS } from "@/lib/billing/prices";
@@ -53,6 +54,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Reads stay on the user-scoped client (RLS-protected). Writes to billing
+  // columns (cpf_cnpj, asaas_customer_id, asaas_subscription_id) go through
+  // the admin client because the column-level GRANT for `authenticated`
+  // intentionally excludes them — those columns are server-managed only.
+  const admin = createAdminClient();
+
   const { data: profile } = await supabase
     .from("profiles")
     .select(
@@ -93,7 +100,7 @@ export async function POST(req: Request) {
       );
     }
     cpfCnpj = digits;
-    await supabase.from("profiles").update({ cpf_cnpj: digits }).eq("id", p.id);
+    await admin.from("profiles").update({ cpf_cnpj: digits }).eq("id", p.id);
   }
   if (!cpfCnpj) {
     return NextResponse.json({ error: "cpf_required" }, { status: 422 });
@@ -111,7 +118,7 @@ export async function POST(req: Request) {
       cpfCnpj,
     });
     customerId = cust.id;
-    await supabase
+    await admin
       .from("profiles")
       .update({ asaas_customer_id: customerId })
       .eq("id", p.id);
@@ -141,7 +148,7 @@ export async function POST(req: Request) {
       }),
       callback: { successUrl: proSuccessUrl, autoRedirect: true },
     });
-    await supabase
+    await admin
       .from("profiles")
       .update({ asaas_subscription_id: sub.id })
       .eq("id", p.id);
