@@ -4,9 +4,15 @@ import { updateSession } from "@/lib/supabase/middleware";
 export async function middleware(request: NextRequest) {
   // Force www → apex (canonical = no www). Runs before Supabase session
   // logic so the redirect is the cheapest possible response.
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
-  if (host.startsWith("www.")) {
-    const apexHost = host.slice(4);
+  // Check every host source — Railway sometimes leaves x-forwarded-host as
+  // the internal hostname while the real public host is in `host` or in the
+  // parsed nextUrl.
+  const xfHost = request.headers.get("x-forwarded-host") ?? "";
+  const rawHost = request.headers.get("host") ?? "";
+  const urlHost = request.nextUrl.host ?? "";
+  const wwwHost = [xfHost, rawHost, urlHost].find((h) => h.startsWith("www."));
+  if (wwwHost) {
+    const apexHost = wwwHost.slice(4);
     const proto = request.headers.get("x-forwarded-proto") ?? "https";
     const target = new URL(request.nextUrl.pathname + request.nextUrl.search, `${proto}://${apexHost}`);
     return NextResponse.redirect(target, 308);
