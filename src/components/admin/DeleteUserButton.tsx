@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { deleteUserAction } from "@/app/admin/actions";
+import { useDialogFocus } from "@/components/ui/useDialogFocus";
 
 export function DeleteUserButton({
   userId,
@@ -15,6 +16,10 @@ export function DeleteUserButton({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const close = () => !pending && setOpen(false);
+  useDialogFocus(open, dialogRef, close, cancelRef);
 
   function onConfirm() {
     setError(null);
@@ -42,14 +47,16 @@ export function DeleteUserButton({
         <div
           role="dialog"
           aria-modal="true"
+          aria-labelledby="delete-user-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => !pending && setOpen(false)}
+          onClick={close}
         >
           <div
+            ref={dialogRef}
             className="w-full max-w-md rounded-lg border border-neutral-200 bg-bg p-5 shadow-prep dark:border-zinc-800"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-text-primary">
+            <h3 id="delete-user-title" className="text-base font-semibold text-text-primary">
               Excluir usuário?
             </h3>
             <p className="mt-2 text-sm text-text-secondary">
@@ -63,6 +70,7 @@ export function DeleteUserButton({
             )}
             <div className="mt-5 flex justify-end gap-2">
               <button
+                ref={cancelRef}
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={pending}

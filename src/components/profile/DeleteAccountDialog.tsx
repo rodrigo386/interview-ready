@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
+import { useDialogFocus } from "@/components/ui/useDialogFocus";
 import type { ActionResult } from "@/app/(app)/profile/actions";
 
 export function DeleteAccountDialog({
@@ -13,6 +14,15 @@ export function DeleteAccountDialog({
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const dialogRef = useRef<HTMLFormElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const close = () => {
+    if (pending) return;
+    setOpen(false);
+    setText("");
+    setError(null);
+  };
+  useDialogFocus(open, dialogRef, close, cancelRef);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,13 +47,17 @@ export function DeleteAccountDialog({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="delete-account-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={close}
     >
       <form
+        ref={dialogRef}
         onSubmit={onSubmit}
+        onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md space-y-4 rounded-lg bg-bg p-6 shadow-prep"
       >
-        <h3 className="text-lg font-semibold text-text-primary">Excluir minha conta</h3>
+        <h3 id="delete-account-title" className="text-lg font-semibold text-text-primary">Excluir minha conta</h3>
         <p className="text-sm text-text-secondary">
           Essa ação é permanente. Todos os seus preps, CVs e dados serão excluídos
           imediatamente. Digite <strong>EXCLUIR</strong> para confirmar.
@@ -63,13 +77,10 @@ export function DeleteAccountDialog({
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-2">
           <Button
+            ref={cancelRef}
             type="button"
             variant="ghost"
-            onClick={() => {
-              setOpen(false);
-              setText("");
-              setError(null);
-            }}
+            onClick={close}
             disabled={pending}
           >
             Cancelar

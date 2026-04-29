@@ -8,7 +8,7 @@ import { createPrep, type CreatePrepState } from "@/app/prep/new/actions";
 import { CvPicker, type CvSummary } from "./CvPicker";
 import { JobDescriptionPicker } from "./JobDescriptionPicker";
 import { UpgradeModal } from "@/components/billing/UpgradeModal";
-import { startCheckout } from "@/components/billing/CheckoutButton";
+import { useCheckoutFlow } from "@/components/billing/useCheckoutFlow";
 
 export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
   const [state, formAction, pending] = useActionState<CreatePrepState, FormData>(
@@ -21,6 +21,7 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
   );
   const [cvText, setCvText] = useState<string | null>(null);
   const [jdText, setJdText] = useState<string | null>(null);
+  const checkout = useCheckoutFlow();
 
   const onCvResolved = useCallback(
     (v: { cvId: string | null; cvText: string | null }) => {
@@ -108,12 +109,14 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
             // The modal closes on Esc or outside-click via its own handlers.
             window.location.reload();
           }}
-          onCheckout={(kind) =>
-            startCheckout(kind).catch((err) =>
-              alert(err instanceof Error ? err.message : "Erro"),
-            )
-          }
+          onCheckout={(kind) => checkout.start(kind)}
         />
+        {checkout.error && (
+          <p role="alert" className="rounded-md border border-red-500 bg-red-soft px-3 py-2 text-sm text-red-700">
+            {checkout.error}
+          </p>
+        )}
+        {checkout.dialog}
 
         <Button type="submit" disabled={pending || !canSubmit} className="w-full" size="lg">
           {pending ? (

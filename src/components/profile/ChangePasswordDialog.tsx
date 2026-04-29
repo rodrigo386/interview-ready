@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
+import { useDialogFocus } from "@/components/ui/useDialogFocus";
 import type { ActionResult } from "@/app/(app)/profile/actions";
 
 export function ChangePasswordDialog({
@@ -16,8 +17,11 @@ export function ChangePasswordDialog({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [pending, startTransition] = useTransition();
+  const dialogRef = useRef<HTMLFormElement>(null);
+  const firstFieldRef = useRef<HTMLInputElement>(null);
 
   const close = () => {
+    if (pending) return;
     setOpen(false);
     setCurrent("");
     setNext("");
@@ -25,6 +29,7 @@ export function ChangePasswordDialog({
     setError(null);
     setSuccess(false);
   };
+  useDialogFocus(open, dialogRef, close, firstFieldRef);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,18 +68,23 @@ export function ChangePasswordDialog({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="change-password-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={close}
     >
       <form
+        ref={dialogRef}
         onSubmit={onSubmit}
+        onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md space-y-4 rounded-lg bg-bg p-6 shadow-prep"
       >
-        <h3 className="text-lg font-semibold text-text-primary">Trocar senha</h3>
+        <h3 id="change-password-title" className="text-lg font-semibold text-text-primary">Trocar senha</h3>
         <div>
           <label className="mb-1 block text-sm text-text-secondary" htmlFor="cur-pwd">
             Senha atual
           </label>
           <input
+            ref={firstFieldRef}
             id="cur-pwd"
             type="password"
             value={current}

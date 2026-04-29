@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { useDialogFocus } from "@/components/ui/useDialogFocus";
 
 type Kind = "pro_subscription" | "prep_purchase";
 
@@ -16,15 +17,8 @@ export function UpgradeModal({
   onCheckout: (kind: Kind) => void;
 }) {
   const [pendingKind, setPendingKind] = useState<Kind | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, dialogRef, onClose);
 
   if (!open) return null;
 
@@ -37,14 +31,16 @@ export function UpgradeModal({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="upgrade-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         className="w-full max-w-2xl rounded-lg bg-bg p-6 shadow-prep"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-xl font-bold text-text-primary">
+        <h3 id="upgrade-modal-title" className="text-xl font-bold text-text-primary">
           Você já usou sua prep grátis
         </h3>
         <p className="mt-2 text-sm text-text-secondary">
