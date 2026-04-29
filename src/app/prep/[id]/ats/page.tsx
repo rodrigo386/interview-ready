@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { atsAnalysisSchema, prepGuideSchema, cvRewriteSchema } from "@/lib/ai/schemas";
+import { loadPrepSession } from "@/lib/prep/load-session";
 import { AtsHero } from "@/components/prep/AtsHero";
 import { IssueRow } from "@/components/prep/IssueRow";
 import { AtsCtaCard } from "@/components/prep/AtsCtaCard";
@@ -19,12 +19,7 @@ export default async function AtsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: session } = await supabase
-    .from("prep_sessions")
-    .select("id, prep_guide, ats_status, ats_analysis, ats_error_message, cv_rewrite, cv_rewrite_status, cv_rewrite_error")
-    .eq("id", id)
-    .single();
+  const session = await loadPrepSession(id);
   if (!session) notFound();
 
   const guideParsed = prepGuideSchema.safeParse(session.prep_guide);

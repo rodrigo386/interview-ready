@@ -24,18 +24,18 @@ export async function uploadCv(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "You must be signed in." };
+  if (!user) return { error: "Faça login para enviar um CV." };
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { error: "Choose a file to upload." };
+    return { error: "Selecione um arquivo para enviar." };
   }
   if (file.size > MAX_SIZE_BYTES) {
     const mb = (file.size / 1024 / 1024).toFixed(1);
-    return { error: `Max 5 MB. This file is ${mb} MB.` };
+    return { error: `Limite de 5 MB. Este arquivo tem ${mb} MB.` };
   }
   if (!ACCEPTED_MIME_TYPES.includes(file.type as typeof ACCEPTED_MIME_TYPES[number])) {
-    return { error: "Only PDF, DOCX, or TXT files are supported." };
+    return { error: "Apenas PDF, DOCX ou TXT são aceitos." };
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -47,7 +47,7 @@ export async function uploadCv(
   } catch (err) {
     if (err instanceof ParseError) return { error: err.message };
     console.error("[uploadCv] parse error:", err);
-    return { error: "Couldn't read this file. Try a different one." };
+    return { error: "Não conseguimos ler este arquivo. Tente outro." };
   }
 
   const cvId = randomUUID();
@@ -59,7 +59,7 @@ export async function uploadCv(
     .upload(path, buffer, { contentType: file.type, upsert: false });
   if (uploadErr) {
     console.error("[uploadCv] storage upload failed:", uploadErr);
-    return { error: "Upload failed. Please retry." };
+    return { error: "Falha no upload. Tente novamente." };
   }
 
   const { error: insertErr } = await supabase.from("cvs").insert({
@@ -79,7 +79,7 @@ export async function uploadCv(
     console.error("[uploadCv] DB insert failed:", insertErr.message, insertErr.code);
     // Best-effort rollback of storage object.
     await supabase.storage.from(BUCKET).remove([path]);
-    return { error: "Couldn't save your CV. Please retry." };
+    return { error: "Não foi possível salvar seu CV. Tente novamente." };
   }
 
   return { cv: { id: cvId, file_name: file.name } };

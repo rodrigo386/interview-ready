@@ -5,7 +5,6 @@ export function FreeTierBanner({
   credits,
 }: {
   prepsUsedThisMonth: number;
-  prepsResetAt?: string;
   credits: number;
 }) {
   const freeRemaining = Math.max(0, 1 - prepsUsedThisMonth);

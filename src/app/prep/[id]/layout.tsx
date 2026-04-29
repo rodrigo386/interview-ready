@@ -10,6 +10,7 @@ import { MobileStepNav } from "@/components/prep/MobileStepNav";
 import { computeServerCompleted } from "@/lib/prep/step-state";
 import { PrepSkeleton } from "@/components/prep/PrepSkeleton";
 import { PrepFailed } from "@/components/prep/PrepFailed";
+import { loadPrepSession } from "@/lib/prep/load-session";
 
 export default async function PrepLayout({
   children,
@@ -25,13 +26,8 @@ export default async function PrepLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: session, error } = await supabase
-    .from("prep_sessions")
-    .select("id, generation_status, prep_guide, error_message, ats_status")
-    .eq("id", id)
-    .single();
-
-  if (error || !session) notFound();
+  const session = await loadPrepSession(id);
+  if (!session) notFound();
 
   if (session.generation_status === "generating" || session.generation_status === "pending") {
     return <PrepSkeleton />;

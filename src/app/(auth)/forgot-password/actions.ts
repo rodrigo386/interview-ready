@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
+import { resolveOrigin } from "@/lib/http/host";
 
 const schema = z.object({ email: z.string().email("E-mail inválido") });
 
@@ -42,9 +43,7 @@ export async function requestPasswordReset(
 
   // Build redirect target from the request host so the email link returns
   // the user to the same domain they started on (apex prepavaga.com.br).
-  const proto = hdrs.get("x-forwarded-proto") ?? "https";
-  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "prepavaga.com.br";
-  const redirectTo = `${proto}://${host}/auth/reset`;
+  const redirectTo = `${resolveOrigin(hdrs)}/auth/reset`;
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {

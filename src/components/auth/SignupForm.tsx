@@ -73,7 +73,7 @@ export function SignupForm() {
         </p>
       )}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Criando conta..." : "Criar conta"}
+        {pending ? "Criando conta…" : "Criar conta"}
       </Button>
     </form>
   );

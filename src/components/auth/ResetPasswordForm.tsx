@@ -34,7 +34,7 @@ export function ResetPasswordForm() {
         </p>
       )}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Salvando..." : "Redefinir senha"}
+        {pending ? "Salvando…" : "Redefinir senha"}
       </Button>
     </form>
   );

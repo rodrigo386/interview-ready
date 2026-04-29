@@ -40,7 +40,7 @@ Próximas alavancas são pós-launch (analytics, Sentry, sitemap, welcome email)
 | Lang | TypeScript strict |
 | DB / Auth / Storage | Supabase (project `reslmtzofwczxrswulca`) |
 | AI — sections + ATS + CV rewrite | **Google Gemini** (`gemini-3.1-flash-lite-preview`) via `@google/generative-ai` |
-| AI — Company intel (com Google Search grounding) | **Google Gemini** (`gemini-2.5-flash`) via `@google/generative-ai` |
+| AI — Company intel (com Google Search grounding) | **Google Gemini** (`gemini-3.1-flash-lite-preview`) via `@google/generative-ai` |
 | File parse | `pdf-parse@2` (PDF), `mammoth` (DOCX) |
 | PDF gen | `pdf-lib` |
 | URL fetch | Jina Reader (`https://r.jina.ai/<URL>`) — free, no key, handles JS-rendered pages |
@@ -121,7 +121,7 @@ Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyInte
 **`QuestionPager` (client)** recebe `pages: PagerPage[]` **pré-renderizadas** (JSX serializa cross RSC boundary, closures não — não passar `buildSections: fn` do server). Ao chegar na última pergunta, chama `markStepComplete` do context + `router.push(nextHref)`.
 
 **Pipeline de geração** (`src/lib/ai/pipeline.ts`):
-- Stage A: company research via Gemini 2.5 Flash + `googleSearchRetrieval` (single-call, JSON output via prompt — Gemini não permite grounding + responseSchema simultâneos)
+- Stage A: company research via Gemini 3.1 Flash Lite Preview + `googleSearch` (single-call, JSON output via prompt — Gemini não permite grounding + responseSchema simultâneos). Antes era 2.5-flash mas chronic 503s forçaram a troca em 2026-04-29.
 - Stage B: 5 chamadas paralelas de sections via Gemini 3.1 Flash Lite (likely/deep-dive/tricky/questions-to-ask/mindset)
 - ATS analysis e CV rewrite são server actions separadas via Gemini 3.1 Flash Lite, disparadas pelo user na tela ATS
 

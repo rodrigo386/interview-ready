@@ -106,16 +106,6 @@ export function CompanyCard({
                     <p className="mt-0.5 text-[13px] leading-5 text-ink-2">
                       {d.why_it_matters}
                     </p>
-                    {d.source_url && (
-                      <a
-                        href={d.source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 inline-block text-[11px] font-medium text-orange-700 hover:text-orange-500"
-                      >
-                        Fonte ↗
-                      </a>
-                    )}
                   </li>
                 ))}
               </ul>

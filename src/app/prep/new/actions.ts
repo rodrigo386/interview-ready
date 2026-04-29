@@ -106,7 +106,7 @@ export async function createPrep(
       .eq("user_id", user.id)
       .single();
     if (cvErr || !cv) {
-      return { error: "CV not found. Upload or paste one." };
+      return { error: "CV não encontrado. Envie um arquivo ou cole o texto." };
     }
     cv_text = cv.parsed_text;
     cv_id = cv.id;
@@ -129,8 +129,8 @@ export async function createPrep(
     .single();
 
   if (insertError || !session) {
-    console.error("[createPrep] insert failed:", insertError);
-    return { error: "Could not save your prep session. Please try again." };
+    console.error("[createPrep] insert failed:", insertError?.message, insertError?.code);
+    return { error: "Não foi possível salvar seu prep agora. Tente novamente em alguns instantes." };
   }
 
   // Quota consumption. These columns (prep_credits, preps_used_this_month)

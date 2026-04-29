@@ -46,7 +46,7 @@ export function LoginForm() {
         </p>
       )}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Entrando..." : "Entrar"}
+        {pending ? "Entrando…" : "Entrar"}
       </Button>
     </form>
   );

@@ -6,6 +6,7 @@ import { asaas } from "@/lib/billing/asaas";
 import { buildExternalReference } from "@/lib/billing/ids";
 import { PRO_AMOUNT_CENTS, PER_USE_AMOUNT_CENTS } from "@/lib/billing/prices";
 import { env } from "@/lib/env";
+import { resolveOrigin } from "@/lib/http/host";
 
 const bodySchema = z.object({
   kind: z.enum(["pro_subscription", "prep_purchase"]),
@@ -30,15 +31,6 @@ function nano(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function appUrl(req: Request): string {
-  // Prefer the request's actual host so the Asaas callback returns the user
-  // to the same domain they started checkout from (e.g. prepavaga.com.br
-  // even when NEXT_PUBLIC_APP_URL still points to the railway.app fallback).
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  const proto = req.headers.get("x-forwarded-proto") ?? "https";
-  if (host) return `${proto}://${host}`;
-  return env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-}
 
 export async function POST(req: Request) {
   let parsed;
@@ -131,8 +123,8 @@ export async function POST(req: Request) {
     }
   }
 
-  const proSuccessUrl = `${appUrl(req)}/welcome/pro`;
-  const oneOffSuccessUrl = `${appUrl(req)}/dashboard?billing=ok`;
+  const proSuccessUrl = `${resolveOrigin(req)}/welcome/pro`;
+  const oneOffSuccessUrl = `${resolveOrigin(req)}/dashboard?billing=ok`;
 
   if (parsed.kind === "pro_subscription") {
     const sub = await asaas.createSubscription({

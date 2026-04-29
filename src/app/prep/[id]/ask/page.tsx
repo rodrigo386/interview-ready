@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { prepGuideSchema } from "@/lib/ai/schemas";
 import { classifyPrepSections } from "@/lib/prep/section-classifier";
 import { QuestionPager, type PagerPage } from "@/components/prep/QuestionPager";
 import { SuccessBanner } from "@/components/prep/SuccessBanner";
+import { loadPrepSession } from "@/lib/prep/load-session";
 
 export default async function AskPage({
   params,
@@ -12,12 +12,7 @@ export default async function AskPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: session } = await supabase
-    .from("prep_sessions")
-    .select("prep_guide")
-    .eq("id", id)
-    .single();
+  const session = await loadPrepSession(id);
   if (!session) notFound();
   const parsed = prepGuideSchema.safeParse(session.prep_guide);
   if (!parsed.success) notFound();
