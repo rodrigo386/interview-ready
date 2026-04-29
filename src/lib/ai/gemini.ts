@@ -646,7 +646,10 @@ export async function generateCompanyIntel(params: {
       systemInstruction: params.system,
       tools: [tool] as never,
       generationConfig: {
-        maxOutputTokens: 4096,
+        // Bumped from 4096 → 12000 after Burson prep (5915 chars) hit
+        // Unterminated string mid-JSON. Grounded calls eat tokens on
+        // citation overhead, so the JSON envelope needs more headroom.
+        maxOutputTokens: 12000,
         temperature: 0.4,
       },
     });
@@ -726,7 +729,8 @@ export async function generateCompanyIntel(params: {
     // Defensive: strip any URL-ish fields the model might have sneaked in
     // despite the prompt — Vertex AI redirect URLs run thousands of chars.
     const clean = stripUrlFields(raw);
-    const parsed = companyIntelSchema.safeParse(clean);
+    const sanitized = sanitizeCompanyIntel(clean);
+    const parsed = companyIntelSchema.safeParse(sanitized);
     if (parsed.success) return parsed.data;
     parseErr = `schema: ${parsed.error.message}`;
   }
@@ -748,4 +752,82 @@ function stripUrlFields(value: unknown): unknown {
     return out;
   }
   return value;
+}
+
+/**
+ * Best-effort cleanup of a parsed company-intel JSON object before strict
+ * schema validation. Goal: never reject the whole payload over one bad item.
+ *
+ * - `recent_developments`: drop entries missing `headline` or `why_it_matters`,
+ *   truncate strings to schema max, cap array at 6.
+ * - `key_people`: drop entries missing required fields, truncate strings,
+ *   cap at 5.
+ * - `culture_signals`: drop empties, truncate to 300 chars, cap at 6.
+ * - `questions_this_creates`: drop empties/too-shorts, truncate to 400, cap 4.
+ * - `overview` / `strategic_context`: truncate to 2000 chars.
+ *
+ * Anything else passes through. Returns the original value if it's not an
+ * object (schema will then reject it normally).
+ */
+function sanitizeCompanyIntel(value: unknown): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const obj = value as Record<string, unknown>;
+  const out: Record<string, unknown> = { ...obj };
+
+  const truncStr = (v: unknown, max: number): string | undefined => {
+    if (typeof v !== "string") return undefined;
+    const s = v.trim();
+    return s.length > max ? s.slice(0, max) : s;
+  };
+
+  if (typeof obj.overview === "string") out.overview = truncStr(obj.overview, 2000);
+  if (typeof obj.strategic_context === "string")
+    out.strategic_context = truncStr(obj.strategic_context, 2000);
+
+  if (Array.isArray(obj.recent_developments)) {
+    out.recent_developments = (obj.recent_developments as unknown[])
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const it = item as Record<string, unknown>;
+        const headline = truncStr(it.headline, 200);
+        const why = truncStr(it.why_it_matters, 400);
+        if (!headline || !why || why.length < 10) return null;
+        return { headline, why_it_matters: why };
+      })
+      .filter((it): it is { headline: string; why_it_matters: string } => it !== null)
+      .slice(0, 6);
+  }
+
+  if (Array.isArray(obj.key_people)) {
+    out.key_people = (obj.key_people as unknown[])
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const it = item as Record<string, unknown>;
+        const name = truncStr(it.name, 120);
+        const role = truncStr(it.role, 120);
+        const bg = truncStr(it.background_snippet, 400);
+        if (!name || !role || !bg) return null;
+        return { name, role, background_snippet: bg };
+      })
+      .filter(
+        (it): it is { name: string; role: string; background_snippet: string } => it !== null,
+      )
+      .slice(0, 5);
+  }
+
+  if (Array.isArray(obj.culture_signals)) {
+    out.culture_signals = (obj.culture_signals as unknown[])
+      .map((s) => truncStr(s, 300))
+      .filter((s): s is string => Boolean(s && s.length >= 1))
+      .slice(0, 6);
+  }
+
+  if (Array.isArray(obj.questions_this_creates)) {
+    out.questions_this_creates = (obj.questions_this_creates as unknown[])
+      .map((s) => truncStr(s, 400))
+      .filter((s): s is string => Boolean(s && s.length >= 5))
+      .slice(0, 4);
+  }
+
+  return out;
 }

@@ -90,7 +90,7 @@ export const companyIntelSchema = z.object({
     )
     .min(0)
     .max(5),
-  culture_signals: z.array(z.string().min(1).max(150)).min(0).max(6),
+  culture_signals: z.array(z.string().min(1).max(300)).min(0).max(6),
   strategic_context: z.string().min(20).max(2000),
   questions_this_creates: z.array(z.string().min(5).max(400)).min(0).max(4),
 });
