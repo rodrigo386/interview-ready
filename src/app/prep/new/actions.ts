@@ -152,13 +152,38 @@ export async function createPrep(
       .eq("id", user.id);
   }
 
-  await runGenerationInline(session.id);
+  // Fire-and-forget the generation pipeline. Server actions on Railway run
+  // inside the long-lived Node process — the promise survives after this
+  // request returns. The /prep/[id] layout polls generation_status and
+  // renders <PrepSkeleton /> until 'complete', so the UX is "redirect now,
+  // skeleton then result" instead of "spinner blocked for 60s".
+  //
+  // Errors inside runGeneration mark the row as 'failed' in the DB; the
+  // outer .catch is a last-resort net for crashes that escape that try/catch.
+  void runGenerationInBackground(session.id);
+
   redirect(`/prep/${session.id}`);
 }
 
-async function runGenerationInline(sessionId: string) {
-  const { runGeneration } = await import("./generation");
-  await runGeneration(sessionId);
+function runGenerationInBackground(sessionId: string): void {
+  const t0 = Date.now();
+  console.log(`[runGeneration] background start sessionId=${sessionId}`);
+  // Dynamic import keeps generation.ts (and its Gemini deps) out of the
+  // hot path's bundle graph; first-touch latency is acceptable here since
+  // the user is already redirecting.
+  import("./generation")
+    .then(({ runGeneration }) => runGeneration(sessionId))
+    .then(() => {
+      console.log(
+        `[runGeneration] background done sessionId=${sessionId} ${Date.now() - t0}ms`,
+      );
+    })
+    .catch((err) => {
+      console.error(
+        `[runGeneration] background CRASHED sessionId=${sessionId}`,
+        err instanceof Error ? err.message : String(err),
+      );
+    });
 }
 
 export async function retryPrep(id: string) {
@@ -187,7 +212,7 @@ export async function retryPrep(id: string) {
     })
     .eq("id", id);
 
-  await runGenerationInline(id);
+  void runGenerationInBackground(id);
 
   redirect(`/prep/${id}`);
 }

@@ -1,4 +1,5 @@
 import { SECTION_KINDS } from "@/lib/ai/prompts/section-generator";
+import { PrepSkeletonRefresh } from "./PrepSkeletonRefresh";
 
 const STEPS = [
   { label: "CV lido e analisado", done: true },
@@ -12,6 +13,7 @@ const STEPS = [
 export function PrepSkeleton() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
+      <PrepSkeletonRefresh />
       <div className="rounded-lg border border-border bg-surface p-6">
         <div className="flex items-center gap-3">
           <div className="h-3 w-3 animate-pulse rounded-full bg-brand-600" />
@@ -20,7 +22,8 @@ export function PrepSkeleton() {
           </p>
         </div>
         <p className="mt-2 text-sm text-text-secondary">
-          Estamos preparando seu dossiê. Isso leva entre 15 e 25 minutos.
+          Pesquisando a empresa e gerando seu dossiê. Costuma levar cerca de 60 segundos —
+          a página atualiza sozinha quando estiver pronto.
         </p>
 
         <ul className="mt-6 space-y-2.5">
@@ -47,7 +50,7 @@ export function PrepSkeleton() {
         </ul>
 
         <p className="mt-6 text-xs text-text-muted">
-          Você pode fechar esta aba. Te avisamos por e-mail quando estiver pronto.
+          Pode deixar essa aba aberta — atualiza sozinha. Se levar mais de 2 minutos, recarregue.
         </p>
       </div>
 
