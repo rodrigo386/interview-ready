@@ -16,10 +16,13 @@ import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 // Lighter / cheaper / higher rate limits than the Sonnet path we replaced.
 const MODEL_ID = "gemini-3.1-flash-lite-preview";
 
-// Model used for company intel — needs Google Search grounding, which the
-// flash-lite preview does not support. 2.5-flash is the lightest model that
-// supports `googleSearchRetrieval` + ample reasoning for research synthesis.
-const GROUNDED_MODEL_ID = "gemini-2.5-flash";
+// Model used for company intel. Originally 2.5-flash for googleSearch
+// grounding support, but 2.5-flash hit chronic 503s (high demand) in prod.
+// Switched to flash-lite-preview: same family as the section/ATS calls,
+// higher rate limits, faster. If grounding (googleSearch tool) is rejected
+// by the API at runtime, the ungrounded fallback below produces results
+// from training knowledge — acceptable trade-off vs failing entirely.
+const GROUNDED_MODEL_ID = "gemini-3.1-flash-lite-preview";
 
 /** JSON Schema mirror of prepSectionSchema for Gemini responseSchema. */
 const sectionResponseSchema: Schema = {
@@ -636,15 +639,14 @@ export async function generateCompanyIntel(params: {
 
   const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
 
-  // For Gemini 2.5+ models, the grounding tool is `googleSearch` (no Retrieval
-  // suffix). Older models used `googleSearchRetrieval`. The bundled SDK types
-  // only know the old name, so we cast. Try the new name first; if the API
-  // rejects it, fall back to the legacy name.
-  async function callWith(tool: unknown, label: string): Promise<string> {
+  async function callOnce(opts: {
+    grounded: boolean;
+    label: string;
+  }): Promise<string> {
     const model = client.getGenerativeModel({
       model: GROUNDED_MODEL_ID,
       systemInstruction: params.system,
-      tools: [tool] as never,
+      ...(opts.grounded ? { tools: [{ googleSearch: {} }] as never } : {}),
       generationConfig: {
         // Bumped from 4096 → 12000 after Burson prep (5915 chars) hit
         // Unterminated string mid-JSON. Grounded calls eat tokens on
@@ -653,54 +655,73 @@ export async function generateCompanyIntel(params: {
         temperature: 0.4,
       },
     });
-    console.log(`[gemini] company-intel ${label} starting`);
+    console.log(`[gemini] company-intel ${opts.label} starting`);
     const t0 = Date.now();
     const result = await model.generateContent(params.user);
     const text = result.response.text();
     console.log(
-      `[gemini] company-intel ${label} completed in ${Date.now() - t0}ms (${text.length} chars)`,
+      `[gemini] company-intel ${opts.label} completed in ${Date.now() - t0}ms (${text.length} chars)`,
     );
     return text;
   }
 
-  let text = "";
-  let lastErr: unknown = null;
-  for (const attempt of [
-    { tool: { googleSearch: {} }, label: "googleSearch" },
-    { tool: { googleSearchRetrieval: {} }, label: "googleSearchRetrieval" },
-  ]) {
-    try {
-      text = await callWith(attempt.tool, attempt.label);
-      break;
-    } catch (err) {
-      lastErr = err;
-      console.warn(
-        `[gemini] company-intel ${attempt.label} threw: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
+  // Retry-with-backoff helper. Gemini frequently returns 503 ("model
+  // experiencing high demand") under load — these are transient. 429 is
+  // also transient (rate limiting). Other errors fail fast.
+  function isTransient(err: unknown): boolean {
+    const msg = err instanceof Error ? err.message : String(err);
+    return /\b(503|429|UNAVAILABLE|deadline|ECONNRESET|ETIMEDOUT|fetch failed)\b/i.test(msg);
   }
 
-  // Last-resort: try without grounding so we still produce *something* for
-  // the candidate from the model's training knowledge.
+  async function callWithRetry(opts: {
+    grounded: boolean;
+    label: string;
+  }): Promise<string> {
+    const delays = [0, 1500, 4000]; // 3 attempts: immediate, +1.5s, +4s
+    let lastErr: unknown;
+    for (let i = 0; i < delays.length; i++) {
+      if (delays[i] > 0) await new Promise((r) => setTimeout(r, delays[i]));
+      try {
+        return await callOnce(opts);
+      } catch (err) {
+        lastErr = err;
+        const transient = isTransient(err);
+        console.warn(
+          `[gemini] company-intel ${opts.label} attempt ${i + 1}/${delays.length} threw (transient=${transient}): ${err instanceof Error ? err.message : String(err)}`,
+        );
+        if (!transient) break;
+      }
+    }
+    throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+  }
+
+  let text = "";
+  let groundedErr: unknown = null;
+  try {
+    text = await callWithRetry({ grounded: true, label: "googleSearch" });
+  } catch (err) {
+    groundedErr = err;
+  }
+
+  // Fallback to ungrounded call so we still produce *something* for the
+  // candidate from the model's training knowledge. This is acceptable
+  // even when grounded fails — better stale info than no info.
   if (!text) {
     try {
       console.warn("[gemini] company-intel falling back to ungrounded call");
-      const model = client.getGenerativeModel({
-        model: GROUNDED_MODEL_ID,
-        systemInstruction: params.system,
-        generationConfig: {
-          maxOutputTokens: 4096,
-          temperature: 0.4,
-        },
-      });
-      const result = await model.generateContent(params.user);
-      text = result.response.text();
+      text = await callWithRetry({ grounded: false, label: "ungrounded" });
     } catch (err) {
+      // Both paths failed. If error was transient (503 etc.), surface a
+      // user-friendly message and let them retry. If it was a hard error,
+      // surface the actual exception.
+      const groundedMsg = groundedErr instanceof Error ? groundedErr.message : String(groundedErr);
+      const ungroundedMsg = err instanceof Error ? err.message : String(err);
+      const bothTransient = isTransient(groundedErr) && isTransient(err);
+      const userMessage = bothTransient
+        ? "O serviço de pesquisa de empresa está temporariamente sobrecarregado. Tente novamente em alguns minutos."
+        : `Falha na pesquisa de empresa. Detalhes: ${ungroundedMsg}`;
       throw new GeminiResponseError(
-        `Gemini company-intel failed all attempts. Last error: ${
-          (lastErr instanceof Error ? lastErr.message : String(lastErr)) ||
-          (err instanceof Error ? err.message : String(err))
-        }`,
+        `${userMessage}\n\n[grounded] ${groundedMsg}\n[ungrounded] ${ungroundedMsg}`,
         "",
       );
     }
