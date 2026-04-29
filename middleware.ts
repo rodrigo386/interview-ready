@@ -10,6 +10,10 @@ export async function middleware(request: NextRequest) {
   const xfHost = request.headers.get("x-forwarded-host") ?? "";
   const rawHost = request.headers.get("host") ?? "";
   const urlHost = request.nextUrl.host ?? "";
+  // TEMP DEBUG: remove after www→apex is confirmed working in prod
+  if (process.env.DEBUG_HOST === "1") {
+    console.log("[middleware:host]", JSON.stringify({ xfHost, rawHost, urlHost, path: request.nextUrl.pathname }));
+  }
   const wwwHost = [xfHost, rawHost, urlHost].find((h) => h.startsWith("www."));
   if (wwwHost) {
     const apexHost = wwwHost.slice(4);
