@@ -17,6 +17,14 @@ const updateAvatarPathSchema = z.object({
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
+// Generic message returned to clients on DB failure. Never echo the raw
+// Supabase error.message — that leaks schema details (column names,
+// constraints, RLS policy names) and aids attackers fingerprinting the DB.
+function dbErrorOf(scope: string, err: { message: string; code?: string }): string {
+  console.error(`[${scope}] DB error:`, err.message, err.code);
+  return "Não foi possível salvar agora. Tente novamente em alguns instantes.";
+}
+
 export async function updateProfile(input: z.infer<typeof updateProfileSchema>): Promise<ActionResult> {
   const parsed = updateProfileSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Dados inválidos." };
@@ -31,7 +39,7 @@ export async function updateProfile(input: z.infer<typeof updateProfileSchema>):
   if (Object.keys(patch).length === 0) return { ok: true };
 
   const { error } = await supabase.from("profiles").update(patch).eq("id", auth.user.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: dbErrorOf("updateProfile", error) };
 
   revalidatePath("/profile");
   return { ok: true };
@@ -50,7 +58,7 @@ export async function updateAvatarPath(input: z.infer<typeof updateAvatarPathSch
     .from("profiles")
     .update({ avatar_url: path, avatar_updated_at: new Date().toISOString() })
     .eq("id", auth.user.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: dbErrorOf("updateAvatarPath", error) };
 
   revalidatePath("/profile");
   revalidatePath("/dashboard");
@@ -74,7 +82,7 @@ export async function removeAvatar(): Promise<ActionResult> {
     .from("profiles")
     .update({ avatar_url: null, avatar_updated_at: new Date().toISOString() })
     .eq("id", uid);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: dbErrorOf("removeAvatar", error) };
 
   revalidatePath("/profile");
   revalidatePath("/dashboard");
@@ -110,7 +118,7 @@ export async function deleteUploadedCv(input: z.infer<typeof cvIdSchema>): Promi
     .delete()
     .eq("id", parsed.data.cvId)
     .eq("user_id", auth.user.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: dbErrorOf("deleteUploadedCv", error) };
 
   if (row?.file_path) {
     await supabase.storage.from("cvs").remove([row.file_path]);
@@ -133,7 +141,7 @@ export async function renameUploadedCv(input: z.infer<typeof renameSchema>): Pro
     .update({ display_name: parsed.data.displayName } as never)
     .eq("id", parsed.data.cvId)
     .eq("user_id", auth.user.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: dbErrorOf("renameUploadedCv", error) };
 
   revalidatePath("/profile/cvs");
   return { ok: true };
@@ -152,7 +160,7 @@ export async function deleteAiCvRewrite(input: z.infer<typeof prepIdSchema>): Pr
     .update({ cv_rewrite: null, cv_rewrite_status: "pending", cv_rewrite_error: null })
     .eq("id", parsed.data.prepSessionId)
     .eq("user_id", auth.user.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: dbErrorOf("deleteAiCvRewrite", error) };
 
   revalidatePath("/profile/cvs");
   return { ok: true };
@@ -181,7 +189,10 @@ export async function changePassword(
   if (reAuthErr) return { ok: false, error: "Senha atual incorreta." };
 
   const { error: updErr } = await supabase.auth.updateUser({ password: parsed.data.newPassword });
-  if (updErr) return { ok: false, error: updErr.message };
+  if (updErr) {
+    console.error("[changePassword] updateUser error:", updErr.message);
+    return { ok: false, error: "Não foi possível alterar a senha. Tente novamente." };
+  }
 
   return { ok: true };
 }
@@ -213,7 +224,10 @@ export async function deleteAccount(
   // Delete the auth user (cascades profiles, cvs, prep_sessions).
   const admin = createAdminClient();
   const { error: delErr } = await admin.auth.admin.deleteUser(uid);
-  if (delErr) return { ok: false, error: delErr.message };
+  if (delErr) {
+    console.error("[deleteAccount] admin.deleteUser error:", delErr.message);
+    return { ok: false, error: "Não foi possível excluir a conta. Entre em contato com o suporte." };
+  }
 
   await supabase.auth.signOut();
   redirect("/");

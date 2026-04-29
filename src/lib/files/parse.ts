@@ -18,6 +18,13 @@ export class ParseError extends Error {
 }
 
 const MIN_CHARS = 200;
+// Reasonable cap for a CV — 50 pages already covers academic CVs with full
+// publication lists. A 5MB PDF can hold thousands of pages of compressed
+// text; without this cap, a malicious upload causes pdf-parse to OOM.
+const MAX_PDF_PAGES = 50;
+// Hard cap on extracted text. Schema uses min(200) — tail is unlikely to
+// help a CV interpretation and bloats Gemini token usage.
+const MAX_CHARS = 80_000;
 
 const PDF_MIME = "application/pdf";
 const DOCX_MIME =
@@ -39,7 +46,13 @@ export async function parseCvFile(
       const result = await parser.getText();
       raw = result.text;
       pageCount = result.total;
+      if (pageCount && pageCount > MAX_PDF_PAGES) {
+        throw new ParseError(
+          `Este PDF tem ${pageCount} páginas. O limite é ${MAX_PDF_PAGES} — envie só as páginas relevantes do CV.`,
+        );
+      }
     } catch (err) {
+      if (err instanceof ParseError) throw err;
       throw new ParseError(
         `Couldn't read this PDF: ${err instanceof Error ? err.message : String(err)}. It may be a scanned image or corrupt. Try pasting the text instead.`,
       );
@@ -57,13 +70,18 @@ export async function parseCvFile(
     );
   }
 
-  const text = normalize(raw);
+  const normalized = normalize(raw);
 
-  if (text.length < MIN_CHARS) {
+  if (normalized.length < MIN_CHARS) {
     throw new ParseError(
       "Não conseguimos extrair texto suficiente deste arquivo. Pode ser uma imagem escaneada. Tente colar o texto em vez de enviar o arquivo.",
     );
   }
+
+  // Truncate at MAX_CHARS — cap lifetime exposure on Gemini token usage and
+  // the size of the parsed_text column in cvs.
+  const text =
+    normalized.length > MAX_CHARS ? normalized.slice(0, MAX_CHARS) : normalized;
 
   return { text, pageCount };
 }

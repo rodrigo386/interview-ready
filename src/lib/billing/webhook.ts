@@ -24,14 +24,38 @@ export async function dispatchEvent(
   asaasEventId: string,
   supabase: SupabaseClient,
 ): Promise<DispatchResult> {
-  // 1. Resolve user.
+  // 1. Resolve user. The `externalReference` (which we set ourselves at
+  // checkout time) is the primary signal. If a forged event passes the
+  // token check (e.g. token leaked), an attacker could set
+  // externalReference="pro:<victim-uid>" and grant themselves Pro on a
+  // victim's account. To mitigate: when we have BOTH externalReference
+  // userId AND a customer id on the event, require they agree — i.e.
+  // the customer id must match the resolved user's profile.asaas_customer_id.
   const ref = parseExternalReference(evt.payment?.externalReference);
   let userId: string | null = ref?.userId ?? null;
-  if (!userId && evt.payment?.customer) {
+  const customerId = evt.payment?.customer ?? null;
+
+  if (userId && customerId) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("asaas_customer_id")
+      .eq("id", userId)
+      .single();
+    const profileCustomer = (data as { asaas_customer_id: string | null } | null)
+      ?.asaas_customer_id ?? null;
+    if (profileCustomer && profileCustomer !== customerId) {
+      console.warn(
+        `[webhook] customer mismatch for user ${userId}: profile=${profileCustomer} event=${customerId}`,
+      );
+      return { handled: false, reason: "error", detail: "customer mismatch" };
+    }
+  }
+
+  if (!userId && customerId) {
     const { data } = await supabase
       .from("profiles")
       .select("id")
-      .eq("asaas_customer_id", evt.payment.customer)
+      .eq("asaas_customer_id", customerId)
       .single();
     userId = (data as { id: string } | null)?.id ?? null;
   }
