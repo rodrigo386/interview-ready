@@ -2,6 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
+  // TEMP: bypass redirect for debug endpoint so we can inspect raw headers
+  // as Railway forwards them. Remove once www→apex is confirmed working.
+  if (request.nextUrl.pathname === "/api/debug-host") {
+    return await updateSession(request);
+  }
+
   // Force www → apex (canonical = no www). Runs before Supabase session
   // logic so the redirect is the cheapest possible response.
   // Check every host source — Railway sometimes leaves x-forwarded-host as
@@ -10,10 +16,6 @@ export async function middleware(request: NextRequest) {
   const xfHost = request.headers.get("x-forwarded-host") ?? "";
   const rawHost = request.headers.get("host") ?? "";
   const urlHost = request.nextUrl.host ?? "";
-  // TEMP DEBUG: remove after www→apex is confirmed working in prod
-  if (process.env.DEBUG_HOST === "1") {
-    console.log("[middleware:host]", JSON.stringify({ xfHost, rawHost, urlHost, path: request.nextUrl.pathname }));
-  }
   const wwwHost = [xfHost, rawHost, urlHost].find((h) => h.startsWith("www."));
   if (wwwHost) {
     const apexHost = wwwHost.slice(4);
