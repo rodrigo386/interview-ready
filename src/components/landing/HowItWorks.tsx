@@ -6,7 +6,7 @@ const STEPS = [
   },
   {
     number: "02",
-    title: "A IA faz o trabalho do coach",
+    title: "A IA faz o trabalho de pesquisa e estrutura",
     body: "Lemos seu CV, pesquisamos a empresa em tempo real, cruzamos requisitos e geramos roteiros usando sua história.",
   },
   {

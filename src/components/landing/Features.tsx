@@ -30,8 +30,8 @@ const BLOCKS: FeatureBlock[] = [
     eyebrow: "03 · Roteiros STAR personalizados",
     title: "15 perguntas: prováveis, difíceis e o que o gestor vai cobrar.",
     body: "Cada pergunta vem com estrutura STAR (Situação, Tarefa, Ação, Resultado) usando casos reais do seu CV. Não é resposta pronta. É o esqueleto pra você adaptar com naturalidade.",
-    quote: "É o coach que eu queria ter tido nas minhas próprias transições.",
-    attribution: "Rodrigo, fundador",
+    quote: "Treinou minha postura sem a pressão de uma sessão real.",
+    attribution: "Beta tester",
     visual: <QuestionsMock />,
   },
   {

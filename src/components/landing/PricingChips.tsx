@@ -1,9 +1,15 @@
 import Link from "next/link";
 
-const PLANS = [
+type Plan = {
+  label: string;
+  sub: string;
+  strike?: string;
+};
+
+const PLANS: Plan[] = [
   { label: "1ª prep grátis", sub: "ao criar sua conta" },
   { label: "R$10 por uso", sub: "1 prep avulso" },
-  { label: "R$30/mês", sub: "ilimitado · promo R$50" },
+  { label: "R$30/mês", sub: "ilimitado", strike: "R$50" },
 ];
 
 export function PricingChips() {
@@ -27,7 +33,18 @@ export function PricingChips() {
               key={p.label}
               className="rounded-xl border border-neutral-200 bg-bg px-5 py-4 dark:border-zinc-800"
             >
-              <p className="text-base font-semibold text-text-primary">{p.label}</p>
+              <p className="text-base font-semibold text-text-primary">
+                {p.strike ? (
+                  <>
+                    <span className="mr-1.5 text-text-tertiary line-through decoration-[1.5px]">
+                      {p.strike}
+                    </span>
+                    {p.label}
+                  </>
+                ) : (
+                  p.label
+                )}
+              </p>
               <p className="mt-1 text-xs text-text-tertiary">{p.sub}</p>
             </div>
           ))}
