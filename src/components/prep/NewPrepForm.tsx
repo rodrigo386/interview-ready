@@ -96,7 +96,28 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
           </div>
         )}
 
-        {state.error && !pending && state.error !== "quota_exceeded" && (
+        {state.error === "pro_soft_cap" && !pending && (
+          <div
+            role="alert"
+            className="rounded-md border border-yellow-500/40 bg-yellow-soft p-4 text-sm"
+          >
+            <p className="font-semibold text-yellow-700">
+              Uso atípico detectado neste ciclo
+            </p>
+            <p className="mt-1 text-ink-2">
+              Sua conta Pro atingiu o teto mensal de preps. Esse limite é alto pra cobrir
+              uso real — se você está rodando legitimamente, fala comigo que libero na hora.
+            </p>
+            <a
+              href="mailto:rodrigo@proaicircle.com?subject=PrepaVAGA%20%E2%80%94%20liberar%20cap%20mensal"
+              className="mt-3 inline-block rounded-pill bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-700"
+            >
+              Falar com rodrigo@proaicircle.com →
+            </a>
+          </div>
+        )}
+
+        {state.error && !pending && state.error !== "quota_exceeded" && state.error !== "pro_soft_cap" && (
           <p className="text-sm text-red-500 dark:text-red-400" role="alert">
             {state.error}
           </p>

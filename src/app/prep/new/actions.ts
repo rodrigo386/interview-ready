@@ -4,7 +4,11 @@ import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { checkQuota, type ProfileBilling } from "@/lib/billing/quota";
+import {
+  checkQuota,
+  isNewBillingCycle,
+  type ProfileBilling,
+} from "@/lib/billing/quota";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { createPrepInputSchema } from "./schema";
 
@@ -53,20 +57,38 @@ export async function createPrep(
   const { data: billingProfile } = await supabase
     .from("profiles")
     .select(
-      "subscription_status, preps_used_this_month, preps_reset_at, prep_credits",
+      "subscription_status, preps_used_this_month, preps_reset_at, prep_credits, preps_this_billing_cycle, billing_cycle_started_at",
     )
     .eq("id", user.id)
     .single();
 
+  const nowIso = new Date().toISOString();
   const billing: ProfileBilling = {
     subscription_status: (billingProfile as { subscription_status?: ProfileBilling["subscription_status"] } | null)?.subscription_status ?? "none",
     preps_used_this_month: (billingProfile as { preps_used_this_month?: number } | null)?.preps_used_this_month ?? 0,
-    preps_reset_at: (billingProfile as { preps_reset_at?: string } | null)?.preps_reset_at ?? new Date().toISOString(),
+    preps_reset_at: (billingProfile as { preps_reset_at?: string } | null)?.preps_reset_at ?? nowIso,
     prep_credits: (billingProfile as { prep_credits?: number } | null)?.prep_credits ?? 0,
+    preps_this_billing_cycle:
+      (billingProfile as { preps_this_billing_cycle?: number } | null)?.preps_this_billing_cycle ?? 0,
+    billing_cycle_started_at:
+      (billingProfile as { billing_cycle_started_at?: string } | null)?.billing_cycle_started_at ?? nowIso,
   };
-  const quota = checkQuota(billing, new Date());
+
+  // Lazy soft-cap reset: if we crossed into a new calendar month since the
+  // last cycle start, zero the counter BEFORE checking the cap. Persisted
+  // via admin client (column is server-managed, no auth UPDATE grant).
+  const now = new Date();
+  const cycleStarted = new Date(billing.billing_cycle_started_at);
+  let cycleResetThisRequest = false;
+  if (isNewBillingCycle(cycleStarted, now)) {
+    billing.preps_this_billing_cycle = 0;
+    billing.billing_cycle_started_at = nowIso;
+    cycleResetThisRequest = true;
+  }
+
+  const quota = checkQuota(billing, now);
   if (!quota.allowed) {
-    return { error: "quota_exceeded" };
+    return { error: quota.mode === "pro_soft_cap" ? "pro_soft_cap" : "quota_exceeded" };
   }
 
   // Duplicate-JD check: same user + same JD fingerprint = same prep.
@@ -133,19 +155,29 @@ export async function createPrep(
     return { error: "Não foi possível salvar seu prep agora. Tente novamente em alguns instantes." };
   }
 
-  // Quota consumption. These columns (prep_credits, preps_used_this_month)
-  // are server-managed — `authenticated` has no UPDATE grant on them, so we
-  // write via the admin client. We've already verified ownership via getUser
-  // above and quota state via checkQuota, so privilege escalation isn't a
-  // concern here.
+  // Quota consumption. These columns are server-managed — `authenticated`
+  // has no UPDATE grant on them, so we write via the admin client. We've
+  // already verified ownership via getUser above and quota state via
+  // checkQuota, so privilege escalation isn't a concern here.
   const admin = createAdminClient();
   if (quota.mode === "credit") {
     await admin
       .from("profiles")
       .update({ prep_credits: billing.prep_credits - 1 })
       .eq("id", user.id);
+  } else if (quota.mode === "pro") {
+    // Increment per-cycle counter (soft cap enforcement) AND lifetime counter
+    // (analytics). Persist a fresh cycle start when we just rolled the month.
+    const update: Record<string, unknown> = {
+      preps_used_this_month: billing.preps_used_this_month + 1,
+      preps_this_billing_cycle: billing.preps_this_billing_cycle + 1,
+    };
+    if (cycleResetThisRequest) {
+      update.billing_cycle_started_at = billing.billing_cycle_started_at;
+    }
+    await admin.from("profiles").update(update).eq("id", user.id);
   } else {
-    // pro or free: increment lifetime counter (free enforces 0→1 cap; pro is analytics).
+    // free: increment lifetime counter (enforces 0→1 cap).
     await admin
       .from("profiles")
       .update({ preps_used_this_month: billing.preps_used_this_month + 1 })

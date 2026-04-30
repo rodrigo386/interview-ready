@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default async function HealthAdminPage() {
     recentEventsRes,
     stuckPrepsRes,
     preps24hRes,
+    proSoftCapRes,
   ] = await Promise.all([
     sb
       .from("prep_sessions")
@@ -70,6 +72,13 @@ export default async function HealthAdminPage() {
       .from("prep_sessions")
       .select("user_id")
       .gte("created_at", last24h),
+    sb
+      .from("profiles")
+      .select("id, email, preps_this_billing_cycle, billing_cycle_started_at")
+      .gte("preps_this_billing_cycle", PRO_MONTHLY_SOFT_CAP)
+      .in("subscription_status", ["active", "overdue"])
+      .order("preps_this_billing_cycle", { ascending: false })
+      .limit(20),
   ]);
 
   const failedPreps = (failedPrepsRes.data ?? []) as Array<{
@@ -141,6 +150,13 @@ export default async function HealthAdminPage() {
   const ABUSE_THRESHOLD = 5;
   const flaggedTopUsers = topUsersWithEmail.filter((u) => u.count >= ABUSE_THRESHOLD);
 
+  const proSoftCap = (proSoftCapRes.data ?? []) as Array<{
+    id: string;
+    email: string | null;
+    preps_this_billing_cycle: number;
+    billing_cycle_started_at: string;
+  }>;
+
   const cards = [
     { label: "Preps falhadas (7d)", value: failedPreps.length, tone: failedPreps.length > 0 ? "warn" : "ok" },
     { label: "ATS falhadas (7d)", value: failedAts.length, tone: failedAts.length > 0 ? "warn" : "ok" },
@@ -154,6 +170,11 @@ export default async function HealthAdminPage() {
       label: `Users acima de ${ABUSE_THRESHOLD} preps/24h`,
       value: flaggedTopUsers.length,
       tone: flaggedTopUsers.length > 0 ? "warn" : "ok",
+    },
+    {
+      label: `Pro acima do soft cap (${PRO_MONTHLY_SOFT_CAP}/mês)`,
+      value: proSoftCap.length,
+      tone: proSoftCap.length > 0 ? "warn" : "ok",
     },
   ];
 
@@ -292,6 +313,41 @@ export default async function HealthAdminPage() {
           </ul>
         )}
       </section>
+
+      {proSoftCap.length > 0 && (
+        <section className="rounded-xl border border-yellow-soft bg-yellow-soft/30 p-5 dark:border-yellow-900 dark:bg-yellow-950/30">
+          <h2 className="text-base font-semibold text-text-primary">
+            Pro acima do soft cap mensal
+          </h2>
+          <p className="mt-1 text-xs text-text-tertiary">
+            Atingiram {PRO_MONTHLY_SOFT_CAP}+ preps no ciclo atual. Entram em
+            soft block até falar com você (rodrigo@proaicircle.com) ou virar mês.
+          </p>
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {proSoftCap.map((u) => (
+              <li
+                key={u.id}
+                className="flex items-center justify-between gap-3 rounded-md border border-yellow-soft/60 bg-bg px-3 py-2 dark:border-yellow-900/60 dark:bg-zinc-900/40"
+              >
+                <span className="truncate">
+                  <a
+                    href={`/admin/users?q=${encodeURIComponent(u.email ?? u.id)}`}
+                    className="font-medium text-text-primary hover:underline"
+                  >
+                    {u.email ?? u.id.slice(0, 8)}
+                  </a>
+                  <span className="ml-2 text-[11px] text-text-tertiary">
+                    desde {new Date(u.billing_cycle_started_at).toLocaleDateString("pt-BR")}
+                  </span>
+                </span>
+                <span className="rounded-full bg-yellow-soft px-2 py-0.5 text-xs font-semibold tabular-nums text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
+                  {u.preps_this_billing_cycle} preps
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="rounded-xl border border-neutral-200 bg-bg p-5 dark:border-zinc-800">
         <h2 className="text-base font-semibold text-text-primary">

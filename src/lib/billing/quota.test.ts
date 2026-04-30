@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { checkQuota, type ProfileBilling } from "./quota";
+import {
+  checkQuota,
+  isNewBillingCycle,
+  PRO_MONTHLY_SOFT_CAP,
+  type ProfileBilling,
+} from "./quota";
 
 const NOW = new Date("2026-04-26T12:00:00Z");
 
@@ -9,14 +14,38 @@ function profile(overrides: Partial<ProfileBilling> = {}): ProfileBilling {
     preps_used_this_month: 0,
     preps_reset_at: "2026-04-01T00:00:00Z",
     prep_credits: 0,
+    preps_this_billing_cycle: 0,
+    billing_cycle_started_at: "2026-04-01T00:00:00Z",
     ...overrides,
   };
 }
 
 describe("checkQuota", () => {
-  it("pro active is always allowed", () => {
+  it("pro active is allowed below the soft cap", () => {
     const res = checkQuota(profile({ subscription_status: "active", preps_used_this_month: 999 }), NOW);
     expect(res).toEqual({ allowed: true, mode: "pro" });
+  });
+
+  it("pro active hits soft cap exactly at PRO_MONTHLY_SOFT_CAP", () => {
+    const res = checkQuota(
+      profile({
+        subscription_status: "active",
+        preps_this_billing_cycle: PRO_MONTHLY_SOFT_CAP,
+      }),
+      NOW,
+    );
+    expect(res).toEqual({ allowed: false, mode: "pro_soft_cap" });
+  });
+
+  it("pro overdue ALSO subject to soft cap (no free pass during dunning)", () => {
+    const res = checkQuota(
+      profile({
+        subscription_status: "overdue",
+        preps_this_billing_cycle: PRO_MONTHLY_SOFT_CAP + 5,
+      }),
+      NOW,
+    );
+    expect(res).toEqual({ allowed: false, mode: "pro_soft_cap" });
   });
 
   it("pro overdue still allowed (dunning grace)", () => {
@@ -61,5 +90,43 @@ describe("checkQuota", () => {
       NOW,
     );
     expect(res).toEqual({ allowed: false, mode: "block" });
+  });
+});
+
+describe("isNewBillingCycle", () => {
+  it("same calendar month -> false", () => {
+    expect(
+      isNewBillingCycle(
+        new Date("2026-04-01T00:00:00Z"),
+        new Date("2026-04-30T23:59:59Z"),
+      ),
+    ).toBe(false);
+  });
+
+  it("crossed calendar month -> true", () => {
+    expect(
+      isNewBillingCycle(
+        new Date("2026-04-30T23:59:59Z"),
+        new Date("2026-05-01T00:00:01Z"),
+      ),
+    ).toBe(true);
+  });
+
+  it("crossed year boundary -> true", () => {
+    expect(
+      isNewBillingCycle(
+        new Date("2026-12-31T23:59:59Z"),
+        new Date("2027-01-01T00:00:01Z"),
+      ),
+    ).toBe(true);
+  });
+
+  it("same month different year -> true", () => {
+    expect(
+      isNewBillingCycle(
+        new Date("2025-04-15T00:00:00Z"),
+        new Date("2026-04-15T00:00:00Z"),
+      ),
+    ).toBe(true);
   });
 });
