@@ -26,8 +26,11 @@ export function HowItWorks() {
         <div className="max-w-2xl">
           <p className="text-sm font-semibold text-brand-600">Como funciona</p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
-            Três passos. Você no controle.
+            Como funciona a preparação para entrevista
           </h2>
+          <p className="mt-3 text-base leading-[1.6] text-text-secondary">
+            Três passos, você no controle.
+          </p>
         </div>
 
         <div className="mt-12 grid gap-4 md:grid-cols-3">
