@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalLayout, Section } from "@/components/legal/LegalLayout";
+import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 
 export const metadata: Metadata = {
   title: "Termos de Uso · PrepaVAGA",
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalLayout title="Termos de Uso" updatedAt="26 de abril de 2026">
+    <LegalLayout title="Termos de Uso" updatedAt="30 de abril de 2026">
       <p className="text-lg text-text-primary">
         Bem-vindo à PrepaVAGA. Estes Termos regulam o uso da nossa plataforma de preparação para
         entrevistas com IA. Ao criar sua conta ou usar qualquer parte do serviço, você concorda
@@ -65,8 +66,9 @@ export default function TermsPage() {
           </li>
           <li>
             <strong className="text-text-primary">Plano Pro.</strong> R$ 30/mês (preço promocional
-            de lançamento, valor cheio R$ 50/mês). Acesso ilimitado, sem cobrança extra por prep,
-            cancelamento a qualquer momento.
+            de lançamento, valor cheio R$ 50/mês). Acesso ilimitado para uso pessoal de preparação,
+            sem cobrança extra por prep, cancelamento a qualquer momento. Sujeito à política de uso
+            justo (fair use) descrita no item 3.1 abaixo.
           </li>
           <li>
             <strong className="text-text-primary">Pay-per-use.</strong> R$ 10 por prep avulso. Sem
@@ -81,6 +83,24 @@ export default function TermsPage() {
         <p>
           A assinatura Pro é renovada automaticamente todo mês até que você cancele. O cancelamento
           interrompe a renovação, mas mantém o acesso até o fim do ciclo já pago.
+        </p>
+        <p>
+          <strong className="text-text-primary">3.1. Política de uso justo (fair use).</strong> O
+          plano Pro oferece uso ilimitado para preparação real de candidatos. Para evitar abuso e
+          uso automatizado em larga escala, aplicamos um teto operacional de aproximadamente{" "}
+          {PRO_MONTHLY_SOFT_CAP} preps por ciclo mensal — número várias vezes maior que o uso típico
+          de um candidato em busca ativa. Caso você atinja o teto e tenha um caso legítimo de uso
+          mais intenso (ex.: recolocação simultânea em muitas vagas, uso por equipe), basta entrar
+          em contato em{" "}
+          <a
+            href="mailto:rodrigo@proaicircle.com"
+            className="font-medium text-orange-700 underline"
+          >
+            rodrigo@proaicircle.com
+          </a>{" "}
+          que liberamos o uso adicional sem custo extra. O teto não se aplica a usos automatizados,
+          revenda da plataforma ou criação de contas em massa, situações em que o serviço pode ser
+          suspenso conforme item 6.
         </p>
       </Section>
 

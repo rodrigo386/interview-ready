@@ -53,9 +53,12 @@ export function UpgradeModal({
             </p>
             <h4 className="mt-1 text-lg font-bold text-ink">Pro</h4>
             <p className="text-sm text-ink-2">
-              Preps ilimitados.{" "}
+              Uso ilimitado.{" "}
               <span className="text-ink-3 line-through">R$ 50</span>{" "}
               <strong className="text-orange-700">R$ 30/mês</strong>
+            </p>
+            <p className="mt-1 text-[11px] text-ink-3">
+              Fair use ~50/mês cobre uso intensivo.
             </p>
             <Link
               href="/pricing"

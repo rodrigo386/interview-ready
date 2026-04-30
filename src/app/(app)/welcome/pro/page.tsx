@@ -125,6 +125,16 @@ export default async function WelcomeProPage() {
         </Link>
         .
       </p>
+      <p className="mt-2 text-center text-[11px] text-text-tertiary">
+        Uso ilimitado com fair use de ~50 preps/mês. Precisa de mais? Fala com a gente em{" "}
+        <a
+          href="mailto:rodrigo@proaicircle.com"
+          className="underline-offset-4 hover:underline"
+        >
+          rodrigo@proaicircle.com
+        </a>
+        .
+      </p>
     </div>
   );
 }

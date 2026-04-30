@@ -4,11 +4,11 @@ import { CheckoutButton } from "@/components/billing/CheckoutButton";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { createClient } from "@/lib/supabase/server";
+import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 
 export const metadata: Metadata = {
   title: "Planos · PrepaVAGA",
-  description:
-    "Free 1 prep grátis · Pro R$30/mês ilimitado (promo de lançamento) · Per-use R$10. Cancele quando quiser, sem letras miúdas.",
+  description: `Free 1 prep grátis · Pro R$30/mês com uso ilimitado (fair use ~${PRO_MONTHLY_SOFT_CAP}/mês) · Per-use R$10. Cancele quando quiser.`,
 };
 
 export default async function PricingPage() {
@@ -45,7 +45,9 @@ export default async function PricingPage() {
               </span>
               <header>
                 <h2 className="text-xl font-extrabold text-ink">Plano Pro</h2>
-                <p className="mt-1 text-sm text-ink-2">Preps ilimitados, todo mês.</p>
+                <p className="mt-1 text-sm text-ink-2">
+                  Uso ilimitado para sua preparação — sem limite por hora ou por dia.
+                </p>
               </header>
 
               <div className="mt-5 flex items-baseline gap-2">
@@ -65,7 +67,7 @@ export default async function PricingPage() {
                 <li className="flex gap-2">
                   <span aria-hidden className="text-green-700">✓</span>
                   <span>
-                    <strong>Preps ilimitados</strong>: quantas vagas você quiser, sem limite
+                    <strong>Uso ilimitado</strong>: quantas vagas você quiser, sem cobrança extra
                   </span>
                 </li>
                 <li className="flex gap-2">
@@ -110,6 +112,18 @@ export default async function PricingPage() {
               </div>
               <p className="mt-2 text-[11px] text-ink-3">
                 Pagamento via Asaas (Pix, cartão ou boleto).
+              </p>
+              <p className="mt-3 rounded-md border border-line bg-bg px-3 py-2 text-[11px] leading-relaxed text-ink-3">
+                <strong className="text-ink-2">Fair use</strong>: o plano cobre uso intensivo
+                (~{PRO_MONTHLY_SOFT_CAP} preps/mês). Quem precisa de mais é caso raro — basta
+                falar com a gente em{" "}
+                <a
+                  href="mailto:rodrigo@proaicircle.com?subject=PrepaVAGA%20%E2%80%94%20liberar%20uso%20al%C3%A9m%20do%20fair%20use"
+                  className="font-medium text-orange-700 underline"
+                >
+                  rodrigo@proaicircle.com
+                </a>{" "}
+                que liberamos.
               </p>
             </article>
 
