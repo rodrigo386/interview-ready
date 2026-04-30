@@ -1,9 +1,11 @@
 import type { MetadataRoute } from "next";
+import { getAllPosts } from "@/lib/blog/posts";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const posts = await getAllPosts();
 
   return [
     {
@@ -48,5 +50,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.3,
     },
+    {
+      url: `${SITE_URL}/artigos`,
+      lastModified: posts[0] ? new Date(posts[0].updatedAt ?? posts[0].publishedAt) : now,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    ...posts.map((p) => ({
+      url: `${SITE_URL}/artigos/${p.slug}`,
+      lastModified: new Date(p.updatedAt ?? p.publishedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
   ];
 }
