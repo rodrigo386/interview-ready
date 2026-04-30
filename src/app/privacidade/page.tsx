@@ -3,9 +3,10 @@ import Link from "next/link";
 import { LegalLayout, Section } from "@/components/legal/LegalLayout";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidade · PrepaVAGA",
+  title: "Política de Privacidade",
   description:
-    "Como a PrepaVAGA coleta, usa, compartilha e protege seus dados pessoais. Em conformidade com a LGPD.",
+    "Como a PrepaVAGA coleta, usa, compartilha e protege seus dados pessoais. Em conformidade com a LGPD (Lei Geral de Proteção de Dados).",
+  alternates: { canonical: "/privacidade" },
 };
 
 export default function PrivacyPage() {

@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { GoogleButton } from "@/components/auth/GoogleButton";
+
+export const metadata: Metadata = {
+  title: "Entrar na sua conta",
+  description:
+    "Acesse sua conta PrepaVAGA para gerenciar suas preparações, currículos e análises de entrevistas.",
+  alternates: { canonical: "/login" },
+};
 
 function OAuthErrorBanner({ error }: { error?: string }) {
   if (error !== "oauth_failed") return null;

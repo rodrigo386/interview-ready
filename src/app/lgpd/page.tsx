@@ -3,9 +3,10 @@ import Link from "next/link";
 import { LegalLayout, Section } from "@/components/legal/LegalLayout";
 
 export const metadata: Metadata = {
-  title: "Direitos LGPD · PrepaVAGA",
+  title: "Direitos LGPD",
   description:
-    "Como exercer seus direitos como titular de dados na PrepaVAGA, conforme a Lei Geral de Proteção de Dados (LGPD).",
+    "Como exercer seus direitos como titular de dados na PrepaVAGA, conforme a Lei Geral de Proteção de Dados (LGPD, Lei 13.709/2018).",
+  alternates: { canonical: "/lgpd" },
 };
 
 export default function LgpdPage() {

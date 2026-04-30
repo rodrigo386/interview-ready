@@ -7,8 +7,53 @@ import { createClient } from "@/lib/supabase/server";
 import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 
 export const metadata: Metadata = {
-  title: "Planos · PrepaVAGA",
+  title: "Planos e preços",
   description: `Free 1 prep grátis · Pro R$30/mês com uso ilimitado (fair use ~${PRO_MONTHLY_SOFT_CAP}/mês) · Per-use R$10. Cancele quando quiser.`,
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    title: "Planos e preços · PrepaVAGA",
+    description: `Free 1 prep grátis · Pro R$30/mês com uso ilimitado · Per-use R$10. Sem fidelidade.`,
+    url: "/pricing",
+  },
+};
+
+const PRICING_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  serviceType: "Preparação para entrevista de emprego com IA",
+  provider: { "@type": "Organization", name: "PrepaVAGA", url: "https://prepavaga.com.br" },
+  areaServed: { "@type": "Country", name: "Brazil" },
+  description:
+    "Análise ATS do currículo, pesquisa da empresa em tempo real, CV reescrito para a vaga e roteiros de perguntas personalizados.",
+  offers: [
+    {
+      "@type": "Offer",
+      name: "Plano Pro (assinatura mensal)",
+      description: "Uso ilimitado para preparação. Promo de lançamento R$30/mês (preço cheio R$50/mês).",
+      price: "30.00",
+      priceCurrency: "BRL",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "30.00",
+        priceCurrency: "BRL",
+        billingDuration: "P1M",
+        unitText: "MONTH",
+      },
+      availability: "https://schema.org/InStock",
+      category: "subscription",
+      url: "https://prepavaga.com.br/pricing",
+    },
+    {
+      "@type": "Offer",
+      name: "Avulso (1 prep)",
+      description: "Pagamento único por prep. Sem mensalidade.",
+      price: "10.00",
+      priceCurrency: "BRL",
+      availability: "https://schema.org/InStock",
+      category: "one-time",
+      url: "https://prepavaga.com.br/pricing",
+    },
+  ],
 };
 
 export default async function PricingPage() {
@@ -23,6 +68,10 @@ export default async function PricingPage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(PRICING_JSONLD) }}
+      />
       <LandingNavbar />
       <main className="bg-bg">
         <div className="mx-auto max-w-4xl px-6 py-14">

@@ -1,8 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 
-export const metadata = {
-  title: "Recuperar senha · PrepaVAGA",
+export const metadata: Metadata = {
+  title: "Recuperar senha",
+  description: "Redefina a senha da sua conta PrepaVAGA por e-mail.",
+  alternates: { canonical: "/forgot-password" },
+  robots: { index: false, follow: true },
 };
 
 export default function ForgotPasswordPage() {

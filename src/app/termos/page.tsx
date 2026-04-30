@@ -4,9 +4,10 @@ import { LegalLayout, Section } from "@/components/legal/LegalLayout";
 import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 
 export const metadata: Metadata = {
-  title: "Termos de Uso · PrepaVAGA",
+  title: "Termos de Uso",
   description:
     "Termos e condições para uso da plataforma PrepaVAGA. Cadastro, planos, pagamentos, reembolso, cancelamento e responsabilidades.",
+  alternates: { canonical: "/termos" },
 };
 
 export default function TermsPage() {
