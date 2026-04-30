@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: `Free 1 prep grátis · Pro R$30/mês com uso ilimitado (fair use ~${PRO_MONTHLY_SOFT_CAP}/mês) · Per-use R$10. Cancele quando quiser.`,
   alternates: { canonical: "/pricing" },
   openGraph: {
-    title: "Planos e preços · PrepaVAGA",
+    title: "Planos e preços · PrepaVaga",
     description: `Free 1 prep grátis · Pro R$30/mês com uso ilimitado · Per-use R$10. Sem fidelidade.`,
     url: "/pricing",
   },
@@ -21,7 +21,7 @@ const PRICING_JSONLD = {
   "@context": "https://schema.org",
   "@type": "Service",
   serviceType: "Preparação para entrevista de emprego com IA",
-  provider: { "@type": "Organization", name: "PrepaVAGA", url: "https://prepavaga.com.br" },
+  provider: { "@type": "Organization", name: "PrepaVaga", url: "https://prepavaga.com.br" },
   areaServed: { "@type": "Country", name: "Brazil" },
   description:
     "Análise ATS do currículo, pesquisa da empresa em tempo real, CV reescrito para a vaga e roteiros de perguntas personalizados.",
@@ -77,7 +77,7 @@ export default async function PricingPage() {
         <div className="mx-auto max-w-4xl px-6 py-14">
           <header className="mb-10 text-center">
             <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-orange-700">
-              Planos PrepaVAGA
+              Planos PrepaVaga
             </p>
             <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
               Escolha como entrar mais preparado nas entrevistas
@@ -167,10 +167,10 @@ export default async function PricingPage() {
                 (~{PRO_MONTHLY_SOFT_CAP} preps/mês). Quem precisa de mais é caso raro — basta
                 falar com a gente em{" "}
                 <a
-                  href="mailto:rodrigo@proaicircle.com?subject=PrepaVAGA%20%E2%80%94%20liberar%20uso%20al%C3%A9m%20do%20fair%20use"
+                  href="mailto:prepavaga@prepavaga.com.br?subject=PrepaVaga%20%E2%80%94%20liberar%20uso%20al%C3%A9m%20do%20fair%20use"
                   className="font-medium text-orange-700 underline"
                 >
-                  rodrigo@proaicircle.com
+                  prepavaga@prepavaga.com.br
                 </a>{" "}
                 que liberamos.
               </p>

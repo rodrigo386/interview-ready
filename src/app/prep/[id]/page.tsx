@@ -4,7 +4,7 @@ import { Tela1Visual } from "@/components/prep/Tela1Visual";
 import { loadPrepSession } from "@/lib/prep/load-session";
 
 export const metadata: Metadata = {
-  title: "Prep · PrepaVAGA",
+  title: "Prep · PrepaVaga",
 };
 
 export default async function PrepHomePage({

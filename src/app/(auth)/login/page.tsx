@@ -6,7 +6,7 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 export const metadata: Metadata = {
   title: "Entrar na sua conta",
   description:
-    "Acesse sua conta PrepaVAGA para gerenciar suas preparações, currículos e análises de entrevistas.",
+    "Acesse sua conta PrepaVaga para gerenciar suas preparações, currículos e análises de entrevistas.",
   alternates: { canonical: "/login" },
 };
 

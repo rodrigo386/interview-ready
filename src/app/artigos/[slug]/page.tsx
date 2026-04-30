@@ -71,12 +71,12 @@ export default async function ArticlePage({
     inLanguage: "pt-BR",
     author: {
       "@type": "Organization",
-      name: post.author ?? "PrepaVAGA",
+      name: post.author ?? "PrepaVaga",
       url: SITE_URL,
     },
     publisher: {
       "@type": "Organization",
-      name: "PrepaVAGA",
+      name: "PrepaVaga",
       url: SITE_URL,
       logo: { "@type": "ImageObject", url: `${SITE_URL}/icon.svg` },
     },
@@ -156,7 +156,7 @@ export default async function ArticlePage({
               Quer aplicar isso na sua próxima entrevista?
             </h2>
             <p className="mt-2 text-sm text-ink-2">
-              A PrepaVAGA gera um pitch personalizado de 90 segundos para uma vaga específica,
+              A PrepaVaga gera um pitch personalizado de 90 segundos para uma vaga específica,
               junto com análise ATS do seu currículo, pesquisa atualizada da empresa e perguntas
               prováveis. A primeira preparação é grátis.
             </p>

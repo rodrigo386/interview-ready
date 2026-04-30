@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 export const contentType = "image/png";
 export const size = { width: 1200, height: 630 };
 export const alt =
-  "PrepaVAGA — Coach de carreira com IA. Entre pronto. Saia contratado.";
+  "PrepaVaga — Coach de carreira com IA. Entre pronto. Saia contratado.";
 
 export default async function OpengraphImage() {
   const [interRegular, interBold] = await Promise.all([

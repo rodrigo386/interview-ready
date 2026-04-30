@@ -21,7 +21,7 @@ const config: Config = {
           900: "#7C2D12",
           hover: "#C2410C",
         },
-        // PrepaVAGA Opção A spec tokens — usados pelos componentes em src/components/prep/*
+        // PrepaVaga Opção A spec tokens — usados pelos componentes em src/components/prep/*
         orange: {
           DEFAULT: "#F15A24",
           500: "#F15A24",

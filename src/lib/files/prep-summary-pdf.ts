@@ -132,7 +132,7 @@ export async function buildPrepSummaryPdf(input: {
 }): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(sanitize(`Prep - ${input.company} - ${input.role}`));
-  doc.setAuthor("PrepaVAGA");
+  doc.setAuthor("PrepaVaga");
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 

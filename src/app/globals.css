@@ -26,7 +26,7 @@
   --color-text-tertiary: 107 114 128;
   --color-text-muted: 156 163 175;
 
-  /* PrepaVAGA Opção A — gauge color tokens (consumed via CSS var em Gauge.tsx) */
+  /* PrepaVaga Opção A — gauge color tokens (consumed via CSS var em Gauge.tsx) */
   --prep-red: #E54848;
   --prep-yellow: #F5B800;
   --prep-green: #2DB87F;
@@ -117,7 +117,7 @@ body {
   border: 0;
 }
 
-/* PrepaVAGA Opção A — honor prefers-reduced-motion globally
+/* PrepaVaga Opção A — honor prefers-reduced-motion globally
    Skeleton shimmers continue (loading state still informs); only animations
    and transitions collapse. Scroll behavior reverts to instant. */
 @media (prefers-reduced-motion: reduce) {

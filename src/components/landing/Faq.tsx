@@ -5,7 +5,7 @@ type FaqItem = { q: string; a: React.ReactNode; aPlain: string };
 
 const ITEMS: FaqItem[] = [
   {
-    q: "O PrepaVAGA é grátis?",
+    q: "O PrepaVaga é grátis?",
     aPlain:
       "Sim. Toda nova conta ganha 1 prep grátis vitalícia. Depois disso você pode comprar prep avulso por R$10 ou assinar o Pro por R$30/mês (promo de lançamento, valor cheio R$50/mês).",
     a: (
@@ -142,10 +142,10 @@ export function Faq() {
           <p className="mt-3 text-base leading-[1.6] text-text-secondary">
             Não achou sua resposta?{" "}
             <a
-              href="mailto:rodrigo@proaicircle.com"
+              href="mailto:prepavaga@prepavaga.com.br"
               className="text-brand-600 underline-offset-4 hover:underline"
             >
-              rodrigo@proaicircle.com
+              prepavaga@prepavaga.com.br
             </a>
             .
           </p>

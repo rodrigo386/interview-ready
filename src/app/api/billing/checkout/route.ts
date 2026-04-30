@@ -133,7 +133,7 @@ export async function POST(req: Request) {
       value: PRO_AMOUNT_CENTS / 100,
       cycle: "MONTHLY",
       nextDueDate: tomorrowIso(),
-      description: "PrepaVAGA Pro · assinatura mensal",
+      description: "PrepaVaga Pro · assinatura mensal",
       externalReference: buildExternalReference({
         kind: "pro_subscription",
         userId: p.id,
@@ -159,7 +159,7 @@ export async function POST(req: Request) {
     billingType: "UNDEFINED",
     value: PER_USE_AMOUNT_CENTS / 100,
     dueDate: tomorrowIso(),
-    description: "PrepaVAGA · 1 prep avulso",
+    description: "PrepaVaga · 1 prep avulso",
     externalReference: buildExternalReference({
       kind: "prep_purchase",
       userId: p.id,

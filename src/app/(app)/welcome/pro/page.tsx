@@ -70,7 +70,7 @@ export default async function WelcomeProPage() {
         </div>
         <h1 className="mt-5 text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
           Bem-vindo ao{" "}
-          <span className="text-green-700 dark:text-green-300">PrepaVAGA Pro</span>
+          <span className="text-green-700 dark:text-green-300">PrepaVaga Pro</span>
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-base text-text-secondary">
           Obrigado pela confiança! Seu pagamento foi confirmado e sua assinatura já está ativa.
@@ -128,10 +128,10 @@ export default async function WelcomeProPage() {
       <p className="mt-2 text-center text-[11px] text-text-tertiary">
         Uso ilimitado com fair use de ~50 preps/mês. Precisa de mais? Fala com a gente em{" "}
         <a
-          href="mailto:rodrigo@proaicircle.com"
+          href="mailto:prepavaga@prepavaga.com.br"
           className="underline-offset-4 hover:underline"
         >
-          rodrigo@proaicircle.com
+          prepavaga@prepavaga.com.br
         </a>
         .
       </p>

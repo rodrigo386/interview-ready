@@ -25,8 +25,8 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "PrepaVAGA · Preparação para entrevista com IA",
-    template: "%s · PrepaVAGA",
+    default: "PrepaVaga · Preparação para entrevista com IA",
+    template: "%s · PrepaVaga",
   },
   description: DESCRIPTION,
   keywords: [
@@ -38,22 +38,22 @@ export const metadata: Metadata = {
     "preparar entrevista",
     "coach de carreira",
     "IA carreira",
-    "PrepaVAGA",
+    "PrepaVaga",
   ],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "PrepaVAGA · Preparação para entrevista com IA",
+    title: "PrepaVaga · Preparação para entrevista com IA",
     description: DESCRIPTION,
     type: "website",
     locale: "pt_BR",
-    siteName: "PrepaVAGA",
+    siteName: "PrepaVaga",
     url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
-    title: "PrepaVAGA · Preparação para entrevista com IA",
+    title: "PrepaVaga · Preparação para entrevista com IA",
     description: DESCRIPTION,
   },
   robots: {
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
 const ORG_JSONLD = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "PrepaVAGA",
+  name: "PrepaVaga",
   alternateName: "Pro AI Circle",
   url: SITE_URL,
   logo: `${SITE_URL}/icon.svg`,
@@ -89,7 +89,7 @@ const ORG_JSONLD = {
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
-    email: "rodrigo@proaicircle.com",
+    email: "prepavaga@prepavaga.com.br",
     availableLanguage: ["Portuguese"],
   },
 };
@@ -97,10 +97,10 @@ const ORG_JSONLD = {
 const WEBSITE_JSONLD = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "PrepaVAGA",
+  name: "PrepaVaga",
   url: SITE_URL,
   inLanguage: "pt-BR",
-  publisher: { "@type": "Organization", name: "PrepaVAGA", url: SITE_URL },
+  publisher: { "@type": "Organization", name: "PrepaVaga", url: SITE_URL },
 };
 
 export default function RootLayout({

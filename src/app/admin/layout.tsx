@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <header className="sticky top-0 z-30 border-b border-neutral-200 bg-bg dark:border-zinc-800">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <Link href="/admin" aria-label="Admin · PrepaVAGA">
+            <Link href="/admin" aria-label="Admin · PrepaVaga">
               <Logo variant="horizontal" size={26} />
             </Link>
             <span className="rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-700 dark:border-brand-900 dark:bg-brand-900/30 dark:text-brand-500">

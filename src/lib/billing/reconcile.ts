@@ -167,7 +167,7 @@ async function fetchAsaas<T>(path: string): Promise<T> {
   const res = await fetch(`${env.ASAAS_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": "PrepaVAGA/1.0",
+      "User-Agent": "PrepaVaga/1.0",
       access_token: env.ASAAS_API_KEY!,
     },
     cache: "no-store",

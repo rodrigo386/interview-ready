@@ -6,7 +6,7 @@ import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 export const metadata: Metadata = {
   title: "Termos de Uso",
   description:
-    "Termos e condições para uso da plataforma PrepaVAGA. Cadastro, planos, pagamentos, reembolso, cancelamento e responsabilidades.",
+    "Termos e condições para uso da plataforma PrepaVaga. Cadastro, planos, pagamentos, reembolso, cancelamento e responsabilidades.",
   alternates: { canonical: "/termos" },
 };
 
@@ -14,14 +14,14 @@ export default function TermsPage() {
   return (
     <LegalLayout title="Termos de Uso" updatedAt="30 de abril de 2026">
       <p className="text-lg text-text-primary">
-        Bem-vindo à PrepaVAGA. Estes Termos regulam o uso da nossa plataforma de preparação para
+        Bem-vindo à PrepaVaga. Estes Termos regulam o uso da nossa plataforma de preparação para
         entrevistas com IA. Ao criar sua conta ou usar qualquer parte do serviço, você concorda
-        integralmente com este documento. Se não concordar, por favor não use a PrepaVAGA.
+        integralmente com este documento. Se não concordar, por favor não use a PrepaVaga.
       </p>
 
       <Section number="1." title="Quem somos">
         <p>
-          A PrepaVAGA é operada pela <strong className="text-text-primary">PROAICIRCLE
+          A PrepaVaga é operada pela <strong className="text-text-primary">PROAICIRCLE
           CONSULTORIA EMPRESARIAL LTDA</strong> (nome fantasia: <em>Pro AI Circle</em>),
           inscrita no CNPJ sob o nº <strong className="text-text-primary">62.805.016/0001-29</strong>,
           com sede na Rua Pais Leme, 215, Conjunto 1713, Pinheiros, São Paulo/SP, CEP 05.424-150.
@@ -42,7 +42,7 @@ export default function TermsPage() {
 
       <Section number="2." title="Cadastro e elegibilidade">
         <p>
-          Para usar a PrepaVAGA, você precisa: (i) ter no mínimo 18 anos; (ii) fornecer e-mail
+          Para usar a PrepaVaga, você precisa: (i) ter no mínimo 18 anos; (ii) fornecer e-mail
           válido, nome completo e CPF (ou CNPJ, se pessoa jurídica); (iii) criar uma senha segura;
           e (iv) manter seus dados atualizados.
         </p>
@@ -78,7 +78,7 @@ export default function TermsPage() {
         </ul>
         <p>
           Os pagamentos são processados pelo Asaas (Asaas Gestão Financeira S.A.), que aceita Pix,
-          cartão de crédito e boleto. A PrepaVAGA não armazena dados de cartão. A nota fiscal é
+          cartão de crédito e boleto. A PrepaVaga não armazena dados de cartão. A nota fiscal é
           emitida pelo próprio Asaas.
         </p>
         <p>
@@ -94,10 +94,10 @@ export default function TermsPage() {
           mais intenso (ex.: recolocação simultânea em muitas vagas, uso por equipe), basta entrar
           em contato em{" "}
           <a
-            href="mailto:rodrigo@proaicircle.com"
+            href="mailto:prepavaga@prepavaga.com.br"
             className="font-medium text-orange-700 underline"
           >
-            rodrigo@proaicircle.com
+            prepavaga@prepavaga.com.br
           </a>{" "}
           que liberamos o uso adicional sem custo extra. O teto não se aplica a usos automatizados,
           revenda da plataforma ou criação de contas em massa, situações em que o serviço pode ser
@@ -120,7 +120,7 @@ export default function TermsPage() {
       <Section number="5." title="Como você deve usar">
         <p>Você concorda em <strong className="text-text-primary">não</strong>:</p>
         <ul className="ml-5 list-disc space-y-2">
-          <li>Usar a PrepaVAGA para fins ilegais, fraudulentos ou para gerar conteúdo ofensivo.</li>
+          <li>Usar a PrepaVaga para fins ilegais, fraudulentos ou para gerar conteúdo ofensivo.</li>
           <li>
             Tentar burlar limites de quota, criar contas múltiplas para abusar do plano Free, ou
             automatizar requisições (scraping, bots).
@@ -140,7 +140,7 @@ export default function TermsPage() {
 
       <Section number="6." title="Conteúdo gerado e propriedade intelectual">
         <p>
-          O currículo e as informações que você submete continuam sendo seus. Ao usar a PrepaVAGA,
+          O currículo e as informações que você submete continuam sendo seus. Ao usar a PrepaVaga,
           você nos concede licença limitada e revogável para processar esses dados exclusivamente
           para gerar seu dossiê e operar o serviço.
         </p>
@@ -149,20 +149,20 @@ export default function TermsPage() {
           salvar e usar livremente em qualquer entrevista.
         </p>
         <p>
-          A marca, logotipo, código-fonte, design e tecnologia da PrepaVAGA pertencem à IAgentics
+          A marca, logotipo, código-fonte, design e tecnologia da PrepaVaga pertencem à IAgentics
           e estão protegidos por direitos autorais e propriedade intelectual.
         </p>
       </Section>
 
       <Section number="7." title="Limitações do serviço e da IA">
         <p>
-          A PrepaVAGA usa modelos de IA generativa (Google Gemini) e pesquisa pública na internet.
+          A PrepaVaga usa modelos de IA generativa (Google Gemini) e pesquisa pública na internet.
           A qualidade do dossiê depende da qualidade do currículo e da descrição da vaga que você
           fornecer.
         </p>
         <p>
           <strong className="text-text-primary">Não garantimos contratação.</strong> A decisão de
-          quem entrevista e contrata é sempre da empresa contratante. A PrepaVAGA é uma ferramenta
+          quem entrevista e contrata é sempre da empresa contratante. A PrepaVaga é uma ferramenta
           de preparação, não um intermediador de vagas nem agente de carreira.
         </p>
         <p>
@@ -192,7 +192,7 @@ export default function TermsPage() {
 
       <Section number="9." title="Limitação de responsabilidade">
         <p>
-          Na máxima extensão permitida pela lei, a PrepaVAGA e a PROAICIRCLE Ltda não respondem
+          Na máxima extensão permitida pela lei, a PrepaVaga e a PROAICIRCLE Ltda não respondem
           por: (i) decisões de contratação tomadas por terceiros; (ii) eventuais imprecisões em
           dados gerados pela IA; (iii) indisponibilidade temporária do serviço por manutenção,
           falha de terceiros (Asaas, Supabase, Google) ou força maior; (iv) danos indiretos,
@@ -211,7 +211,7 @@ export default function TermsPage() {
           plataforma com pelo menos 7 dias de antecedência.
         </p>
         <p>
-          Se você continuar usando a PrepaVAGA depois da entrada em vigor das mudanças, fica
+          Se você continuar usando a PrepaVaga depois da entrada em vigor das mudanças, fica
           entendido que concorda. Se não concordar, pode encerrar a conta.
         </p>
       </Section>

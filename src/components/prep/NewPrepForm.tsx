@@ -109,10 +109,10 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
               uso real — se você está rodando legitimamente, fala comigo que libero na hora.
             </p>
             <a
-              href="mailto:rodrigo@proaicircle.com?subject=PrepaVAGA%20%E2%80%94%20liberar%20cap%20mensal"
+              href="mailto:prepavaga@prepavaga.com.br?subject=PrepaVaga%20%E2%80%94%20liberar%20cap%20mensal"
               className="mt-3 inline-block rounded-pill bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-700"
             >
-              Falar com rodrigo@proaicircle.com →
+              Falar com prepavaga@prepavaga.com.br →
             </a>
           </div>
         )}

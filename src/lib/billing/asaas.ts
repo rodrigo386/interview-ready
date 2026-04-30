@@ -17,7 +17,7 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": "PrepaVAGA/1.0",
+      "User-Agent": "PrepaVaga/1.0",
       access_token: env.ASAAS_API_KEY,
       ...(init.headers ?? {}),
     },

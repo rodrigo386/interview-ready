@@ -7,10 +7,10 @@ import { getAllPosts, formatPublishedDate } from "@/lib/blog/posts";
 export const metadata: Metadata = {
   title: "Artigos sobre entrevista e carreira",
   description:
-    "Guias práticos sobre entrevista de emprego, currículo ATS, perguntas comuns e estratégias de carreira. Conteúdo da equipe PrepaVAGA.",
+    "Guias práticos sobre entrevista de emprego, currículo ATS, perguntas comuns e estratégias de carreira. Conteúdo da equipe PrepaVaga.",
   alternates: { canonical: "/artigos" },
   openGraph: {
-    title: "Artigos · PrepaVAGA",
+    title: "Artigos · PrepaVaga",
     description:
       "Guias práticos sobre entrevista de emprego, currículo ATS e perguntas comuns.",
     url: "/artigos",
@@ -27,7 +27,7 @@ export default async function ArticlesIndexPage() {
         <div className="mx-auto max-w-3xl px-6 py-14">
           <header className="mb-10">
             <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-orange-700">
-              Artigos PrepaVAGA
+              Artigos PrepaVaga
             </p>
             <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
               Guias para a sua próxima entrevista

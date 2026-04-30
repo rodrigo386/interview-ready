@@ -5,7 +5,7 @@ import { LegalLayout, Section } from "@/components/legal/LegalLayout";
 export const metadata: Metadata = {
   title: "Política de Privacidade",
   description:
-    "Como a PrepaVAGA coleta, usa, compartilha e protege seus dados pessoais. Em conformidade com a LGPD (Lei Geral de Proteção de Dados).",
+    "Como a PrepaVaga coleta, usa, compartilha e protege seus dados pessoais. Em conformidade com a LGPD (Lei Geral de Proteção de Dados).",
   alternates: { canonical: "/privacidade" },
 };
 
@@ -14,13 +14,13 @@ export default function PrivacyPage() {
     <LegalLayout title="Política de Privacidade" updatedAt="26 de abril de 2026">
       <p className="text-lg text-text-primary">
         Sua privacidade importa. Esta política descreve, em linguagem direta, quais dados pessoais
-        a PrepaVAGA coleta, por que, com quem compartilha e como você pode exercer seus direitos
+        a PrepaVaga coleta, por que, com quem compartilha e como você pode exercer seus direitos
         conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, LGPD).
       </p>
 
       <Section number="1." title="Quem é o controlador dos seus dados">
         <p>
-          A controladora dos dados pessoais coletados pela PrepaVAGA é a{" "}
+          A controladora dos dados pessoais coletados pela PrepaVaga é a{" "}
           <strong className="text-text-primary">PROAICIRCLE CONSULTORIA EMPRESARIAL LTDA</strong>
           {" "}(nome fantasia: <em>Pro AI Circle</em>), CNPJ{" "}
           <strong className="text-text-primary">62.805.016/0001-29</strong>, com sede na Rua Pais
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong className="text-text-primary">Pagamento:</strong> os dados de cartão e Pix são
-            tratados diretamente pelo Asaas. A PrepaVAGA armazena apenas o ID do cliente Asaas, o
+            tratados diretamente pelo Asaas. A PrepaVaga armazena apenas o ID do cliente Asaas, o
             ID da assinatura e o histórico de transações (data, valor, status). Não temos acesso
             ao número do seu cartão.
           </li>
@@ -131,7 +131,7 @@ export default function PrivacyPage() {
         </ul>
         <p>
           Também podemos compartilhar dados quando obrigados por ordem judicial, requisição de
-          autoridade competente, ou para defender direitos da PrepaVAGA em processos legais.
+          autoridade competente, ou para defender direitos da PrepaVaga em processos legais.
         </p>
       </Section>
 
@@ -234,7 +234,7 @@ export default function PrivacyPage() {
 
       <Section number="10." title="Crianças e adolescentes">
         <p>
-          A PrepaVAGA é destinada a maiores de 18 anos. Não coletamos intencionalmente dados de
+          A PrepaVaga é destinada a maiores de 18 anos. Não coletamos intencionalmente dados de
           crianças ou adolescentes. Se identificarmos que uma conta foi criada por menor, ela será
           encerrada e os dados removidos.
         </p>

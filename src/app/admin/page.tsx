@@ -3,7 +3,7 @@ import { getAdminOverview } from "@/lib/admin/metrics";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Admin · PrepaVAGA",
+  title: "Admin · PrepaVaga",
   robots: { index: false, follow: false },
 };
 

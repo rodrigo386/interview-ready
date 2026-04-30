@@ -85,7 +85,7 @@ Cloudflare → **Rules** → **Redirect Rules** → **Create rule**:
 | Campo | Valor |
 |---|---|
 | Rule name | `Redirect www to apex` |
-| If hostname equals | `www.prepavaga.com.br` |
+| If hostname equals | `c` |
 | Then... | **Static** |
 | URL | `https://prepavaga.com.br${1}` |
 | Preserve query string | ON |

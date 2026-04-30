@@ -4,7 +4,7 @@ import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 
 export const metadata: Metadata = {
   title: "Recuperar senha",
-  description: "Redefina a senha da sua conta PrepaVAGA por e-mail.",
+  description: "Redefina a senha da sua conta PrepaVaga por e-mail.",
   alternates: { canonical: "/forgot-password" },
   robots: { index: false, follow: true },
 };

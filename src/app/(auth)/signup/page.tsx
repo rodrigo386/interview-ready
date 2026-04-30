@@ -6,7 +6,7 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 export const metadata: Metadata = {
   title: "Criar conta grátis",
   description:
-    "Crie sua conta grátis na PrepaVAGA e gere sua primeira preparação para entrevista (análise ATS + pesquisa da empresa + perguntas) sem cartão de crédito.",
+    "Crie sua conta grátis na PrepaVaga e gere sua primeira preparação para entrevista (análise ATS + pesquisa da empresa + perguntas) sem cartão de crédito.",
   alternates: { canonical: "/signup" },
 };
 

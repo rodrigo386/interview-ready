@@ -4,7 +4,7 @@ import { getHistoricalSeries } from "@/lib/admin/timeseries";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Métricas · Admin · PrepaVAGA",
+  title: "Métricas · Admin · PrepaVaga",
   robots: { index: false, follow: false },
 };
 

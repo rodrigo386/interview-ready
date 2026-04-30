@@ -5,7 +5,7 @@ import { LegalLayout, Section } from "@/components/legal/LegalLayout";
 export const metadata: Metadata = {
   title: "Direitos LGPD",
   description:
-    "Como exercer seus direitos como titular de dados na PrepaVAGA, conforme a Lei Geral de Proteção de Dados (LGPD, Lei 13.709/2018).",
+    "Como exercer seus direitos como titular de dados na PrepaVaga, conforme a Lei Geral de Proteção de Dados (LGPD, Lei 13.709/2018).",
   alternates: { canonical: "/lgpd" },
 };
 
@@ -15,10 +15,10 @@ export default function LgpdPage() {
       <p className="text-lg text-text-primary">
         A Lei Geral de Proteção de Dados (Lei nº 13.709/2018) garante a você, titular dos dados, o
         controle sobre como suas informações pessoais são tratadas. Esta página resume esses
-        direitos e mostra como exercê-los na PrepaVAGA.
+        direitos e mostra como exercê-los na PrepaVaga.
       </p>
 
-      <Section number="1." title="O que são meus dados na PrepaVAGA">
+      <Section number="1." title="O que são meus dados na PrepaVaga">
         <p>
           Coletamos: nome, e-mail, CPF, currículo (que você enviou), descrições de vaga, dossiês
           gerados, histórico de pagamentos. Detalhes completos na{" "}

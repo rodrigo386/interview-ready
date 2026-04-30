@@ -6,7 +6,7 @@ import { GrantProButton } from "@/components/admin/GrantProButton";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Usuários · Admin · PrepaVAGA",
+  title: "Usuários · Admin · PrepaVaga",
   robots: { index: false, follow: false },
 };
 

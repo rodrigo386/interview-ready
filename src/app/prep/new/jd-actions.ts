@@ -58,7 +58,7 @@ export async function fetchJdFromUrl(
     res = await fetch(`https://r.jina.ai/${url}`, {
       headers: {
         Accept: "text/plain",
-        "User-Agent": "PrepaVAGA/1.0",
+        "User-Agent": "PrepaVaga/1.0",
       },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });

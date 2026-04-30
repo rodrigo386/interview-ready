@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 
 export const metadata = {
-  title: "Redefinir senha · PrepaVAGA",
+  title: "Redefinir senha · PrepaVaga",
 };
 
 export default function ResetPasswordPage() {

@@ -17,7 +17,7 @@ export function Logo({
         width={size}
         height={size}
         className={className}
-        aria-label="PrepaVAGA"
+        aria-label="PrepaVaga"
         role="img"
       >
         <g transform="translate(40, 40)">
@@ -43,7 +43,7 @@ export function Logo({
         width={size}
         height={(size * 140) / 160}
         className={className}
-        aria-label="PrepaVAGA"
+        aria-label="PrepaVaga"
         role="img"
       >
         <g transform="translate(80, 45)">
@@ -81,7 +81,7 @@ export function Logo({
       width={(size * 360) / 80}
       height={size}
       className={className}
-      aria-label="PrepaVAGA"
+      aria-label="PrepaVaga"
       role="img"
     >
       <g transform="translate(40, 40)">

@@ -4,7 +4,7 @@ import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Saúde · Admin · PrepaVAGA",
+  title: "Saúde · Admin · PrepaVaga",
   robots: { index: false, follow: false },
 };
 
@@ -321,7 +321,7 @@ export default async function HealthAdminPage() {
           </h2>
           <p className="mt-1 text-xs text-text-tertiary">
             Atingiram {PRO_MONTHLY_SOFT_CAP}+ preps no ciclo atual. Entram em
-            soft block até falar com você (rodrigo@proaicircle.com) ou virar mês.
+            soft block até falar com você (prepavaga@prepavaga.com.br) ou virar mês.
           </p>
           <ul className="mt-3 space-y-1.5 text-sm">
             {proSoftCap.map((u) => (
