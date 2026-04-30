@@ -1,10 +1,16 @@
-// Best-effort cleanup of E2E test users created by Playwright in CI.
-// Deletes auth.users where email matches /^e2e-.*@example\.com$/i AND
-// created_at > 1 day ago. Profiles/prep_sessions/cvs cascade via FK.
+// Safety-net cleanup of E2E test users that escaped per-test fixture cleanup.
+// Deletes auth.users where email matches /^e2e-.*@example\.com$/i. The regex
+// is the ONLY thing protecting real users — it must stay in sync with the
+// allowlist in /api/test/{confirm,delete}-user.
 //
-// Runs at the end of the CI workflow (always(), even on failure) when
-// real Supabase staging credentials are present. Failures here never
-// fail the workflow — cleanup is opportunistic.
+// The Playwright fixture in tests/e2e/auth-required/_helpers.ts cleans up
+// users created during a normal test run via /api/test/delete-user. This
+// script is a backstop for cases where the fixture didn't run (process
+// killed mid-test, network failure during cleanup phase, ad-hoc test runs
+// outside Playwright, etc).
+//
+// Runs at the end of the CI workflow (always(), even on failure) when real
+// Supabase credentials are present. Never fails the workflow — opportunistic.
 //
 // Usage: node scripts/cleanup-e2e-users.mjs
 
@@ -22,12 +28,10 @@ const sb = createClient(url, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const ONE_DAY_AGO = Date.now() - 24 * 60 * 60 * 1000;
 const E2E_RX = /^e2e-.*@example\.com$/i;
 const PER_PAGE = 1000;
 
 let deleted = 0;
-let kept = 0;
 let scanned = 0;
 let failures = 0;
 let page = 1;
@@ -44,11 +48,6 @@ try {
 
     for (const u of data.users) {
       if (!u.email || !E2E_RX.test(u.email)) continue;
-      const created = new Date(u.created_at).getTime();
-      if (created > ONE_DAY_AGO) {
-        kept++;
-        continue;
-      }
       const { error: delErr } = await sb.auth.admin.deleteUser(u.id);
       if (delErr) {
         failures++;
@@ -66,6 +65,6 @@ try {
 }
 
 console.log(
-  `[cleanup] scanned ${scanned} users · deleted ${deleted} e2e (>1 day old) · kept ${kept} recent · failures ${failures}`,
+  `[cleanup] scanned ${scanned} users · deleted ${deleted} e2e leftovers · failures ${failures}`,
 );
 process.exit(0);

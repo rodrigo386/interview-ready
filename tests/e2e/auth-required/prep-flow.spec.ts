@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { signUpAndLand } from "./_helpers";
+import { test, expect } from "./_helpers";
+import type { Page } from "@playwright/test";
 
 const CV_TEXT = `Rodrigo Costa — 10 years in procurement leadership.
 2019-2022 Bayer LATAM: Head of Digital Procurement Transformation.
@@ -15,8 +15,11 @@ Responsibilities include: build the target operating model, stand up an AI Cente
 deploy AI Sourcing Agents for autonomous negotiation on tail spend, and drive touchless P2P.
 Qualifications: 10+ years procurement transformation, hands-on AI deployment, PE experience preferred.`;
 
-async function signupAndCreatePrep(page: import("@playwright/test").Page) {
-  await signUpAndLand(page, "E2E Prep Flow", "e2e-prepflow");
+async function signupAndCreatePrep(
+  page: Page,
+  signUp: (fullName?: string, prefix?: string) => Promise<string>,
+) {
+  await signUp("E2E Prep Flow", "e2e-prepflow");
   await page.goto("/prep/new");
   await page.getByLabel("Empresa").fill("Hexion");
   await page.getByLabel("Cargo").fill("Senior Director, AI Procurement");
@@ -28,8 +31,8 @@ async function signupAndCreatePrep(page: import("@playwright/test").Page) {
 }
 
 test.describe("PrepaVAGA Opção A — fluxo das 5 telas", () => {
-  test("Tela 1 mostra PrepStepper + FocusCard + breadcrumb (sem JourneyArc)", async ({ page }) => {
-    await signupAndCreatePrep(page);
+  test("Tela 1 mostra PrepStepper + FocusCard + breadcrumb (sem JourneyArc)", async ({ page, signUp }) => {
+    await signupAndCreatePrep(page, signUp);
 
     // Header empresa
     await expect(page.getByText("Prep para", { exact: true })).toBeVisible({ timeout: 15_000 });
@@ -49,8 +52,8 @@ test.describe("PrepaVAGA Opção A — fluxo das 5 telas", () => {
     await expect(page.getByRole("link", { name: /voltar para seus preps/i })).toBeVisible();
   });
 
-  test("/ats renderiza Tela 2 (ou estado pending) sem JourneyArc", async ({ page }) => {
-    await signupAndCreatePrep(page);
+  test("/ats renderiza Tela 2 (ou estado pending) sem JourneyArc", async ({ page, signUp }) => {
+    await signupAndCreatePrep(page, signUp);
     const url = new URL(page.url());
     await page.goto(`${url.origin}${url.pathname.replace(/\/$/, "")}/ats`);
 
@@ -64,8 +67,8 @@ test.describe("PrepaVAGA Opção A — fluxo das 5 telas", () => {
     await expect(page.getByRole("navigation", { name: /Jornada do prep/i })).toHaveCount(0);
   });
 
-  test("/likely renderiza Tela 3 com QuestionCard accent laranja", async ({ page }) => {
-    await signupAndCreatePrep(page);
+  test("/likely renderiza Tela 3 com QuestionCard accent laranja", async ({ page, signUp }) => {
+    await signupAndCreatePrep(page, signUp);
     const url = new URL(page.url());
     await page.goto(`${url.origin}${url.pathname.replace(/\/$/, "")}/likely`);
 
@@ -75,8 +78,8 @@ test.describe("PrepaVAGA Opção A — fluxo das 5 telas", () => {
     await expect(header.or(empty)).toBeVisible({ timeout: 10_000 });
   });
 
-  test("/deep-dive renderiza Tela 4 com badge 🔥", async ({ page }) => {
-    await signupAndCreatePrep(page);
+  test("/deep-dive renderiza Tela 4 com badge 🔥", async ({ page, signUp }) => {
+    await signupAndCreatePrep(page, signUp);
     const url = new URL(page.url());
     await page.goto(`${url.origin}${url.pathname.replace(/\/$/, "")}/deep-dive`);
 
@@ -85,8 +88,8 @@ test.describe("PrepaVAGA Opção A — fluxo das 5 telas", () => {
     await expect(header.or(empty)).toBeVisible({ timeout: 10_000 });
   });
 
-  test("/ask renderiza Tela 5 com SuccessBanner", async ({ page }) => {
-    await signupAndCreatePrep(page);
+  test("/ask renderiza Tela 5 com SuccessBanner", async ({ page, signUp }) => {
+    await signupAndCreatePrep(page, signUp);
     const url = new URL(page.url());
     await page.goto(`${url.origin}${url.pathname.replace(/\/$/, "")}/ask`);
 

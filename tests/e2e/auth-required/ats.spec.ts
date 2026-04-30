@@ -1,5 +1,4 @@
-import { test, expect } from "@playwright/test";
-import { signUpAndLand } from "./_helpers";
+import { test, expect } from "./_helpers";
 
 const CV_TEXT = `Rodrigo Costa — 10 years procurement leadership.
 2019-2022 Bayer LATAM: Head of Digital Procurement Transformation.
@@ -14,8 +13,8 @@ Build target operating model, stand up AI Center of Excellence,
 deploy AI Sourcing Agents for autonomous negotiation on tail spend, drive touchless P2P.
 10+ years procurement transformation required, hands-on AI deployment, PE experience preferred.`;
 
-test("run ATS match shows score and top fixes", async ({ page }) => {
-  await signUpAndLand(page, "E2E ATS Tester", "e2e-ats");
+test("run ATS match shows score and top fixes", async ({ page, signUp }) => {
+  await signUp("E2E ATS Tester", "e2e-ats");
 
   await page.getByRole("link", { name: /primeiro prep|novo prep/i }).first().click();
   await page.waitForURL("**/prep/new");

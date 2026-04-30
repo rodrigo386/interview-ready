@@ -1,6 +1,5 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_helpers";
 import { PDFDocument, StandardFonts } from "pdf-lib";
-import { signUpAndLand } from "./_helpers";
 
 const CV_BODY =
   "Rodrigo Costa — 10 years in procurement leadership. " +
@@ -31,12 +30,8 @@ async function makeEmptyPdfBuffer(): Promise<Buffer> {
   return Buffer.from(await pdf.save());
 }
 
-async function signup(page: import("@playwright/test").Page) {
-  return signUpAndLand(page, "E2E Upload Tester", "e2e-upload");
-}
-
-test("upload PDF, create prep, reuse CV on second prep", async ({ page }) => {
-  await signup(page);
+test("upload PDF, create prep, reuse CV on second prep", async ({ page, signUp }) => {
+  await signUp("E2E Upload Tester", "e2e-upload");
   await page.getByRole("link", { name: /primeiro prep|novo prep/i }).first().click();
   await page.waitForURL("**/prep/new");
 
@@ -69,8 +64,8 @@ test("upload PDF, create prep, reuse CV on second prep", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "BASF" })).toBeVisible({ timeout: 10_000 });
 });
 
-test("paste fallback still works", async ({ page }) => {
-  await signup(page);
+test("paste fallback still works", async ({ page, signUp }) => {
+  await signUp("E2E Upload Tester", "e2e-upload");
   await page.goto("/prep/new");
 
   await page.getByLabel("Empresa").fill("Acme");
@@ -84,8 +79,8 @@ test("paste fallback still works", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Acme" })).toBeVisible({ timeout: 10_000 });
 });
 
-test("empty PDF is rejected with a helpful message", async ({ page }) => {
-  await signup(page);
+test("empty PDF is rejected with a helpful message", async ({ page, signUp }) => {
+  await signUp("E2E Upload Tester", "e2e-upload");
   await page.goto("/prep/new");
 
   const emptyPdf = await makeEmptyPdfBuffer();
