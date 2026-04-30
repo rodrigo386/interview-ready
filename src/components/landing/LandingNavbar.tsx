@@ -6,10 +6,13 @@ import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-const NAV_LINKS = [
+type NavLink = { href: string; label: string; route?: boolean };
+
+const NAV_LINKS: NavLink[] = [
   { href: "#como-funciona", label: "Como funciona" },
   { href: "#para-quem", label: "Para quem" },
   { href: "#precos", label: "Preços" },
+  { href: "/artigos", label: "Artigos", route: true },
 ];
 
 export function LandingNavbar() {
@@ -23,15 +26,25 @@ export function LandingNavbar() {
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Principal">
-          {NAV_LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="text-sm text-text-secondary transition hover:text-text-primary"
-            >
-              {l.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((l) =>
+            l.route ? (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-sm text-text-secondary transition hover:text-text-primary"
+              >
+                {l.label}
+              </Link>
+            ) : (
+              <a
+                key={l.href}
+                href={l.href}
+                className="text-sm text-text-secondary transition hover:text-text-primary"
+              >
+                {l.label}
+              </a>
+            ),
+          )}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -70,16 +83,27 @@ export function LandingNavbar() {
             className="mx-auto flex max-w-6xl flex-col gap-1 px-6 py-4"
             aria-label="Principal mobile"
           >
-            {NAV_LINKS.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                onClick={() => setOpen(false)}
-                className="rounded-md px-2 py-2 text-sm text-text-secondary hover:bg-neutral-100 hover:text-text-primary dark:hover:bg-zinc-900"
-              >
-                {l.label}
-              </a>
-            ))}
+            {NAV_LINKS.map((l) =>
+              l.route ? (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-2 py-2 text-sm text-text-secondary hover:bg-neutral-100 hover:text-text-primary dark:hover:bg-zinc-900"
+                >
+                  {l.label}
+                </Link>
+              ) : (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-2 py-2 text-sm text-text-secondary hover:bg-neutral-100 hover:text-text-primary dark:hover:bg-zinc-900"
+                >
+                  {l.label}
+                </a>
+              ),
+            )}
             <div className="mt-2 flex flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-zinc-800">
               <Link
                 href="/login"

@@ -2,15 +2,24 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 
 const PRODUTO = [
-  { href: "#como-funciona", label: "Como funciona" },
-  { href: "#para-quem", label: "Para quem" },
-  { href: "#precos", label: "Preços" },
+  { href: "/#como-funciona", label: "Como funciona" },
+  { href: "/#para-quem", label: "Para quem" },
+  { href: "/#precos", label: "Preços" },
+  { href: "/#faq", label: "Perguntas frequentes" },
 ];
 
-const EMPRESA = [
-  { href: "/sobre", label: "Sobre" },
-  { href: "/blog", label: "Blog" },
-  { href: "/contato", label: "Contato" },
+const RECURSOS = [
+  { href: "/artigos", label: "Artigos" },
+  {
+    href: "https://www.linkedin.com/company/prepavaga/",
+    label: "LinkedIn",
+    external: true,
+  },
+  {
+    href: "https://instagram.com/prepavaga",
+    label: "Instagram",
+    external: true,
+  },
 ];
 
 const LEGAL = [
@@ -39,7 +48,7 @@ export function LandingFooter() {
           </div>
           <FooterColumn title="Produto" links={PRODUTO} />
           <FooterColumn title="Conta" links={CONTA} />
-          <FooterColumn title="Empresa" links={EMPRESA} />
+          <FooterColumn title="Recursos" links={RECURSOS} />
           <FooterColumn title="Legal" links={LEGAL} />
         </div>
 
@@ -63,7 +72,7 @@ function FooterColumn({
   links,
 }: {
   title: string;
-  links: { href: string; label: string }[];
+  links: { href: string; label: string; external?: boolean }[];
 }) {
   return (
     <div>
@@ -73,12 +82,23 @@ function FooterColumn({
       <ul className="mt-4 space-y-2.5">
         {links.map((l) => (
           <li key={l.href}>
-            <Link
-              href={l.href}
-              className="text-sm text-text-secondary transition hover:text-text-primary"
-            >
-              {l.label}
-            </Link>
+            {l.external ? (
+              <a
+                href={l.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-text-secondary transition hover:text-text-primary"
+              >
+                {l.label}
+              </a>
+            ) : (
+              <Link
+                href={l.href}
+                className="text-sm text-text-secondary transition hover:text-text-primary"
+              >
+                {l.label}
+              </Link>
+            )}
           </li>
         ))}
       </ul>
