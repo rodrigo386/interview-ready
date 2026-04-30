@@ -2,6 +2,15 @@ import { test as base, expect, type Page } from "@playwright/test";
 
 const PASSWORD = "testpassword123";
 const TEST_CPF = "12345678909";
+// Endereço fixo de teste pra signup E2E (formato válido, não real).
+const TEST_ADDRESS = {
+  postalCode: "01310100",
+  street: "Avenida Paulista",
+  number: "1000",
+  district: "Bela Vista",
+  city: "São Paulo",
+  state: "SP",
+} as const;
 
 /**
  * Generate a unique e2e-only email. Format matches the allowlist in
@@ -24,6 +33,12 @@ async function signUpAndLandRaw(
   await page.getByLabel("Nome completo").fill(fullName);
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel(/CPF/i).fill(TEST_CPF);
+  await page.getByLabel("CEP").fill(TEST_ADDRESS.postalCode);
+  await page.getByLabel("Logradouro").fill(TEST_ADDRESS.street);
+  await page.getByLabel("Número", { exact: true }).fill(TEST_ADDRESS.number);
+  await page.getByLabel("Bairro").fill(TEST_ADDRESS.district);
+  await page.getByLabel("Cidade").fill(TEST_ADDRESS.city);
+  await page.getByLabel("UF").fill(TEST_ADDRESS.state);
   await page.getByLabel("Senha").fill(PASSWORD);
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
 

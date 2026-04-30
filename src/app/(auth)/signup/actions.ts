@@ -18,6 +18,26 @@ const schema = z.object({
     .refine((v) => v.length === 11 || v.length === 14, {
       message: "CPF (11 dígitos) ou CNPJ (14 dígitos) inválido",
     }),
+  postalCode: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/[^0-9]/g, ""))
+    .refine((v) => v.length === 8, { message: "CEP deve ter 8 dígitos" }),
+  addressStreet: z.string().trim().min(1, "Informe o logradouro"),
+  addressNumber: z.string().trim().min(1, "Informe o número"),
+  addressComplement: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null)),
+  addressDistrict: z.string().trim().min(1, "Informe o bairro"),
+  addressCity: z.string().trim().min(1, "Informe a cidade"),
+  addressState: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .length(2, "UF deve ter 2 letras"),
 });
 
 export type SignupState = {
@@ -45,6 +65,13 @@ export async function signup(
     password: formData.get("password"),
     fullName: formData.get("fullName"),
     cpfCnpj: formData.get("cpfCnpj"),
+    postalCode: formData.get("postalCode"),
+    addressStreet: formData.get("addressStreet"),
+    addressNumber: formData.get("addressNumber"),
+    addressComplement: formData.get("addressComplement"),
+    addressDistrict: formData.get("addressDistrict"),
+    addressCity: formData.get("addressCity"),
+    addressState: formData.get("addressState"),
   });
 
   if (!parsed.success) {
@@ -78,17 +105,28 @@ export async function signup(
       return { error: mapSupabaseError(error.message) };
     }
 
-    // Persist CPF on the profile row created by the auth.users trigger.
-    // cpf_cnpj is in the column-level GRANT denylist for `authenticated`
-    // (migration 0011), so this write must go via admin client.
+    // Persist CPF + endereço no profile row criada pelo auth.users trigger.
+    // cpf_cnpj está no denylist de GRANT pra `authenticated` (migration 0011),
+    // então usamos admin client. Os campos de endereço estão no allowlist
+    // (migration 0015) mas a gente passa pelo admin pra simplificar — uma
+    // única round-trip cobre tudo.
     if (data.user) {
       const admin = createAdminClient();
-      const { error: cpfErr } = await admin
+      const { error: profileErr } = await admin
         .from("profiles")
-        .update({ cpf_cnpj: parsed.data.cpfCnpj })
+        .update({
+          cpf_cnpj: parsed.data.cpfCnpj,
+          postal_code: parsed.data.postalCode,
+          address_street: parsed.data.addressStreet,
+          address_number: parsed.data.addressNumber,
+          address_complement: parsed.data.addressComplement,
+          address_district: parsed.data.addressDistrict,
+          address_city: parsed.data.addressCity,
+          address_state: parsed.data.addressState,
+        })
         .eq("id", data.user.id);
-      if (cpfErr) {
-        console.warn("[signup] cpf_cnpj update failed:", cpfErr.message);
+      if (profileErr) {
+        console.warn("[signup] profile update failed:", profileErr.message);
       }
     }
 

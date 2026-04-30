@@ -42,6 +42,14 @@ export type CreateCustomerInput = {
   email: string;
   externalReference: string;
   cpfCnpj: string;
+  // Endereço (necessário pra emissão de NFSe pelo Asaas).
+  // Asaas normaliza CEP (aceita com ou sem hífen) e resolve city/state
+  // a partir dele — mas mandamos explicitamente pra robustez.
+  postalCode?: string;
+  address?: string;
+  addressNumber?: string;
+  complement?: string;
+  province?: string;
 };
 
 export type CreateSubscriptionInput = {

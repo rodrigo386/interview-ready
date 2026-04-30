@@ -55,7 +55,7 @@ export async function POST(req: Request) {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, email, asaas_customer_id, asaas_subscription_id, subscription_status, cpf_cnpj",
+      "id, full_name, email, asaas_customer_id, asaas_subscription_id, subscription_status, cpf_cnpj, postal_code, address_street, address_number, address_complement, address_district, address_city, address_state",
     )
     .eq("id", auth.user.id)
     .single();
@@ -68,6 +68,13 @@ export async function POST(req: Request) {
         asaas_subscription_id: string | null;
         subscription_status: string | null;
         cpf_cnpj: string | null;
+        postal_code: string | null;
+        address_street: string | null;
+        address_number: string | null;
+        address_complement: string | null;
+        address_district: string | null;
+        address_city: string | null;
+        address_state: string | null;
       }
     | null;
   if (!p) {
@@ -98,9 +105,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "cpf_required" }, { status: 422 });
   }
 
-  // Ensure customer exists AND has cpfCnpj on Asaas side. Customers created
-  // before we collected CPF won't have it; PATCH them to avoid 400 on the
-  // next createSubscription/createPayment.
+  // Endereço é exigido pra Asaas emitir NFSe. Users criados antes da
+  // migration 0015 (sem address) caem aqui — frontend redireciona pra
+  // /profile/account preencher. Mesmo padrão do cpf_required.
+  const hasFullAddress =
+    !!p.postal_code &&
+    !!p.address_street &&
+    !!p.address_number &&
+    !!p.address_district &&
+    !!p.address_city &&
+    !!p.address_state;
+  if (!hasFullAddress) {
+    return NextResponse.json({ error: "address_required" }, { status: 422 });
+  }
+
+  const addressInput = {
+    postalCode: p.postal_code!,
+    address: p.address_street!,
+    addressNumber: p.address_number!,
+    complement: p.address_complement ?? undefined,
+    province: p.address_district!,
+  };
+
+  // Ensure customer exists AND has cpfCnpj + endereço on Asaas side.
+  // Customers created before this migration won't have address; PATCH
+  // them no-op-safe a cada checkout.
   let customerId = p.asaas_customer_id;
   if (!customerId) {
     const cust = await asaas.createCustomer({
@@ -108,6 +137,7 @@ export async function POST(req: Request) {
       email: p.email,
       externalReference: p.id,
       cpfCnpj,
+      ...addressInput,
     });
     customerId = cust.id;
     await admin
@@ -115,9 +145,9 @@ export async function POST(req: Request) {
       .update({ asaas_customer_id: customerId })
       .eq("id", p.id);
   } else {
-    // Best-effort: ensure the existing customer has the cpfCnpj on file.
+    // Best-effort: ensure the existing customer has cpfCnpj + endereço on file.
     try {
-      await asaas.updateCustomer(customerId, { cpfCnpj });
+      await asaas.updateCustomer(customerId, { cpfCnpj, ...addressInput });
     } catch (err) {
       console.warn("[billing/checkout] updateCustomer failed:", err);
     }
