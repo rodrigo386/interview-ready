@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { Hero } from "@/components/landing/Hero";
+import { WhatIs } from "@/components/landing/WhatIs";
 import { UseCases } from "@/components/landing/UseCases";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Features } from "@/components/landing/Features";
@@ -29,6 +30,7 @@ export default async function LandingPage() {
       <LandingNavbar />
       <main className="bg-bg">
         <Hero />
+        <WhatIs />
         <UseCases />
         <HowItWorks />
         <Features />

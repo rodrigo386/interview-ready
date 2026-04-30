@@ -17,11 +17,13 @@ export const metadata: Metadata = {
   },
 };
 
-const PRICING_JSONLD = {
+const SITE = "https://prepavaga.com.br";
+
+const PRICING_SERVICE_JSONLD = {
   "@context": "https://schema.org",
   "@type": "Service",
   serviceType: "Preparação para entrevista de emprego com IA",
-  provider: { "@type": "Organization", name: "PrepaVaga", url: "https://prepavaga.com.br" },
+  provider: { "@type": "Organization", name: "PrepaVaga", url: SITE },
   areaServed: { "@type": "Country", name: "Brazil" },
   description:
     "Análise ATS do currículo, pesquisa da empresa em tempo real, CV reescrito para a vaga e roteiros de perguntas personalizados.",
@@ -29,7 +31,8 @@ const PRICING_JSONLD = {
     {
       "@type": "Offer",
       name: "Plano Pro (assinatura mensal)",
-      description: "Uso ilimitado para preparação. Promo de lançamento R$30/mês (preço cheio R$50/mês).",
+      description:
+        "Uso ilimitado para preparação. Promo de lançamento R$30/mês (preço cheio R$50/mês).",
       price: "30.00",
       priceCurrency: "BRL",
       priceSpecification: {
@@ -41,7 +44,7 @@ const PRICING_JSONLD = {
       },
       availability: "https://schema.org/InStock",
       category: "subscription",
-      url: "https://prepavaga.com.br/pricing",
+      url: `${SITE}/pricing`,
     },
     {
       "@type": "Offer",
@@ -51,9 +54,57 @@ const PRICING_JSONLD = {
       priceCurrency: "BRL",
       availability: "https://schema.org/InStock",
       category: "one-time",
-      url: "https://prepavaga.com.br/pricing",
+      url: `${SITE}/pricing`,
     },
   ],
+};
+
+const PRICING_PRODUCT_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: "PrepaVaga",
+  description:
+    "Plataforma de preparação para entrevista de emprego com IA: análise ATS, pesquisa da empresa, CV reescrito e roteiros de perguntas personalizados.",
+  brand: { "@type": "Brand", name: "PrepaVaga" },
+  url: SITE,
+  image: `${SITE}/opengraph-image`,
+  category: "Career coaching software",
+  offers: {
+    "@type": "AggregateOffer",
+    priceCurrency: "BRL",
+    lowPrice: "10.00",
+    highPrice: "30.00",
+    offerCount: 2,
+    availability: "https://schema.org/InStock",
+    offers: [
+      {
+        "@type": "Offer",
+        name: "PrepaVaga Pro",
+        description:
+          "Assinatura mensal com uso ilimitado de preparações. Promo R$30/mês (cheio R$50/mês).",
+        price: "30.00",
+        priceCurrency: "BRL",
+        availability: "https://schema.org/InStock",
+        url: `${SITE}/pricing`,
+        priceSpecification: {
+          "@type": "UnitPriceSpecification",
+          price: "30.00",
+          priceCurrency: "BRL",
+          billingDuration: "P1M",
+          unitText: "MONTH",
+        },
+      },
+      {
+        "@type": "Offer",
+        name: "PrepaVaga Avulso",
+        description: "1 preparação. Pagamento único, crédito não expira.",
+        price: "10.00",
+        priceCurrency: "BRL",
+        availability: "https://schema.org/InStock",
+        url: `${SITE}/pricing`,
+      },
+    ],
+  },
 };
 
 export default async function PricingPage() {
@@ -70,7 +121,11 @@ export default async function PricingPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(PRICING_JSONLD) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(PRICING_SERVICE_JSONLD) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(PRICING_PRODUCT_JSONLD) }}
       />
       <LandingNavbar />
       <main className="bg-bg">

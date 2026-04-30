@@ -5,10 +5,12 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import {
+  getAllPosts,
   getPostBySlug,
   listSlugs,
   formatPublishedDate,
 } from "@/lib/blog/posts";
+import { extractH2Headings, pickRelatedPosts } from "@/lib/blog/related";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
@@ -60,20 +62,28 @@ export default async function ArticlePage({
   if (!post) notFound();
 
   const articleUrl = `${SITE_URL}/artigos/${post.slug}`;
+  const articleImage = `${SITE_URL}/artigos/${post.slug}/opengraph-image`;
+
+  const isPersonAuthor =
+    !!post.author && !/equipe|prepavaga|team/i.test(post.author);
+  const author = isPersonAuthor
+    ? { "@type": "Person" as const, name: post.author!, url: SITE_URL }
+    : {
+        "@type": "Organization" as const,
+        name: post.author ?? "PrepaVaga",
+        url: SITE_URL,
+      };
 
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.title,
     description: post.description,
+    image: [articleImage],
     datePublished: post.publishedAt,
     dateModified: post.updatedAt ?? post.publishedAt,
     inLanguage: "pt-BR",
-    author: {
-      "@type": "Organization",
-      name: post.author ?? "PrepaVaga",
-      url: SITE_URL,
-    },
+    author,
     publisher: {
       "@type": "Organization",
       name: "PrepaVaga",
@@ -84,6 +94,32 @@ export default async function ArticlePage({
     url: articleUrl,
     keywords: post.tags?.join(", "),
   };
+
+  const headings = extractH2Headings(post.content);
+  const isHowTo =
+    /^como\s/i.test(post.title) ||
+    /^quais\s/i.test(post.title) ||
+    /^pretens/i.test(post.title);
+  const howToJsonLd =
+    isHowTo && headings.length >= 3
+      ? {
+          "@context": "https://schema.org",
+          "@type": "HowTo",
+          name: post.title,
+          description: post.description,
+          inLanguage: "pt-BR",
+          totalTime: `PT${Math.max(post.readingMinutes, 5)}M`,
+          step: headings.map((h, i) => ({
+            "@type": "HowToStep",
+            position: i + 1,
+            name: h,
+            url: `${articleUrl}#${slugifyHeading(h)}`,
+          })),
+        }
+      : null;
+
+  const allPosts = await getAllPosts();
+  const related = pickRelatedPosts(post, allPosts, 3);
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
@@ -115,6 +151,12 @@ export default async function ArticlePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
+      {howToJsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+        />
+      ) : null}
       <LandingNavbar />
       <main className="bg-bg">
         <article className="mx-auto max-w-3xl px-6 py-14">
@@ -167,9 +209,51 @@ export default async function ArticlePage({
               Gerar minha preparação grátis →
             </Link>
           </footer>
+
+          {related.length > 0 ? (
+            <aside aria-labelledby="leia-tambem" className="mt-14">
+              <h2
+                id="leia-tambem"
+                className="text-xs font-bold uppercase tracking-[0.6px] text-text-tertiary"
+              >
+                Leia também
+              </h2>
+              <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {related.map((r) => (
+                  <li key={r.slug}>
+                    <Link
+                      href={`/artigos/${r.slug}`}
+                      className="block h-full rounded-xl border border-line bg-white p-5 transition hover:border-orange-500 hover:shadow-prep"
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-[0.6px] text-orange-700">
+                        {r.tags?.[0] ?? "Artigo"}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold leading-snug text-ink">
+                        {r.title}
+                      </p>
+                      <p className="mt-2 line-clamp-3 text-xs text-ink-2">
+                        {r.description}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          ) : null}
         </article>
       </main>
       <LandingFooter />
     </>
   );
+}
+
+function slugifyHeading(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 80);
 }
