@@ -79,11 +79,12 @@ export async function rateLimit(
  * Gemini quota quickly.
  *
  * createPrep is the heaviest (1 prep = 6 Gemini calls: company intel + 5
- * sections). 5/h matches Pro power users; Free users hit the lifetime
- * cap before this anyway.
+ * sections). 3/h covers legitimate power-user prep cycles (each prep takes
+ * 10+ min to study) and caps adversarial Pro-account abuse at ~2.2k
+ * preps/month instead of 3.6k. Free users hit the lifetime cap before this.
  */
 export const LIMITS = {
-  createPrep: { key: "createPrep", limit: 5, windowSeconds: 3600 },
+  createPrep: { key: "createPrep", limit: 3, windowSeconds: 3600 },
   ats: { key: "ats", limit: 10, windowSeconds: 3600 },
   cvRewrite: { key: "cvRewrite", limit: 10, windowSeconds: 3600 },
   companyIntel: { key: "companyIntel", limit: 10, windowSeconds: 3600 },

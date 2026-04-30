@@ -23,6 +23,7 @@ export default async function HealthAdminPage() {
     overduePaymentsRes,
     recentEventsRes,
     stuckPrepsRes,
+    preps24hRes,
   ] = await Promise.all([
     sb
       .from("prep_sessions")
@@ -65,6 +66,10 @@ export default async function HealthAdminPage() {
       .select("id, company_name, generation_status, created_at")
       .in("generation_status", ["pending", "generating"])
       .lt("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString()),
+    sb
+      .from("prep_sessions")
+      .select("user_id")
+      .gte("created_at", last24h),
   ]);
 
   const failedPreps = (failedPrepsRes.data ?? []) as Array<{
@@ -105,6 +110,37 @@ export default async function HealthAdminPage() {
     created_at: string;
   }>;
 
+  // Top users by preps in the last 24h. With createPrep capped at 3/h,
+  // anyone north of 5 in a day is sustained heavy usage worth a look.
+  const preps24hRows = (preps24hRes.data ?? []) as Array<{ user_id: string }>;
+  const counts = new Map<string, number>();
+  for (const row of preps24hRows) {
+    counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1);
+  }
+  const topUsers = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([user_id, count]) => ({ user_id, count }));
+
+  let topUsersWithEmail: Array<{ user_id: string; count: number; email: string | null }> = [];
+  if (topUsers.length > 0) {
+    const { data: profileRows } = await sb
+      .from("profiles")
+      .select("id, email")
+      .in("id", topUsers.map((u) => u.user_id));
+    const emailById = new Map<string, string | null>();
+    for (const p of (profileRows ?? []) as Array<{ id: string; email: string | null }>) {
+      emailById.set(p.id, p.email);
+    }
+    topUsersWithEmail = topUsers.map((u) => ({
+      ...u,
+      email: emailById.get(u.user_id) ?? null,
+    }));
+  }
+
+  const ABUSE_THRESHOLD = 5;
+  const flaggedTopUsers = topUsersWithEmail.filter((u) => u.count >= ABUSE_THRESHOLD);
+
   const cards = [
     { label: "Preps falhadas (7d)", value: failedPreps.length, tone: failedPreps.length > 0 ? "warn" : "ok" },
     { label: "ATS falhadas (7d)", value: failedAts.length, tone: failedAts.length > 0 ? "warn" : "ok" },
@@ -114,6 +150,11 @@ export default async function HealthAdminPage() {
     { label: "Pagamentos em atraso", value: overduePaymentsRes.count ?? 0, tone: (overduePaymentsRes.count ?? 0) > 0 ? "warn" : "ok" },
     { label: "Webhooks últimas 24h", value: events.length, tone: events.length === 0 ? "warn" : "ok" },
     { label: "Preps travadas (>30 min em pending/generating)", value: stuckPreps.length, tone: stuckPreps.length > 0 ? "warn" : "ok" },
+    {
+      label: `Users acima de ${ABUSE_THRESHOLD} preps/24h`,
+      value: flaggedTopUsers.length,
+      tone: flaggedTopUsers.length > 0 ? "warn" : "ok",
+    },
   ];
 
   return (
@@ -200,6 +241,57 @@ export default async function HealthAdminPage() {
           </ul>
         </section>
       )}
+
+      <section
+        className={
+          "rounded-xl border p-5 " +
+          (flaggedTopUsers.length > 0
+            ? "border-yellow-soft bg-yellow-soft/30 dark:border-yellow-900 dark:bg-yellow-950/30"
+            : "border-neutral-200 bg-bg dark:border-zinc-800")
+        }
+      >
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-base font-semibold text-text-primary">
+            Top users por preps (últimas 24h)
+          </h2>
+          <span className="text-[11px] text-text-tertiary">
+            limite: {ABUSE_THRESHOLD}+ marca em amarelo
+          </span>
+        </div>
+        {topUsersWithEmail.length === 0 ? (
+          <p className="mt-3 text-sm text-text-tertiary">
+            Nenhuma prep nas últimas 24h.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {topUsersWithEmail.map((u) => (
+              <li
+                key={u.user_id}
+                className="flex items-center justify-between gap-3 rounded-md border border-neutral-200/60 bg-bg px-3 py-2 dark:border-zinc-800/60 dark:bg-zinc-900/40"
+              >
+                <span className="truncate text-text-secondary">
+                  <a
+                    href={`/admin/users?q=${encodeURIComponent(u.email ?? u.user_id)}`}
+                    className="font-medium text-text-primary hover:underline"
+                  >
+                    {u.email ?? u.user_id.slice(0, 8)}
+                  </a>
+                </span>
+                <span
+                  className={
+                    "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums " +
+                    (u.count >= ABUSE_THRESHOLD
+                      ? "bg-yellow-soft text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+                      : "bg-neutral-100 text-text-secondary dark:bg-zinc-800")
+                  }
+                >
+                  {u.count} prep{u.count === 1 ? "" : "s"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-xl border border-neutral-200 bg-bg p-5 dark:border-zinc-800">
         <h2 className="text-base font-semibold text-text-primary">
