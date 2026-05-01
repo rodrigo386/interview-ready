@@ -11,6 +11,17 @@ import { resolveOrigin } from "@/lib/http/host";
 const bodySchema = z.object({
   kind: z.enum(["pro_subscription", "prep_purchase"]),
   cpfCnpj: z.string().trim().min(11).max(20).optional(),
+  address: z
+    .object({
+      postalCode: z.string().trim(),
+      addressStreet: z.string().trim().min(1),
+      addressNumber: z.string().trim().min(1),
+      addressComplement: z.string().trim().optional(),
+      addressDistrict: z.string().trim().min(1),
+      addressCity: z.string().trim().min(1),
+      addressState: z.string().trim().toUpperCase().length(2),
+    })
+    .optional(),
 });
 
 function normalizeCpf(raw: string): string {
@@ -106,25 +117,62 @@ export async function POST(req: Request) {
   }
 
   // Endereço é exigido pra Asaas emitir NFSe. Users criados antes da
-  // migration 0015 (sem address) caem aqui — frontend redireciona pra
-  // /profile/account preencher. Mesmo padrão do cpf_required.
+  // migration 0015 (sem address) caem em 422 address_required; o
+  // frontend mostra modal, coleta, re-envia no body. Mesmo padrão do
+  // cpf_required.
+  let postalCode = p.postal_code;
+  let addressStreet = p.address_street;
+  let addressNumber = p.address_number;
+  let addressComplement = p.address_complement;
+  let addressDistrict = p.address_district;
+  let addressCity = p.address_city;
+  let addressState = p.address_state;
+
   const hasFullAddress =
-    !!p.postal_code &&
-    !!p.address_street &&
-    !!p.address_number &&
-    !!p.address_district &&
-    !!p.address_city &&
-    !!p.address_state;
-  if (!hasFullAddress) {
+    !!postalCode &&
+    !!addressStreet &&
+    !!addressNumber &&
+    !!addressDistrict &&
+    !!addressCity &&
+    !!addressState;
+
+  if (!hasFullAddress && parsed.address) {
+    const cepDigits = parsed.address.postalCode.replace(/[^0-9]/g, "");
+    if (cepDigits.length !== 8) {
+      return NextResponse.json(
+        { error: "CEP inválido. Use 8 dígitos." },
+        { status: 422 },
+      );
+    }
+    postalCode = cepDigits;
+    addressStreet = parsed.address.addressStreet;
+    addressNumber = parsed.address.addressNumber;
+    addressComplement = parsed.address.addressComplement ?? null;
+    addressDistrict = parsed.address.addressDistrict;
+    addressCity = parsed.address.addressCity;
+    addressState = parsed.address.addressState;
+    await admin
+      .from("profiles")
+      .update({
+        postal_code: postalCode,
+        address_street: addressStreet,
+        address_number: addressNumber,
+        address_complement: addressComplement,
+        address_district: addressDistrict,
+        address_city: addressCity,
+        address_state: addressState,
+      })
+      .eq("id", p.id);
+  } else if (!hasFullAddress) {
     return NextResponse.json({ error: "address_required" }, { status: 422 });
   }
 
   const addressInput = {
-    postalCode: p.postal_code!,
-    address: p.address_street!,
-    addressNumber: p.address_number!,
-    complement: p.address_complement ?? undefined,
-    province: p.address_district!,
+    postalCode: postalCode!,
+    address: addressStreet!,
+    addressNumber: addressNumber!,
+    complement: addressComplement ?? undefined,
+    province: addressDistrict!,
   };
 
   // Ensure customer exists AND has cpfCnpj + endereço on Asaas side.

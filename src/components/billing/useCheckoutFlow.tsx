@@ -2,10 +2,20 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useDialogFocus } from "@/components/ui/useDialogFocus";
+import {
+  AddressDialog,
+  type AddressDialogValue,
+} from "./AddressDialog";
 
 type Kind = "pro_subscription" | "prep_purchase";
 
-async function postCheckout(body: { kind: Kind; cpfCnpj?: string }): Promise<Response> {
+type CheckoutBody = {
+  kind: Kind;
+  cpfCnpj?: string;
+  address?: AddressDialogValue;
+};
+
+async function postCheckout(body: CheckoutBody): Promise<Response> {
   return fetch("/api/billing/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -14,28 +24,32 @@ async function postCheckout(body: { kind: Kind; cpfCnpj?: string }): Promise<Res
 }
 
 /**
- * Encapsulates the checkout flow:
+ * Orquestra o fluxo de checkout:
  *  1. POST /api/billing/checkout
- *  2. If 422 cpf_required, opens an inline modal asking for CPF/CNPJ,
- *     then retries with the entered value.
- *  3. On success, redirects the browser to Asaas checkout URL.
- *  4. On error, exposes a string in `error` for the caller to render
- *     near the trigger button (no `window.alert`).
+ *  2. Se 422 cpf_required → modal CPF/CNPJ → re-tenta
+ *  3. Se 422 address_required → modal endereço (com CEP autocomplete) → re-tenta
+ *  4. Sucesso: redireciona pro Asaas. Erro: expõe `error` pro caller.
  *
- * Returns `{ start, pending, error, dialog }` — render `dialog` once
- * somewhere in the tree (it portals to fixed positioning).
+ * Retorna `{ start, pending, error, dialog }` — render `dialog` uma vez na árvore.
  */
 export function useCheckoutFlow() {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // CPF dialog state
   const [cpfOpen, setCpfOpen] = useState(false);
   const [cpfValue, setCpfValue] = useState("");
   const [cpfError, setCpfError] = useState<string | null>(null);
-
   const cpfResolverRef = useRef<((cpf: string | null) => void) | null>(null);
+  const cpfFormRef = useRef<HTMLFormElement>(null);
+  const cpfInputRef = useRef<HTMLInputElement>(null);
 
-  const dialogRef = useRef<HTMLFormElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Address dialog state
+  const [addressOpen, setAddressOpen] = useState(false);
+  const addressResolverRef = useRef<
+    ((value: AddressDialogValue | null) => void) | null
+  >(null);
+
   const closeCpf = () => {
     if (pending) return;
     setCpfOpen(false);
@@ -44,7 +58,7 @@ export function useCheckoutFlow() {
     cpfResolverRef.current?.(null);
     cpfResolverRef.current = null;
   };
-  useDialogFocus(cpfOpen, dialogRef, closeCpf, inputRef);
+  useDialogFocus(cpfOpen, cpfFormRef, closeCpf, cpfInputRef);
 
   function askCpf(): Promise<string | null> {
     return new Promise((resolve) => {
@@ -69,19 +83,54 @@ export function useCheckoutFlow() {
     cpfResolverRef.current = null;
   }
 
+  function askAddress(): Promise<AddressDialogValue | null> {
+    return new Promise((resolve) => {
+      addressResolverRef.current = resolve;
+      setAddressOpen(true);
+    });
+  }
+
+  function onAddressSubmit(value: AddressDialogValue) {
+    setAddressOpen(false);
+    addressResolverRef.current?.(value);
+    addressResolverRef.current = null;
+  }
+
+  function onAddressCancel() {
+    setAddressOpen(false);
+    addressResolverRef.current?.(null);
+    addressResolverRef.current = null;
+  }
+
   function start(kind: Kind) {
     setError(null);
     startTransition(async () => {
       try {
-        let res = await postCheckout({ kind });
+        let body: CheckoutBody = { kind };
+        let res = await postCheckout(body);
 
-        if (res.status === 422) {
-          const data = (await res.json().catch(() => ({}))) as { error?: string };
+        // 2 possíveis 422s: cpf_required, address_required. Pode disparar
+        // ambos em sequência se user veio do OAuth Google sem nada.
+        for (let i = 0; i < 3; i++) {
+          if (res.status !== 422) break;
+          const data = (await res.clone().json().catch(() => ({}))) as {
+            error?: string;
+          };
           if (data.error === "cpf_required") {
             const cpfCnpj = await askCpf();
-            if (!cpfCnpj) return; // user canceled
-            res = await postCheckout({ kind, cpfCnpj });
+            if (!cpfCnpj) return;
+            body = { ...body, cpfCnpj };
+            res = await postCheckout(body);
+            continue;
           }
+          if (data.error === "address_required") {
+            const address = await askAddress();
+            if (!address) return;
+            body = { ...body, address };
+            res = await postCheckout(body);
+            continue;
+          }
+          break;
         }
 
         if (!res.ok) {
@@ -102,7 +151,7 @@ export function useCheckoutFlow() {
     });
   }
 
-  const dialog = cpfOpen ? (
+  const cpfDialog = cpfOpen ? (
     <div
       role="dialog"
       aria-modal="true"
@@ -111,7 +160,7 @@ export function useCheckoutFlow() {
       onClick={closeCpf}
     >
       <form
-        ref={dialogRef}
+        ref={cpfFormRef}
         onSubmit={submitCpf}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm space-y-3 rounded-lg bg-bg p-5 shadow-prep"
@@ -123,7 +172,7 @@ export function useCheckoutFlow() {
           O Asaas exige CPF/CNPJ pra emitir a cobrança. Informe só os números.
         </p>
         <input
-          ref={inputRef}
+          ref={cpfInputRef}
           type="text"
           inputMode="numeric"
           autoComplete="off"
@@ -151,6 +200,18 @@ export function useCheckoutFlow() {
       </form>
     </div>
   ) : null;
+
+  const dialog = (
+    <>
+      {cpfDialog}
+      <AddressDialog
+        open={addressOpen}
+        onCancel={onAddressCancel}
+        onSubmit={onAddressSubmit}
+        pending={pending}
+      />
+    </>
+  );
 
   return { start, pending, error, dialog };
 }
