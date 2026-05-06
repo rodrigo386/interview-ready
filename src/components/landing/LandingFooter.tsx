@@ -43,7 +43,7 @@ export function LandingFooter() {
           <div>
             <Logo variant="horizontal" size={28} />
             <p className="mt-4 max-w-xs text-sm leading-[1.55] text-text-secondary">
-              Coach de carreira com IA. Em minutos, dossiê completo da sua próxima vaga.
+              Preparação para entrevista com IA. Em minutos, dossiê completo da sua próxima vaga.
             </p>
           </div>
           <FooterColumn title="Produto" links={PRODUTO} />

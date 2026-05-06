@@ -68,7 +68,7 @@ const PRICING_PRODUCT_JSONLD = {
   brand: { "@type": "Brand", name: "PrepaVaga" },
   url: SITE,
   image: `${SITE}/opengraph-image`,
-  category: "Career coaching software",
+  category: "Interview preparation software",
   offers: {
     "@type": "AggregateOffer",
     priceCurrency: "BRL",
