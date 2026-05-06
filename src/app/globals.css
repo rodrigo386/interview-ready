@@ -31,6 +31,23 @@
   --prep-yellow: #F5B800;
   --prep-green: #2DB87F;
 
+  /* PrepaVaga Opção A — semantic palette tokens (mapped from tailwind.config.ts) */
+  --color-orange-500: 241 90 36;        /* #F15A24 */
+  --color-orange-700: 217 72 24;        /* #D94818 */
+  --color-orange-soft: 255 231 220;     /* #FFE7DC */
+  --color-green-500: 45 184 127;        /* #2DB87F */
+  --color-green-700: 31 122 86;         /* #1F7A56 */
+  --color-green-soft: 224 245 235;      /* #E0F5EB */
+  --color-yellow-500: 245 184 0;        /* #F5B800 */
+  --color-yellow-700: 176 134 0;        /* #B08600 */
+  --color-yellow-soft: 255 244 209;     /* #FFF4D1 */
+  --color-red-500: 229 72 72;           /* #E54848 */
+  --color-red-soft: 253 227 227;        /* #FDE3E3 */
+  --color-ink: 26 26 26;                /* #1A1A1A */
+  --color-ink-2: 74 74 74;              /* #4A4A4A */
+  --color-ink-3: 138 138 138;           /* #8A8A8A */
+  --color-line: 232 232 232;            /* #E8E8E8 */
+
   /* Zinc palette — LIGHT MODE mapping
      Backgrounds (950/900/...) → progressively whiter/warmer surfaces
      Text (50/100/200/...) → progressively darker charcoal */
@@ -72,6 +89,27 @@
   --zinc-200: 228 228 231;
   --zinc-100: 244 244 245;
   --zinc-50:  250 250 250;
+
+  /* PrepaVaga Opção A — semantic palette in dark mode
+     - *-500/700 collapse to a single light shade against dark bg
+     - *-soft becomes a desaturated dark tint
+     - ink/* flip to light grays
+     - line uses zinc-800 for harmonious dark border */
+  --color-orange-500: 251 146 60;       /* tailwind orange-400 */
+  --color-orange-700: 251 146 60;       /* same as 500 in dark */
+  --color-orange-soft: 67 20 7;         /* tailwind orange-950 */
+  --color-green-500: 134 239 172;       /* tailwind green-300 */
+  --color-green-700: 134 239 172;
+  --color-green-soft: 5 46 22;          /* tailwind green-950 */
+  --color-yellow-500: 253 224 71;       /* tailwind yellow-300 */
+  --color-yellow-700: 253 224 71;
+  --color-yellow-soft: 66 32 6;         /* tailwind yellow-950 */
+  --color-red-500: 252 165 165;         /* tailwind red-300 */
+  --color-red-soft: 69 10 10;           /* tailwind red-950 */
+  --color-ink: 244 244 245;             /* tailwind zinc-100 */
+  --color-ink-2: 212 212 216;           /* tailwind zinc-300 */
+  --color-ink-3: 161 161 170;           /* tailwind zinc-400 */
+  --color-line: 39 39 42;               /* tailwind zinc-800 */
 }
 
 @theme inline {
