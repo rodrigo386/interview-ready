@@ -20,12 +20,12 @@ const instrumentSerif = Instrument_Serif({
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
 
 const DESCRIPTION =
-  "Preparação para entrevista de emprego com IA: análise ATS do currículo, pesquisa da empresa, perguntas prováveis e CV reescrito para a vaga. A primeira prep é grátis.";
+  "Preparação completa para entrevista com IA: análise ATS, pesquisa da empresa em tempo real, perguntas prováveis e CV reescrito. Primeira prep grátis.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "PrepaVaga · Preparação para entrevista com IA",
+    default: "Preparação para entrevista com IA — PrepaVaga",
     template: "%s · PrepaVaga",
   },
   description: DESCRIPTION,
@@ -36,15 +36,16 @@ export const metadata: Metadata = {
     "currículo ATS",
     "perguntas de entrevista",
     "preparar entrevista",
-    "coach de carreira",
-    "IA carreira",
+    "preparar entrevista de emprego com IA",
+    "como se preparar para entrevista com IA",
+    "kit de entrevista",
     "PrepaVaga",
   ],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "PrepaVaga · Preparação para entrevista com IA",
+    title: "Preparação para entrevista com IA — PrepaVaga",
     description: DESCRIPTION,
     type: "website",
     locale: "pt_BR",
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "PrepaVaga · Preparação para entrevista com IA",
+    title: "Preparação para entrevista com IA — PrepaVaga",
     description: DESCRIPTION,
   },
   robots: {

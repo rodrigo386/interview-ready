@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 
 export const metadata: Metadata = {
-  title: "Planos e preços",
+  title: { absolute: "Planos e preços — preparação para entrevista com IA · PrepaVaga" },
   description: `Free 1 prep grátis · Pro R$30/mês com uso ilimitado (fair use ~${PRO_MONTHLY_SOFT_CAP}/mês) · Per-use R$10. Cancele quando quiser.`,
   alternates: { canonical: "/pricing" },
   openGraph: {

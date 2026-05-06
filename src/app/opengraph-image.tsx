@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 export const contentType = "image/png";
 export const size = { width: 1200, height: 630 };
 export const alt =
-  "PrepaVaga — Coach de carreira com IA. Entre pronto. Saia contratado.";
+  "PrepaVaga — Preparação para entrevista com IA. Entre pronto. Saia contratado.";
 
 export default async function OpengraphImage() {
   const [interRegular, interBold] = await Promise.all([
@@ -112,8 +112,8 @@ export default async function OpengraphImage() {
               maxWidth: 720,
             }}
           >
-            Coach de carreira com IA. Em minutos, o dossiê completo da sua próxima vaga: empresa
-            pesquisada, CV reescrito pra ATS e roteiros prontos.
+            Preparação para entrevista com IA. Em minutos, o dossiê completo da sua próxima vaga:
+            empresa pesquisada, CV reescrito pra ATS e roteiros prontos.
           </div>
         </div>
 
