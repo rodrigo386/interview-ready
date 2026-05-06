@@ -148,7 +148,29 @@ The current `title: "Planos e preços"` becomes `"Planos e preços · PrepaVaga"
 - `title.absolute` opts out of the root template, giving us full control of the final string.
 - `openGraph.title` (line 14) keeps the existing "Planos e preços · PrepaVaga" — OG title has different display rules (used by social cards, not SERP) and the punchier version reads better in shares.
 
-### Change 6 — Verification only (no edit)
+### Change 6 — OG image copy alignment
+
+**File:** `src/app/opengraph-image.tsx`
+
+Discovered during plan-writing: the OG image still shows "Coach de carreira com IA" in two places, contradicting Change 4 (which removes that keyword from positioning).
+
+```diff
+- export const alt =
+-   "PrepaVaga — Coach de carreira com IA. Entre pronto. Saia contratado.";
++ export const alt =
++   "PrepaVaga — Preparação para entrevista com IA. Entre pronto. Saia contratado.";
+```
+
+```diff
+            Coach de carreira com IA. Em minutos, o dossiê completo da sua próxima vaga: empresa
+-           pesquisada, CV reescrito pra ATS e roteiros prontos.
++           Preparação para entrevista com IA. Em minutos, o dossiê completo da sua próxima vaga:
++           empresa pesquisada, CV reescrito pra ATS e roteiros prontos.
+```
+
+The visual layout (headline "Entre pronto. Saia contratado.", logo, mini-CV decorations, pill CTA "Comece grátis") stays identical — only the subtitle text and `alt` change.
+
+### Change 7 — Verification only (no edit)
 
 - Confirm `<html lang="pt-BR">` (already correct).
 - Confirm sitemap, robots, JSON-LDs (already correct — listed in "Confirmed via codebase exploration" above).
@@ -162,8 +184,9 @@ The current `title: "Planos e preços"` becomes `"Planos e preços · PrepaVaga"
 | `src/components/landing/Hero.tsx` | 1 | copy |
 | `src/app/layout.tsx` | ~10 (3 title strings + description constant + keywords array) | metadata |
 | `src/app/pricing/page.tsx` | 1 | metadata |
+| `src/app/opengraph-image.tsx` | 2 (alt + subtitle text) | copy |
 
-Total: **3 files, ~12 lines net change.**
+Total: **4 files, ~14 lines net change.**
 
 ---
 
