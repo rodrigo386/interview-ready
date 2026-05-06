@@ -1,8 +1,29 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import { LinkedInImportHelper } from "./LinkedInImportHelper";
 
+function mockMatchMedia(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
+
 describe("<LinkedInImportHelper />", () => {
+  beforeEach(() => {
+    mockMatchMedia(false); // default: desktop viewport
+  });
+
   it("renders collapsed by default", () => {
     const { getByRole, queryByText } = render(<LinkedInImportHelper />);
     const toggle = getByRole("button", { name: /importar do linkedin/i });
@@ -11,13 +32,13 @@ describe("<LinkedInImportHelper />", () => {
     expect(queryByText(/recursos.*salvar como pdf/i)).toBeNull();
   });
 
-  it("expands on click revealing the 3 steps", () => {
+  it("expands on click revealing the 3 steps (desktop copy)", () => {
     const { getByRole, getByText } = render(<LinkedInImportHelper />);
     const toggle = getByRole("button", { name: /importar do linkedin/i });
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(getByText(/abra seu perfil no linkedin/i)).toBeInTheDocument();
-    expect(getByText(/recursos.*salvar como pdf/i)).toBeInTheDocument();
+    expect(getByText(/canto superior direito.*recursos.*salvar como pdf/i)).toBeInTheDocument();
     expect(getByText(/volte aqui e faça upload/i)).toBeInTheDocument();
   });
 
@@ -37,5 +58,14 @@ describe("<LinkedInImportHelper />", () => {
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(queryByText(/abrir meu linkedin/i)).toBeNull();
+  });
+
+  it("renders mobile-specific copy when viewport matches mobile media query", () => {
+    mockMatchMedia(true);
+    const { getByRole, getByText, queryByText } = render(<LinkedInImportHelper />);
+    fireEvent.click(getByRole("button", { name: /importar do linkedin/i }));
+    expect(getByText(/três pontos.*salvar como pdf/i)).toBeInTheDocument();
+    expect(getByText(/se o linkedin abrir no app/i)).toBeInTheDocument();
+    expect(queryByText(/canto superior direito.*recursos.*salvar como pdf/i)).toBeNull();
   });
 });

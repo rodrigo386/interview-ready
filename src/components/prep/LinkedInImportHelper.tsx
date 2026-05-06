@@ -1,12 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const PANEL_ID = "linkedin-import-helper-panel";
 const HEADER_ID = "linkedin-import-helper-header";
+const MOBILE_QUERY = "(max-width: 767px)";
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mql = window.matchMedia(MOBILE_QUERY);
+    const update = () => setIsMobile(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+  return isMobile;
+}
 
 export function LinkedInImportHelper() {
   const [expanded, setExpanded] = useState(false);
+  const isMobile = useIsMobile();
 
   return (
     <div className="rounded-md border border-line bg-bg">
@@ -50,10 +65,20 @@ export function LinkedInImportHelper() {
             </li>
             <li>
               <p>
-                <span className="font-semibold text-ink">2.</span> No canto
-                superior do perfil, clique em &quot;Recursos&quot; →
-                &quot;Salvar como PDF&quot;. O download começa
-                automaticamente.
+                <span className="font-semibold text-ink">2.</span>{" "}
+                {isMobile ? (
+                  <>
+                    Toque nos três pontos (⋯) no canto superior do perfil
+                    e escolha &quot;Salvar como PDF&quot;. Se o LinkedIn
+                    abrir no app, feche e abra linkedin.com no navegador.
+                  </>
+                ) : (
+                  <>
+                    No canto superior direito do perfil, clique em
+                    &quot;Recursos&quot; → &quot;Salvar como PDF&quot;. O
+                    download começa automaticamente.
+                  </>
+                )}
               </p>
             </li>
             <li>
