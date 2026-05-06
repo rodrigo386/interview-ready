@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function LgpdPage() {
   return (
-    <LegalLayout title="Seus direitos LGPD" updatedAt="26 de abril de 2026">
+    <LegalLayout title="Seus direitos LGPD" path="/lgpd" updatedAt="26 de abril de 2026">
       <p className="text-lg text-text-primary">
         A Lei Geral de Proteção de Dados (Lei nº 13.709/2018) garante a você, titular dos dados, o
         controle sobre como suas informações pessoais são tratadas. Esta página resume esses

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalLayout title="Termos de Uso" updatedAt="30 de abril de 2026">
+    <LegalLayout title="Termos de Uso" path="/termos" updatedAt="30 de abril de 2026">
       <p className="text-lg text-text-primary">
         Bem-vindo à PrepaVaga. Estes Termos regulam o uso da nossa plataforma de preparação para
         entrevistas com IA. Ao criar sua conta ou usar qualquer parte do serviço, você concorda

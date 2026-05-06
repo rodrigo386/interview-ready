@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalLayout title="Política de Privacidade" updatedAt="26 de abril de 2026">
+    <LegalLayout title="Política de Privacidade" path="/privacidade" updatedAt="26 de abril de 2026">
       <p className="text-lg text-text-primary">
         Sua privacidade importa. Esta política descreve, em linguagem direta, quais dados pessoais
         a PrepaVaga coleta, por que, com quem compartilha e como você pode exercer seus direitos

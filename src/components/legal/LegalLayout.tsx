@@ -1,22 +1,57 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
+
 export function LegalLayout({
   title,
+  path,
   updatedAt,
   children,
 }: {
   title: string;
+  path: string;
   updatedAt: string;
   children: ReactNode;
 }) {
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Início", item: SITE_URL },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: title,
+        item: `${SITE_URL}${path}`,
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <LandingNavbar />
       <main className="bg-bg">
         <section className="border-b border-neutral-200 bg-bg pt-20 pb-10 md:pt-28 md:pb-14 dark:border-zinc-800">
           <div className="mx-auto max-w-3xl px-6">
+            <nav aria-label="Breadcrumb" className="mb-4 text-xs text-text-tertiary">
+              <Link href="/" className="hover:text-text-primary hover:underline">
+                Início
+              </Link>
+              <span aria-hidden className="mx-2">
+                ›
+              </span>
+              <span aria-current="page" className="text-text-primary">
+                {title}
+              </span>
+            </nav>
             <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
               Documento legal
             </p>

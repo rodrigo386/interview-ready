@@ -170,6 +170,12 @@ export default async function ArticlePage({
             <Link href="/artigos" className="hover:text-text-primary hover:underline">
               Artigos
             </Link>
+            <span aria-hidden className="mx-2">
+              ›
+            </span>
+            <span aria-current="page" className="text-text-primary">
+              {post.title.length > 50 ? `${post.title.slice(0, 50)}…` : post.title}
+            </span>
           </nav>
 
           <header className="mt-6">

@@ -4,6 +4,9 @@ import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { getAllPosts, formatPublishedDate } from "@/lib/blog/posts";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
+
 export const metadata: Metadata = {
   title: "Artigos sobre entrevista e carreira",
   description:
@@ -17,14 +20,44 @@ export const metadata: Metadata = {
   },
 };
 
+const BREADCRUMB_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Início", item: SITE_URL },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Artigos",
+      item: `${SITE_URL}/artigos`,
+    },
+  ],
+};
+
 export default async function ArticlesIndexPage() {
   const posts = await getAllPosts();
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_JSONLD) }}
+      />
       <LandingNavbar />
       <main className="bg-bg">
         <div className="mx-auto max-w-3xl px-6 py-14">
+          <nav aria-label="Breadcrumb" className="mb-6 text-xs text-text-tertiary">
+            <Link href="/" className="hover:text-text-primary hover:underline">
+              Início
+            </Link>
+            <span aria-hidden className="mx-2">
+              ›
+            </span>
+            <span aria-current="page" className="text-text-primary">
+              Artigos
+            </span>
+          </nav>
+
           <header className="mb-10">
             <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-orange-700">
               Artigos PrepaVaga
