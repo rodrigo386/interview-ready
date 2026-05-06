@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { uploadCv, type UploadCvState } from "@/app/prep/new/cv-actions";
+import { LinkedInImportHelper } from "./LinkedInImportHelper";
 
 export type CvSummary = {
   id: string;
@@ -87,7 +88,8 @@ export function CvPicker({
       )}
 
       {mode !== "paste" && (
-        <div>
+        <div className="space-y-3">
+          <LinkedInImportHelper />
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-zinc-800 bg-zinc-900/30 px-4 py-8 text-center hover:border-zinc-700">
             <input
               ref={fileRef}
