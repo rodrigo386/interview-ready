@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import type { AsaasWebhookEvent } from "./types";
 import { parseExternalReference } from "./ids";
+import { recordCommission, recordClawback } from "@/lib/affiliate/commission";
 
 export function verifyToken(provided: string | null | undefined): boolean {
   if (!provided) return false;
@@ -138,6 +139,23 @@ async function handlePaymentReceived(
     p_next_due_date: kind === "pro_subscription" ? p.nextDueDate ?? null : null,
   });
   if (error) return { handled: false, reason: "error", detail: error.message };
+
+  // Affiliate commission side-effect (Stage 3). Idempotent via UNIQUE(payment_id).
+  // Failures are tolerated — webhook still acks. Reconciliation is handled
+  // separately if a commission row goes missing.
+  try {
+    const { data: paymentRow } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("asaas_payment_id", p.id)
+      .maybeSingle();
+    if (paymentRow?.id) {
+      await recordCommission(paymentRow.id, supabase);
+    }
+  } catch (err) {
+    console.warn("[affiliate] recordCommission failed:", err);
+  }
+
   return { handled: true, userId };
 }
 
@@ -173,6 +191,22 @@ async function handlePaymentRefunded(
     p_kind: kind,
   });
   if (error) return { handled: false, reason: "error", detail: error.message };
+
+  // Affiliate clawback side-effect (Stage 3). Tolerates missing commission row
+  // (refund of payment that never had a commission, e.g. user not referred).
+  try {
+    const { data: paymentRow } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("asaas_payment_id", p.id)
+      .maybeSingle();
+    if (paymentRow?.id) {
+      await recordClawback(paymentRow.id, supabase);
+    }
+  } catch (err) {
+    console.warn("[affiliate] recordClawback failed:", err);
+  }
+
   return { handled: true, userId };
 }
 
