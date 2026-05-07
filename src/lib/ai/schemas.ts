@@ -23,6 +23,12 @@ export const prepGuideSchema = z.object({
     role: z.string().min(1),
     company: z.string().min(1),
     estimated_prep_time_minutes: z.number().int().min(10).max(180),
+    /** True when prep shipped with at least one section failed (partial mode).
+     *  Set by runStageB when >=3 sections succeed but <5. */
+    partial: z.boolean().optional(),
+    /** Section kinds that failed when partial=true. Surface via UI banner;
+     *  future "regenerate just this section" flow can read this list. */
+    failed_sections: z.array(z.string()).optional(),
   }),
   sections: z.array(prepSectionSchema).min(0).max(7),
 });

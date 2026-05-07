@@ -156,6 +156,7 @@ async function runStageB(
   // Falling within the "1 a 3 minutos" promise in the FAQ.
   const sections: PrepSection[] = [];
   const errors: string[] = [];
+  const failedKinds: SectionKind[] = [];
   for (let i = 0; i < SECTION_KINDS.length; i++) {
     const kind = SECTION_KINDS[i];
     if (i > 0) await new Promise((r) => setTimeout(r, SECTION_INTER_DELAY_MS));
@@ -163,13 +164,19 @@ async function runStageB(
     try {
       sections.push(await generateOne(kind, session, intel));
     } catch (err) {
-      errors.push(formatReason(err));
+      errors.push(`[${kind}] ${formatReason(err)}`);
+      failedKinds.push(kind);
     }
   }
 
-  if (errors.length > 0) {
+  // Partial-success policy: if at least MIN_SECTIONS_TO_SHIP succeed, ship
+  // the prep with a "partial" flag so the UI can show a banner + offer
+  // regeneration of failed sections. Anything below that threshold is too
+  // sparse to be useful — fail entirely.
+  const MIN_SECTIONS_TO_SHIP = 3;
+  if (sections.length < MIN_SECTIONS_TO_SHIP) {
     console.error(
-      `[pipeline ${sessionId}] Stage B: ${errors.length} sections failed`,
+      `[pipeline ${sessionId}] Stage B: only ${sections.length}/${SECTION_KINDS.length} sections succeeded — failing prep`,
     );
     await supabase
       .from("prep_sessions")
@@ -182,12 +189,27 @@ async function runStageB(
     return;
   }
 
+  const isPartial = errors.length > 0;
+  if (isPartial) {
+    console.warn(
+      `[pipeline ${sessionId}] Stage B: shipping partial — ${sections.length}/${SECTION_KINDS.length} sections OK, failed: ${failedKinds.join(", ")}`,
+    );
+  }
+
+  const finalMeta = isPartial
+    ? { ...meta, partial: true, failed_sections: failedKinds }
+    : meta;
+
   await supabase
     .from("prep_sessions")
     .update({
-      prep_guide: { meta, sections },
+      prep_guide: { meta: finalMeta, sections },
       generation_status: "complete",
-      error_message: null,
+      // Save errors for partial preps so /admin/health can audit which
+      // sections failed and why. Cleared only on full success.
+      error_message: isPartial
+        ? errors.join("\n\n---\n\n").slice(0, 8000)
+        : null,
       progress_step: null,
     })
     .eq("id", sessionId);

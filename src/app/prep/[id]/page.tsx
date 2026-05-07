@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { companyIntelSchema } from "@/lib/ai/schemas";
+import { companyIntelSchema, prepGuideSchema } from "@/lib/ai/schemas";
 import { Tela1Visual } from "@/components/prep/Tela1Visual";
+import { PartialPrepBanner } from "@/components/prep/PartialPrepBanner";
 import { loadPrepSession } from "@/lib/prep/load-session";
 
 export const metadata: Metadata = {
@@ -21,12 +22,27 @@ export default async function PrepHomePage({
       : null;
   const companyIntel = intelParsed?.success ? intelParsed.data : null;
 
+  // Check for partial-generation flag — pipeline sets meta.partial=true and
+  // populates meta.failed_sections when 3-4 of 5 sections succeeded.
+  const guideParsed = data?.prep_guide
+    ? prepGuideSchema.safeParse(data.prep_guide)
+    : null;
+  const isPartial = guideParsed?.success
+    ? guideParsed.data.meta.partial === true
+    : false;
+  const failedSections = guideParsed?.success
+    ? (guideParsed.data.meta.failed_sections ?? [])
+    : [];
+
   return (
-    <Tela1Visual
-      sessionId={id}
-      jobDescription={data?.job_description ?? null}
-      companyIntel={companyIntel}
-      companyIntelStatus={data?.company_intel_status ?? null}
-    />
+    <>
+      {isPartial && <PartialPrepBanner failedSections={failedSections} />}
+      <Tela1Visual
+        sessionId={id}
+        jobDescription={data?.job_description ?? null}
+        companyIntel={companyIntel}
+        companyIntelStatus={data?.company_intel_status ?? null}
+      />
+    </>
   );
 }
