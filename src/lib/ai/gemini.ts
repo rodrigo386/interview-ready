@@ -406,11 +406,10 @@ export async function generateSection(params: {
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: sectionResponseSchema,
-          // 8192 (was 4096): PT-BR consumes ~1.3-1.5x more tokens than EN
-          // for the same characters. 4096 was getting truncated mid-JSON
-          // for sections with long sample_answers, producing
-          // "Unterminated string" errors and confusing the user.
-          maxOutputTokens: 8192,
+          // 12288 (4096 → 8192 → 12288): PT-BR consumes ~1.3-1.5x more
+          // tokens than EN. Verbose models with reasoning (gpt-oss, gemini-3-pro)
+          // can chew through 8k easily on a section with 5 dense cards.
+          maxOutputTokens: 12288,
           temperature: 0.7,
         },
       });
@@ -423,7 +422,7 @@ export async function generateSection(params: {
       systemPrompt: params.system,
       userPrompt: params.user,
       temperature: 0.7,
-      maxTokens: 8192,
+      maxTokens: 12288,
       schema: prepSectionSchema,
       geminiErr,
     });
@@ -692,10 +691,11 @@ export async function generateAtsAnalysis(params: {
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: atsResponseSchema,
-          // 8192 (was 4096): ATS analysis can be verbose with many top_fixes
-          // entries each containing original_cv_language + jd_language +
-          // suggested_rewrite — easily blows past 4096 tokens in PT-BR.
-          maxOutputTokens: 8192,
+          // 16384 (4096 → 8192 → 16384): ATS keyword_analysis has 3 buckets
+          // (critical/high/medium) of unbounded length; top_fixes entries
+          // each carry up to 4 long strings. PT-BR sample on prod hit 8k
+          // truncation. 16k matches CV rewrite.
+          maxOutputTokens: 16384,
           // Deterministic-as-possible: same CV + JD should produce the same
           // score and analysis on re-run. temperature=0 + topK=1 collapses the
           // sampling distribution; minor variation may still leak from float
@@ -713,7 +713,7 @@ export async function generateAtsAnalysis(params: {
       systemPrompt: params.system,
       userPrompt: params.user,
       temperature: 0,
-      maxTokens: 8192,
+      maxTokens: 16384,
       schema: atsAnalysisSchema,
       geminiErr,
     });
