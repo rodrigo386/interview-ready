@@ -12,17 +12,30 @@ import {
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 
-// Default model for structured-output tasks (sections, ATS, CV rewrite).
-// Lighter / cheaper / higher rate limits than the Sonnet path we replaced.
-const MODEL_ID = "gemini-3.1-flash-lite-preview";
+// Primary model for structured-output tasks (sections, ATS, CV rewrite).
+// `gemini-3.1-flash-lite` went GA on 2026-05-07. Same pricing as the
+// previous `-preview` version we used ($0.25/$1.50 per 1M), but GA models
+// get dedicated capacity separate from the preview pool — historically
+// where the chronic 503 "high demand" surges concentrate. `-preview`
+// sunsets on 2026-05-25, so the migration was mandatory either way.
+const MODEL_ID = "gemini-3.1-flash-lite";
 
-// Model used for company intel. Originally 2.5-flash for googleSearch
-// grounding support, but 2.5-flash hit chronic 503s (high demand) in prod.
-// Switched to flash-lite-preview: same family as the section/ATS calls,
-// higher rate limits, faster. If grounding (googleSearch tool) is rejected
-// by the API at runtime, the ungrounded fallback below produces results
-// from training knowledge — acceptable trade-off vs failing entirely.
-const GROUNDED_MODEL_ID = "gemini-3.1-flash-lite-preview";
+// Fallback chain: when the primary model returns transient failures
+// (503/429/UNAVAILABLE) AFTER 3 retries with backoff, we try each fallback
+// once. If all fail, the original error propagates.
+//
+// Order chosen for May 2026 reliability:
+// - `gemini-2.5-flash`: GA, mature, ~5-15min recovery in past 503 incidents
+// - `gemini-2.5-flash-lite`: GA, cheapest GA option, last resort
+//
+// AVOIDED: `gemini-2.0-flash` (deprecated, shutdown 2026-06-01),
+// `gemini-3-flash-preview` (still preview AND 2x more expensive).
+const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"] as const;
+
+// Note: company intel call uses MODEL_ID + the fallback chain via
+// callGeminiWithRetry — no separate constant. Gemini 3 supports
+// `responseSchema` AND `googleSearch` together (changed from 2.5), so a
+// future cleanup can simplify the lenient JSON parser in `extractJsonObjects()`.
 
 /** JSON Schema mirror of prepSectionSchema for Gemini responseSchema. */
 const sectionResponseSchema: Schema = {
@@ -93,31 +106,71 @@ function isTransientGeminiError(err: unknown): boolean {
 }
 
 /**
- * Wrap a Gemini call with 3-attempt exponential backoff: immediate, +1.5s,
- * +4s. Only retries on transient errors. Logs each attempt for ops visibility.
- * Total worst case: ~5.5s of waiting before giving up — fits comfortably in
- * the prep generation budget (1-3 min) but keeps user feedback responsive on
- * fast failures.
+ * Wrap a Gemini call with 3-attempt exponential backoff (immediate, +1.5s,
+ * +4s) on the primary model, then 1 attempt on each fallback model. Only
+ * retries on transient errors (503/429/network). Non-transient errors on
+ * the primary skip the fallback chain entirely (likely code/schema bug,
+ * fallback won't help).
+ *
+ * Total worst case: ~5.5s primary retries + 2s + (fallback call 1) + 2s +
+ * (fallback call 2) ≈ 12-15s before giving up. Acceptable in a 1-3 min
+ * prep generation flow.
+ *
+ * `fn` receives the model ID to use for each attempt — caller is expected
+ * to construct the model fresh per call (so that systemInstruction +
+ * generationConfig are bound correctly to whichever model ID is active).
  */
 async function callGeminiWithRetry<T>(
   label: string,
-  fn: () => Promise<T>,
+  fn: (modelId: string) => Promise<T>,
 ): Promise<T> {
-  const delays = [0, 1500, 4000];
+  const PRIMARY_DELAYS = [0, 1500, 4000];
+  const FALLBACK_DELAY = 2000;
+
   let lastErr: unknown;
-  for (let i = 0; i < delays.length; i++) {
-    if (delays[i] > 0) await new Promise((r) => setTimeout(r, delays[i]));
+  let primaryHadNonTransient = false;
+
+  // Primary model: 3 attempts with backoff
+  for (let i = 0; i < PRIMARY_DELAYS.length; i++) {
+    if (PRIMARY_DELAYS[i] > 0) await new Promise((r) => setTimeout(r, PRIMARY_DELAYS[i]));
     try {
-      return await fn();
+      return await fn(MODEL_ID);
     } catch (err) {
       lastErr = err;
       const transient = isTransientGeminiError(err);
       console.warn(
-        `[gemini] ${label} attempt ${i + 1}/${delays.length} failed (transient=${transient}): ${err instanceof Error ? err.message : String(err)}`,
+        `[gemini] ${label} primary attempt ${i + 1}/${PRIMARY_DELAYS.length} failed (transient=${transient}): ${err instanceof Error ? err.message : String(err)}`,
       );
-      if (!transient) break;
+      if (!transient) {
+        primaryHadNonTransient = true;
+        break;
+      }
     }
   }
+
+  // Skip fallback chain if primary failed for a non-transient reason
+  // (probably a code/schema bug — different model won't fix it).
+  if (primaryHadNonTransient) {
+    throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+  }
+
+  // Fallback chain: 1 attempt each on FALLBACK_MODELS
+  for (const fallbackId of FALLBACK_MODELS) {
+    await new Promise((r) => setTimeout(r, FALLBACK_DELAY));
+    console.warn(`[gemini] ${label} falling back to ${fallbackId}`);
+    try {
+      return await fn(fallbackId);
+    } catch (err) {
+      lastErr = err;
+      console.warn(
+        `[gemini] ${label} fallback ${fallbackId} failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      // Continue to next fallback regardless of transient/not — we've already
+      // exhausted the "transient on primary" budget; any error on fallback is
+      // a signal to try the next model.
+    }
+  }
+
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
@@ -236,22 +289,22 @@ export async function generateSection(params: {
   }
 
   const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
-  const model = client.getGenerativeModel({
-    model: MODEL_ID,
-    systemInstruction: params.system,
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: sectionResponseSchema,
-      maxOutputTokens: 4096,
-      temperature: 0.7,
-    },
-  });
 
   const start = Date.now();
   console.log(`[gemini] section ${params.kind} starting`);
-  const result = await callGeminiWithRetry(`section-${params.kind}`, () =>
-    model.generateContent(params.user),
-  );
+  const result = await callGeminiWithRetry(`section-${params.kind}`, (modelId) => {
+    const model = client.getGenerativeModel({
+      model: modelId,
+      systemInstruction: params.system,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: sectionResponseSchema,
+        maxOutputTokens: 4096,
+        temperature: 0.7,
+      },
+    });
+    return model.generateContent(params.user);
+  });
   const text = result.response.text();
   console.log(
     `[gemini] section ${params.kind} completed in ${Date.now() - start}ms`,
@@ -322,22 +375,22 @@ export async function generateCvRewrite(params: {
   }
 
   const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
-  const model = client.getGenerativeModel({
-    model: MODEL_ID,
-    systemInstruction: params.system,
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: cvRewriteResponseSchema,
-      maxOutputTokens: 8192,
-      temperature: 0.5,
-    },
-  });
 
   const start = Date.now();
   console.log("[gemini] cv-rewrite starting");
-  const result = await callGeminiWithRetry("cv-rewrite", () =>
-    model.generateContent(params.user),
-  );
+  const result = await callGeminiWithRetry("cv-rewrite", (modelId) => {
+    const model = client.getGenerativeModel({
+      model: modelId,
+      systemInstruction: params.system,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: cvRewriteResponseSchema,
+        maxOutputTokens: 8192,
+        temperature: 0.5,
+      },
+    });
+    return model.generateContent(params.user);
+  });
   const text = result.response.text();
   console.log(`[gemini] cv-rewrite completed in ${Date.now() - start}ms`);
 
@@ -469,28 +522,28 @@ export async function generateAtsAnalysis(params: {
   }
 
   const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
-  const model = client.getGenerativeModel({
-    model: MODEL_ID,
-    systemInstruction: params.system,
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: atsResponseSchema,
-      maxOutputTokens: 4096,
-      // Deterministic-as-possible: same CV + JD should produce the same
-      // score and analysis on re-run. temperature=0 + topK=1 collapses the
-      // sampling distribution; minor variation may still leak from float
-      // ops on the server, but it's no longer the wild swings users saw.
-      temperature: 0,
-      topK: 1,
-      topP: 0,
-    },
-  });
 
   const start = Date.now();
   console.log("[gemini] ats starting");
-  const result = await callGeminiWithRetry("ats", () =>
-    model.generateContent(params.user),
-  );
+  const result = await callGeminiWithRetry("ats", (modelId) => {
+    const model = client.getGenerativeModel({
+      model: modelId,
+      systemInstruction: params.system,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: atsResponseSchema,
+        maxOutputTokens: 4096,
+        // Deterministic-as-possible: same CV + JD should produce the same
+        // score and analysis on re-run. temperature=0 + topK=1 collapses the
+        // sampling distribution; minor variation may still leak from float
+        // ops on the server, but it's no longer the wild swings users saw.
+        temperature: 0,
+        topK: 1,
+        topP: 0,
+      },
+    });
+    return model.generateContent(params.user);
+  });
   const text = result.response.text();
   console.log(`[gemini] ats completed in ${Date.now() - start}ms`);
 
@@ -549,19 +602,19 @@ Output rules:
 
   try {
     const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
-    const model = client.getGenerativeModel({
-      model: MODEL_ID,
-      systemInstruction: system,
-      generationConfig: {
-        maxOutputTokens: 8192,
-        temperature: 0.1,
-      },
-    });
     const start = Date.now();
     console.log(`[gemini] jd-cleanup starting (${truncated.length} chars in)`);
-    const result = await callGeminiWithRetry("jd-cleanup", () =>
-      model.generateContent(truncated),
-    );
+    const result = await callGeminiWithRetry("jd-cleanup", (modelId) => {
+      const model = client.getGenerativeModel({
+        model: modelId,
+        systemInstruction: system,
+        generationConfig: {
+          maxOutputTokens: 8192,
+          temperature: 0.1,
+        },
+      });
+      return model.generateContent(truncated);
+    });
     const cleaned = result.response.text().trim();
     console.log(
       `[gemini] jd-cleanup completed in ${Date.now() - start}ms (${cleaned.length} chars out)`,
@@ -689,11 +742,12 @@ export async function generateCompanyIntel(params: {
   const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
 
   async function callOnce(opts: {
+    modelId: string;
     grounded: boolean;
     label: string;
   }): Promise<string> {
     const model = client.getGenerativeModel({
-      model: GROUNDED_MODEL_ID,
+      model: opts.modelId,
       systemInstruction: params.system,
       ...(opts.grounded ? { tools: [{ googleSearch: {} }] as never } : {}),
       generationConfig: {
@@ -704,7 +758,7 @@ export async function generateCompanyIntel(params: {
         temperature: 0.4,
       },
     });
-    console.log(`[gemini] company-intel ${opts.label} starting`);
+    console.log(`[gemini] company-intel ${opts.label} (${opts.modelId}) starting`);
     const t0 = Date.now();
     const result = await model.generateContent(params.user);
     const text = result.response.text();
@@ -717,8 +771,8 @@ export async function generateCompanyIntel(params: {
   let text = "";
   let groundedErr: unknown = null;
   try {
-    text = await callGeminiWithRetry("company-intel-grounded", () =>
-      callOnce({ grounded: true, label: "googleSearch" }),
+    text = await callGeminiWithRetry("company-intel-grounded", (modelId) =>
+      callOnce({ modelId, grounded: true, label: "googleSearch" }),
     );
   } catch (err) {
     groundedErr = err;
@@ -730,8 +784,8 @@ export async function generateCompanyIntel(params: {
   if (!text) {
     try {
       console.warn("[gemini] company-intel falling back to ungrounded call");
-      text = await callGeminiWithRetry("company-intel-ungrounded", () =>
-        callOnce({ grounded: false, label: "ungrounded" }),
+      text = await callGeminiWithRetry("company-intel-ungrounded", (modelId) =>
+        callOnce({ modelId, grounded: false, label: "ungrounded" }),
       );
     } catch (err) {
       // Both paths failed. If error was transient (503 etc.), surface a

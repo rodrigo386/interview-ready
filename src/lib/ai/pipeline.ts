@@ -182,22 +182,60 @@ async function generateOne(
   return generateSection({ kind, system, user });
 }
 
+/**
+ * Translate raw AI error messages into user-friendly PT-BR. Strips stack traces
+ * (which leak internal file paths like /app/.next/server/chunks/...) and maps
+ * common transient/known failure modes to actionable copy. The full original
+ * error is still server-logged via console.error before reaching here.
+ */
+function userFriendlyAiError(rawMessage: string): string {
+  // First line only — strips stack frames (each "at ..." is on its own line).
+  const firstLine = rawMessage.split("\n")[0]?.trim() ?? rawMessage;
+
+  if (/\b(503|UNAVAILABLE|high demand|temporarily unavailable)\b/i.test(firstLine)) {
+    return 'O serviço de IA está sobrecarregado no momento. Aguarde alguns instantes e clique em "Tentar novamente".';
+  }
+  if (/\b(429|RESOURCE_EXHAUSTED|rate limit|quota)\b/i.test(firstLine)) {
+    return "Limite temporário de requisições atingido. Aguarde alguns segundos e tente novamente.";
+  }
+  if (/\b(deadline|ECONNRESET|ETIMEDOUT|fetch failed|network)\b/i.test(firstLine)) {
+    return "Falha de conexão com o serviço de IA. Verifique sua internet e tente novamente.";
+  }
+  if (/schema validation|safeParse|invalid.*response|non-JSON/i.test(firstLine)) {
+    return "A IA produziu uma resposta inesperada desta vez. Geralmente é transitório — tente novamente.";
+  }
+  if (/GOOGLE_API_KEY|API key/i.test(firstLine)) {
+    return "Erro de configuração do servidor. Já fomos notificados — tente novamente em alguns minutos.";
+  }
+  // Generic fallback: return the first line, capped, sem stack trace.
+  return firstLine.slice(0, 300);
+}
+
 function formatReason(reason: unknown): string {
   if (reason instanceof GeminiResponseError) {
-    return `${reason.message}\n\nRAW RESPONSE:\n${reason.rawResponse}`;
+    // Friendly summary; raw response goes after delimiter for the <details> block.
+    const friendly = userFriendlyAiError(reason.message);
+    const rawCapped = reason.rawResponse.slice(0, 1000);
+    return rawCapped
+      ? `${friendly}\n\nRAW RESPONSE:\n${rawCapped}`
+      : friendly;
   }
   if (reason instanceof Error) {
-    return reason.stack ?? reason.message;
+    return userFriendlyAiError(reason.message);
   }
-  return String(reason);
+  return userFriendlyAiError(String(reason));
 }
 
 function formatIntelError(err: unknown): string {
   if (err instanceof GeminiResponseError) {
-    return `${err.message}\n\nRAW RESPONSE:\n${err.rawResponse}`;
+    const friendly = userFriendlyAiError(err.message);
+    const rawCapped = err.rawResponse.slice(0, 1000);
+    return rawCapped
+      ? `${friendly}\n\nRAW RESPONSE:\n${rawCapped}`
+      : friendly;
   }
   if (err instanceof Error) {
-    return err.stack ?? err.message;
+    return userFriendlyAiError(err.message);
   }
-  return String(err);
+  return userFriendlyAiError(String(err));
 }
