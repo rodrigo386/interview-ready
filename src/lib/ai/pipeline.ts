@@ -112,6 +112,12 @@ async function runStageA(
   }
 }
 
+// Delay between sequential section calls. Spreads the request load across
+// the Gemini free-tier ~15 RPM window, dramatically reducing the chance of
+// hitting the project-level rate limit that triggers correlated 503s on
+// the primary AND the fallback models.
+const SECTION_INTER_DELAY_MS = 1500;
+
 async function runStageB(
   sessionId: string,
   session: {
@@ -124,16 +130,18 @@ async function runStageB(
   meta: { role: string; company: string; estimated_prep_time_minutes: number },
   supabase: Awaited<ReturnType<typeof createClient>>,
 ): Promise<void> {
-  const promises = SECTION_KINDS.map((kind) => generateOne(kind, session, intel));
-  const results = await Promise.allSettled(promises);
-
+  // Sequential (not parallel) to avoid burst rate limits on Gemini free tier.
+  // Trade-off: prep takes ~2-3 min instead of ~30s, but reliability >> speed.
+  // Falling within the "1 a 3 minutos" promise in the FAQ.
   const sections: PrepSection[] = [];
   const errors: string[] = [];
-  for (const r of results) {
-    if (r.status === "fulfilled") {
-      sections.push(r.value);
-    } else {
-      errors.push(formatReason(r.reason));
+  for (let i = 0; i < SECTION_KINDS.length; i++) {
+    const kind = SECTION_KINDS[i];
+    if (i > 0) await new Promise((r) => setTimeout(r, SECTION_INTER_DELAY_MS));
+    try {
+      sections.push(await generateOne(kind, session, intel));
+    } catch (err) {
+      errors.push(formatReason(err));
     }
   }
 
