@@ -80,6 +80,47 @@ export class GeminiResponseError extends Error {
   }
 }
 
+/**
+ * Detect transient Gemini errors that justify a retry. 503 ("model under high
+ * demand") and 429 ("rate limit") are explicitly listed by Google as retryable.
+ * Network/timeouts also fit. Other errors fail fast.
+ */
+function isTransientGeminiError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /\b(503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|deadline|ECONNRESET|ETIMEDOUT|fetch failed|high demand|temporarily unavailable)\b/i.test(
+    msg,
+  );
+}
+
+/**
+ * Wrap a Gemini call with 3-attempt exponential backoff: immediate, +1.5s,
+ * +4s. Only retries on transient errors. Logs each attempt for ops visibility.
+ * Total worst case: ~5.5s of waiting before giving up — fits comfortably in
+ * the prep generation budget (1-3 min) but keeps user feedback responsive on
+ * fast failures.
+ */
+async function callGeminiWithRetry<T>(
+  label: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const delays = [0, 1500, 4000];
+  let lastErr: unknown;
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i] > 0) await new Promise((r) => setTimeout(r, delays[i]));
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const transient = isTransientGeminiError(err);
+      console.warn(
+        `[gemini] ${label} attempt ${i + 1}/${delays.length} failed (transient=${transient}): ${err instanceof Error ? err.message : String(err)}`,
+      );
+      if (!transient) break;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
 // Re-export the mock fixtures by importing them lazily (anthropic.ts owns them
 // to avoid circular concerns). For test paths, MOCK_ANTHROPIC=1 already short-
 // circuits in anthropic.ts; for parity we honor the same env var here.
@@ -208,7 +249,9 @@ export async function generateSection(params: {
 
   const start = Date.now();
   console.log(`[gemini] section ${params.kind} starting`);
-  const result = await model.generateContent(params.user);
+  const result = await callGeminiWithRetry(`section-${params.kind}`, () =>
+    model.generateContent(params.user),
+  );
   const text = result.response.text();
   console.log(
     `[gemini] section ${params.kind} completed in ${Date.now() - start}ms`,
@@ -292,7 +335,9 @@ export async function generateCvRewrite(params: {
 
   const start = Date.now();
   console.log("[gemini] cv-rewrite starting");
-  const result = await model.generateContent(params.user);
+  const result = await callGeminiWithRetry("cv-rewrite", () =>
+    model.generateContent(params.user),
+  );
   const text = result.response.text();
   console.log(`[gemini] cv-rewrite completed in ${Date.now() - start}ms`);
 
@@ -443,7 +488,9 @@ export async function generateAtsAnalysis(params: {
 
   const start = Date.now();
   console.log("[gemini] ats starting");
-  const result = await model.generateContent(params.user);
+  const result = await callGeminiWithRetry("ats", () =>
+    model.generateContent(params.user),
+  );
   const text = result.response.text();
   console.log(`[gemini] ats completed in ${Date.now() - start}ms`);
 
@@ -512,7 +559,9 @@ Output rules:
     });
     const start = Date.now();
     console.log(`[gemini] jd-cleanup starting (${truncated.length} chars in)`);
-    const result = await model.generateContent(truncated);
+    const result = await callGeminiWithRetry("jd-cleanup", () =>
+      model.generateContent(truncated),
+    );
     const cleaned = result.response.text().trim();
     console.log(
       `[gemini] jd-cleanup completed in ${Date.now() - start}ms (${cleaned.length} chars out)`,
@@ -665,40 +714,12 @@ export async function generateCompanyIntel(params: {
     return text;
   }
 
-  // Retry-with-backoff helper. Gemini frequently returns 503 ("model
-  // experiencing high demand") under load — these are transient. 429 is
-  // also transient (rate limiting). Other errors fail fast.
-  function isTransient(err: unknown): boolean {
-    const msg = err instanceof Error ? err.message : String(err);
-    return /\b(503|429|UNAVAILABLE|deadline|ECONNRESET|ETIMEDOUT|fetch failed)\b/i.test(msg);
-  }
-
-  async function callWithRetry(opts: {
-    grounded: boolean;
-    label: string;
-  }): Promise<string> {
-    const delays = [0, 1500, 4000]; // 3 attempts: immediate, +1.5s, +4s
-    let lastErr: unknown;
-    for (let i = 0; i < delays.length; i++) {
-      if (delays[i] > 0) await new Promise((r) => setTimeout(r, delays[i]));
-      try {
-        return await callOnce(opts);
-      } catch (err) {
-        lastErr = err;
-        const transient = isTransient(err);
-        console.warn(
-          `[gemini] company-intel ${opts.label} attempt ${i + 1}/${delays.length} threw (transient=${transient}): ${err instanceof Error ? err.message : String(err)}`,
-        );
-        if (!transient) break;
-      }
-    }
-    throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
-  }
-
   let text = "";
   let groundedErr: unknown = null;
   try {
-    text = await callWithRetry({ grounded: true, label: "googleSearch" });
+    text = await callGeminiWithRetry("company-intel-grounded", () =>
+      callOnce({ grounded: true, label: "googleSearch" }),
+    );
   } catch (err) {
     groundedErr = err;
   }
@@ -709,14 +730,17 @@ export async function generateCompanyIntel(params: {
   if (!text) {
     try {
       console.warn("[gemini] company-intel falling back to ungrounded call");
-      text = await callWithRetry({ grounded: false, label: "ungrounded" });
+      text = await callGeminiWithRetry("company-intel-ungrounded", () =>
+        callOnce({ grounded: false, label: "ungrounded" }),
+      );
     } catch (err) {
       // Both paths failed. If error was transient (503 etc.), surface a
       // user-friendly message and let them retry. If it was a hard error,
       // surface the actual exception.
       const groundedMsg = groundedErr instanceof Error ? groundedErr.message : String(groundedErr);
       const ungroundedMsg = err instanceof Error ? err.message : String(err);
-      const bothTransient = isTransient(groundedErr) && isTransient(err);
+      const bothTransient =
+        isTransientGeminiError(groundedErr) && isTransientGeminiError(err);
       const userMessage = bothTransient
         ? "O serviço de pesquisa de empresa está temporariamente sobrecarregado. Tente novamente em alguns minutos."
         : `Falha na pesquisa de empresa. Detalhes: ${ungroundedMsg}`;
