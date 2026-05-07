@@ -10,6 +10,13 @@ const schema = z.object({
     .union([z.string().min(1), z.literal("")])
     .optional()
     .transform((val) => (val === "" ? undefined : val)),
+  // Cerebras: optional last-resort fallback for AI generation when Gemini
+  // chain (3.1-flash-lite → 2.5-flash → 2.5-flash-lite) all 503. Free tier
+  // OpenAI-compatible REST. Get key at https://cloud.cerebras.ai
+  CEREBRAS_API_KEY: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
   ASAAS_API_KEY: z
     .union([z.string().min(1), z.literal("")])
     .optional()
@@ -44,6 +51,7 @@ function parseOrThrow(): Env {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+    CEREBRAS_API_KEY: process.env.CEREBRAS_API_KEY,
     ASAAS_API_KEY: process.env.ASAAS_API_KEY,
     ASAAS_WEBHOOK_TOKEN: process.env.ASAAS_WEBHOOK_TOKEN,
     ASAAS_BASE_URL: process.env.ASAAS_BASE_URL,

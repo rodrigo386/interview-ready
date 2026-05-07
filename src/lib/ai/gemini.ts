@@ -11,6 +11,8 @@ import {
   type CvRewrite,
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
+import { callCerebrasJson } from "@/lib/ai/cerebras";
+import type { ZodSchema } from "zod";
 
 // Primary model for structured-output tasks (sections, ATS, CV rewrite).
 // `gemini-3.1-flash-lite` went GA on 2026-05-07. Same pricing as the
@@ -174,6 +176,68 @@ async function callGeminiWithRetry<T>(
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
+/**
+ * Last-resort fallback: when the entire Gemini chain (primary + 2 GA
+ * fallbacks) is exhausted by 503s, try Cerebras Cloud Inference. Returns
+ * the parsed Zod result on success, or throws the original Gemini error
+ * to preserve diagnostics. Never throws from Cerebras itself — silent fail
+ * to original error so user sees the most informative message.
+ *
+ * Cerebras with `response_format: json_object` is looser on schema
+ * adherence than Gemini's `responseSchema`, so the Zod safeParse is the
+ * only enforcement. If Cerebras output fails Zod, we fall back to the
+ * original Gemini error too.
+ */
+async function tryCerebrasFallback<T>(opts: {
+  label: string;
+  systemPrompt: string;
+  userPrompt: string;
+  temperature: number;
+  maxTokens: number;
+  schema: ZodSchema<T>;
+  geminiErr: unknown;
+}): Promise<T> {
+  const result = await callCerebrasJson({
+    systemPrompt: opts.systemPrompt,
+    userPrompt: opts.userPrompt,
+    temperature: opts.temperature,
+    maxTokens: opts.maxTokens,
+    label: opts.label,
+  });
+  if (!result.ok) {
+    // No key OR all Cerebras models failed. Surface the ORIGINAL Gemini
+    // error — it's more diagnostic than "Cerebras has no key".
+    throw opts.geminiErr instanceof Error
+      ? opts.geminiErr
+      : new Error(String(opts.geminiErr));
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(result.text);
+  } catch {
+    console.warn(`[cerebras] ${opts.label} non-JSON output, propagating Gemini error`);
+    throw opts.geminiErr instanceof Error
+      ? opts.geminiErr
+      : new Error(String(opts.geminiErr));
+  }
+
+  const parsed = opts.schema.safeParse(raw);
+  if (!parsed.success) {
+    console.warn(
+      `[cerebras] ${opts.label} schema failed: ${parsed.error.message.slice(0, 200)}`,
+    );
+    throw opts.geminiErr instanceof Error
+      ? opts.geminiErr
+      : new Error(String(opts.geminiErr));
+  }
+
+  console.log(
+    `[cerebras] ${opts.label} succeeded as fallback (${result.modelId})`,
+  );
+  return parsed.data;
+}
+
 // Re-export the mock fixtures by importing them lazily (anthropic.ts owns them
 // to avoid circular concerns). For test paths, MOCK_ANTHROPIC=1 already short-
 // circuits in anthropic.ts; for parity we honor the same env var here.
@@ -292,19 +356,33 @@ export async function generateSection(params: {
 
   const start = Date.now();
   console.log(`[gemini] section ${params.kind} starting`);
-  const result = await callGeminiWithRetry(`section-${params.kind}`, (modelId) => {
-    const model = client.getGenerativeModel({
-      model: modelId,
-      systemInstruction: params.system,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: sectionResponseSchema,
-        maxOutputTokens: 4096,
-        temperature: 0.7,
-      },
+  let result;
+  try {
+    result = await callGeminiWithRetry(`section-${params.kind}`, (modelId) => {
+      const model = client.getGenerativeModel({
+        model: modelId,
+        systemInstruction: params.system,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: sectionResponseSchema,
+          maxOutputTokens: 4096,
+          temperature: 0.7,
+        },
+      });
+      return model.generateContent(params.user);
     });
-    return model.generateContent(params.user);
-  });
+  } catch (geminiErr) {
+    // All Gemini models exhausted — try Cerebras as last resort.
+    return tryCerebrasFallback({
+      label: `section-${params.kind}`,
+      systemPrompt: params.system,
+      userPrompt: params.user,
+      temperature: 0.7,
+      maxTokens: 4096,
+      schema: prepSectionSchema,
+      geminiErr,
+    });
+  }
   const text = result.response.text();
   console.log(
     `[gemini] section ${params.kind} completed in ${Date.now() - start}ms`,
@@ -378,19 +456,32 @@ export async function generateCvRewrite(params: {
 
   const start = Date.now();
   console.log("[gemini] cv-rewrite starting");
-  const result = await callGeminiWithRetry("cv-rewrite", (modelId) => {
-    const model = client.getGenerativeModel({
-      model: modelId,
-      systemInstruction: params.system,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: cvRewriteResponseSchema,
-        maxOutputTokens: 8192,
-        temperature: 0.5,
-      },
+  let result;
+  try {
+    result = await callGeminiWithRetry("cv-rewrite", (modelId) => {
+      const model = client.getGenerativeModel({
+        model: modelId,
+        systemInstruction: params.system,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: cvRewriteResponseSchema,
+          maxOutputTokens: 8192,
+          temperature: 0.5,
+        },
+      });
+      return model.generateContent(params.user);
     });
-    return model.generateContent(params.user);
-  });
+  } catch (geminiErr) {
+    return tryCerebrasFallback({
+      label: "cv-rewrite",
+      systemPrompt: params.system,
+      userPrompt: params.user,
+      temperature: 0.5,
+      maxTokens: 8192,
+      schema: cvRewriteSchema,
+      geminiErr,
+    });
+  }
   const text = result.response.text();
   console.log(`[gemini] cv-rewrite completed in ${Date.now() - start}ms`);
 
@@ -525,25 +616,38 @@ export async function generateAtsAnalysis(params: {
 
   const start = Date.now();
   console.log("[gemini] ats starting");
-  const result = await callGeminiWithRetry("ats", (modelId) => {
-    const model = client.getGenerativeModel({
-      model: modelId,
-      systemInstruction: params.system,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: atsResponseSchema,
-        maxOutputTokens: 4096,
-        // Deterministic-as-possible: same CV + JD should produce the same
-        // score and analysis on re-run. temperature=0 + topK=1 collapses the
-        // sampling distribution; minor variation may still leak from float
-        // ops on the server, but it's no longer the wild swings users saw.
-        temperature: 0,
-        topK: 1,
-        topP: 0,
-      },
+  let result;
+  try {
+    result = await callGeminiWithRetry("ats", (modelId) => {
+      const model = client.getGenerativeModel({
+        model: modelId,
+        systemInstruction: params.system,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: atsResponseSchema,
+          maxOutputTokens: 4096,
+          // Deterministic-as-possible: same CV + JD should produce the same
+          // score and analysis on re-run. temperature=0 + topK=1 collapses the
+          // sampling distribution; minor variation may still leak from float
+          // ops on the server, but it's no longer the wild swings users saw.
+          temperature: 0,
+          topK: 1,
+          topP: 0,
+        },
+      });
+      return model.generateContent(params.user);
     });
-    return model.generateContent(params.user);
-  });
+  } catch (geminiErr) {
+    return tryCerebrasFallback({
+      label: "ats",
+      systemPrompt: params.system,
+      userPrompt: params.user,
+      temperature: 0,
+      maxTokens: 4096,
+      schema: atsAnalysisSchema,
+      geminiErr,
+    });
+  }
   const text = result.response.text();
   console.log(`[gemini] ats completed in ${Date.now() - start}ms`);
 
