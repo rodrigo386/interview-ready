@@ -56,14 +56,26 @@ function fakeSupabase(opts: {
         }),
       }),
       select: () => ({
-        eq: (col: string, val: unknown) => ({
-          single: async () => {
+        eq: (col: string, val: unknown) => {
+          const resolver = async () => {
+            // For affiliate tables, return null (no referral) so commission code path exits cleanly
+            if (
+              table === "affiliate_referrals" ||
+              table === "affiliate_partners" ||
+              table === "affiliate_commissions"
+            ) {
+              return { data: null, error: null };
+            }
             if (opts.profileSelectByCol) {
               return { data: opts.profileSelectByCol(col, val), error: null };
             }
             return { data: { id: "u1", asaas_customer_id: null, prep_credits: 0 }, error: null };
-          },
-        }),
+          };
+          return {
+            single: resolver,
+            maybeSingle: resolver,
+          };
+        },
       }),
     }),
     rpc: async (name: string, args: Record<string, unknown>) => {

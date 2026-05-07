@@ -8,6 +8,7 @@ import {
 } from "@/lib/affiliate/commission";
 import { CodeBox } from "@/components/affiliate/CodeBox";
 import { EarningsCard } from "@/components/affiliate/EarningsCard";
+import { PixKeyCard } from "@/components/affiliate/PixKeyCard";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,13 @@ export default async function PartnerDashboardPage() {
 
   const earnings = await getPartnerEarnings(p.id, admin);
 
+  const { data: profile } = await sb
+    .from("profiles")
+    .select("pix_key")
+    .eq("id", data.user.id)
+    .single();
+  const pixKey = (profile as { pix_key: string | null } | null)?.pix_key ?? null;
+
   const { data: commissions } = await admin
     .from("affiliate_commissions")
     .select("id, payment_id, amount_cents, status, created_at, paid_at")
@@ -141,6 +149,10 @@ export default async function PartnerDashboardPage() {
           label="Já recebido"
           value={`R$ ${(earnings.paid_all_time_cents / 100).toFixed(2)}`}
         />
+      </section>
+
+      <section className="mt-8">
+        <PixKeyCard initialPixKey={pixKey} />
       </section>
 
       <section className="mt-10">
