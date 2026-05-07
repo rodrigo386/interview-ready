@@ -21,6 +21,13 @@ describe("<AvatarMenu />", () => {
     expect(getByText("Sair")).toBeInTheDocument();
   });
 
+  it("inclui link para Programa de parceiros apontando para /parceiros", () => {
+    const { getByRole } = render(<AvatarMenu {...baseProps} />);
+    fireEvent.click(getByRole("button", { name: /menu do usuário/i }));
+    const link = getByRole("menuitem", { name: /programa de parceiros/i });
+    expect(link.getAttribute("href")).toBe("/parceiros");
+  });
+
   it("mostra email no menu aberto", () => {
     const { getByRole, getByText } = render(<AvatarMenu {...baseProps} />);
     fireEvent.click(getByRole("button", { name: /menu do usuário/i }));
