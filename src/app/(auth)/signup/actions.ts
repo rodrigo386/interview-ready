@@ -1,11 +1,12 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
+import { attachReferral } from "@/lib/affiliate/attribution";
 
 const schema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -127,6 +128,19 @@ export async function signup(
         .eq("id", data.user.id);
       if (profileErr) {
         console.warn("[signup] profile update failed:", profileErr.message);
+      }
+
+      // Affiliate attribution: same pattern as auth/callback. If user has pv_ref
+      // cookie, link to partner. Idempotent. Failure tolerated.
+      const cookieStore = await cookies();
+      const refCode = cookieStore.get("pv_ref")?.value;
+      if (refCode) {
+        try {
+          await attachReferral(data.user.id, refCode, admin);
+        } catch (err) {
+          console.warn("[signup] attribution failed:", err);
+        }
+        cookieStore.delete("pv_ref");
       }
     }
 
