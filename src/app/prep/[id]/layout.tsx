@@ -30,7 +30,12 @@ export default async function PrepLayout({
   if (!session) notFound();
 
   if (session.generation_status === "generating" || session.generation_status === "pending") {
-    return <PrepSkeleton />;
+    return (
+      <PrepSkeleton
+        progressStep={session.progress_step}
+        companyIntelStatus={session.company_intel_status}
+      />
+    );
   }
   if (session.generation_status === "failed") {
     return <PrepFailed id={session.id} errorMessage={session.error_message} />;

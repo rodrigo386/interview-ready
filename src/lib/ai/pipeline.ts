@@ -57,14 +57,35 @@ export async function runPipeline(sessionId: string): Promise<void> {
       company_intel: null,
       company_intel_error: null,
       prep_guide: { meta, sections: [] },
+      progress_step: "company_research",
     })
     .eq("id", sessionId);
 
   // ---------------- Stage A: Company research ----------------
   const intel = await runStageA(sessionId, session, supabase);
 
-  // ---------------- Stage B: 5 parallel sections ----------------
+  // ---------------- Stage B: 5 sequential sections ----------------
   await runStageB(sessionId, session, intel, meta, supabase);
+}
+
+/**
+ * Update the progress_step column. Used by the skeleton UI to render
+ * "Gerando 3/5: …" instead of a generic spinner. Errors are tolerated —
+ * progress display is cosmetic; pipeline never fails because of it.
+ */
+async function setProgress(
+  sessionId: string,
+  step: string | null,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<void> {
+  try {
+    await supabase
+      .from("prep_sessions")
+      .update({ progress_step: step })
+      .eq("id", sessionId);
+  } catch (err) {
+    console.warn(`[pipeline ${sessionId}] setProgress failed:`, err);
+  }
 }
 
 async function runStageA(
@@ -130,7 +151,7 @@ async function runStageB(
   meta: { role: string; company: string; estimated_prep_time_minutes: number },
   supabase: Awaited<ReturnType<typeof createClient>>,
 ): Promise<void> {
-  // Sequential (not parallel) to avoid burst rate limits on Gemini free tier.
+  // Sequential (not parallel) to avoid burst rate limits on Gemini.
   // Trade-off: prep takes ~2-3 min instead of ~30s, but reliability >> speed.
   // Falling within the "1 a 3 minutos" promise in the FAQ.
   const sections: PrepSection[] = [];
@@ -138,6 +159,7 @@ async function runStageB(
   for (let i = 0; i < SECTION_KINDS.length; i++) {
     const kind = SECTION_KINDS[i];
     if (i > 0) await new Promise((r) => setTimeout(r, SECTION_INTER_DELAY_MS));
+    await setProgress(sessionId, kind, supabase);
     try {
       sections.push(await generateOne(kind, session, intel));
     } catch (err) {
@@ -154,6 +176,7 @@ async function runStageB(
       .update({
         generation_status: "failed",
         error_message: errors.join("\n\n---\n\n").slice(0, 8000),
+        progress_step: null,
       })
       .eq("id", sessionId);
     return;
@@ -165,6 +188,7 @@ async function runStageB(
       prep_guide: { meta, sections },
       generation_status: "complete",
       error_message: null,
+      progress_step: null,
     })
     .eq("id", sessionId);
 }

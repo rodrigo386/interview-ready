@@ -2,6 +2,15 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
+export type PrepProgressStep =
+  | "company_research"
+  | "likely"
+  | "deep-dive"
+  | "tricky"
+  | "questions-to-ask"
+  | "mindset"
+  | null;
+
 export type PrepSessionRow = {
   id: string;
   generation_status: "pending" | "generating" | "complete" | "failed" | null;
@@ -16,6 +25,7 @@ export type PrepSessionRow = {
   job_description: string | null;
   company_intel: unknown;
   company_intel_status: string | null;
+  progress_step: PrepProgressStep;
 };
 
 /**
@@ -50,6 +60,7 @@ export const loadPrepSession = cache(async (id: string): Promise<PrepSessionRow 
         "job_description",
         "company_intel",
         "company_intel_status",
+        "progress_step",
       ].join(", "),
     )
     .eq("id", id)
