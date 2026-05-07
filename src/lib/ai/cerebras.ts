@@ -22,8 +22,19 @@ const CEREBRAS_ENDPOINT = "https://api.cerebras.ai/v1/chat/completions";
 // Primary fallback. GPT-OSS 120B is OpenAI's open-source release, hosted on
 // Cerebras LPU at ~1500 tok/s. Strong on structured output.
 const CEREBRAS_PRIMARY = "gpt-oss-120b";
-// Secondary if primary 503s — smaller, faster, lower quality.
-const CEREBRAS_SECONDARY = "llama3.1-8b";
+// Secondary if primary 503s — Qwen 3 235B-A22B is much better at schema
+// adherence than Llama 3.1 8B (which we initially used and failed Zod
+// validation in prod). Same provider, free tier, similar latency.
+const CEREBRAS_SECONDARY = "qwen-3-235b-a22b-instruct-2507";
+
+// Suffix appended to the system prompt when calling Cerebras — Cerebras's
+// `response_format: json_object` only guarantees valid JSON, not that the
+// JSON matches our Zod schema. Llama / Qwen / GPT-OSS need an explicit
+// instruction to stay schema-faithful, otherwise they invent extra fields
+// or skip required ones.
+const JSON_STRICT_SUFFIX = `
+
+CRITICAL: Respond with ONLY a single valid JSON object matching the schema described above. No prose, no explanation, no markdown code fences. Every required field must be present. Do not invent extra fields not in the schema.`;
 
 export type CerebrasResult =
   | { ok: true; text: string; modelId: string }
@@ -56,7 +67,10 @@ export async function callCerebrasJson(opts: {
         body: JSON.stringify({
           model: modelId,
           messages: [
-            { role: "system", content: opts.systemPrompt },
+            {
+              role: "system",
+              content: opts.systemPrompt + JSON_STRICT_SUFFIX,
+            },
             { role: "user", content: opts.userPrompt },
           ],
           temperature: opts.temperature,

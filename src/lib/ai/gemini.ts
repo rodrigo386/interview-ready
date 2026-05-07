@@ -22,17 +22,19 @@ import type { ZodSchema } from "zod";
 // sunsets on 2026-05-25, so the migration was mandatory either way.
 const MODEL_ID = "gemini-3.1-flash-lite";
 
-// Fallback chain: when the primary model returns transient failures
-// (503/429/UNAVAILABLE) AFTER 3 retries with backoff, we try each fallback
-// once. If all fail, the original error propagates.
+// Fallback chain: when the primary `gemini-3.1-flash-lite` returns transient
+// failures (503/429/UNAVAILABLE) AFTER 3 retries with backoff, we try each
+// fallback once. If all fail, propagates to Cerebras (last resort).
 //
-// Order chosen for May 2026 reliability:
-// - `gemini-2.5-flash`: GA, mature, ~5-15min recovery in past 503 incidents
-// - `gemini-2.5-flash-lite`: GA, cheapest GA option, last resort
-//
-// AVOIDED: `gemini-2.0-flash` (deprecated, shutdown 2026-06-01),
-// `gemini-3-flash-preview` (still preview AND 2x more expensive).
-const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"] as const;
+// Order (per user request 2026-05-07): escalate to bigger/smarter models
+// in the same Gemini family, hoping their separate capacity pools have
+// headroom even when 3.1-flash-lite is surging.
+// - `gemini-3-flash`: bigger flash sibling, separate capacity pool from
+//   3.1-flash-lite, supports responseSchema + googleSearch. Cost ~6x output
+//   ($0.50/$3.00 per 1M) — only fires on primary failure so impact is low.
+// - `gemini-3.1-pro-preview`: reasoning-heavy, slowest + most expensive,
+//   last Gemini-family attempt before Cerebras takes over.
+const FALLBACK_MODELS = ["gemini-3-flash", "gemini-3.1-pro-preview"] as const;
 
 // Note: company intel call uses MODEL_ID + the fallback chain via
 // callGeminiWithRetry — no separate constant. Gemini 3 supports
@@ -365,7 +367,11 @@ export async function generateSection(params: {
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: sectionResponseSchema,
-          maxOutputTokens: 4096,
+          // 8192 (was 4096): PT-BR consumes ~1.3-1.5x more tokens than EN
+          // for the same characters. 4096 was getting truncated mid-JSON
+          // for sections with long sample_answers, producing
+          // "Unterminated string" errors and confusing the user.
+          maxOutputTokens: 8192,
           temperature: 0.7,
         },
       });
@@ -378,12 +384,23 @@ export async function generateSection(params: {
       systemPrompt: params.system,
       userPrompt: params.user,
       temperature: 0.7,
-      maxTokens: 4096,
+      maxTokens: 8192,
       schema: prepSectionSchema,
       geminiErr,
     });
   }
   const text = result.response.text();
+  // Detect truncation: when Gemini hits maxOutputTokens, finishReason is
+  // "MAX_TOKENS" and the JSON is unterminated mid-string. Surface as a
+  // clear error instead of letting JSON.parse blow up with "Unexpected end".
+  const finishReason =
+    result.response.candidates?.[0]?.finishReason ?? null;
+  if (finishReason === "MAX_TOKENS") {
+    throw new GeminiResponseError(
+      `Gemini section truncated (hit max_output_tokens). Output is malformed JSON.`,
+      text,
+    );
+  }
   console.log(
     `[gemini] section ${params.kind} completed in ${Date.now() - start}ms`,
   );
@@ -465,7 +482,10 @@ export async function generateCvRewrite(params: {
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: cvRewriteResponseSchema,
-          maxOutputTokens: 8192,
+          // 16k (was 8k): CV rewrite output is the full markdown CV plus
+          // summary_of_changes (up to 40 entries) plus preserved_facts (up
+          // to 60). Hit 8k truncation on long CVs in PT-BR.
+          maxOutputTokens: 16384,
           temperature: 0.5,
         },
       });
@@ -477,12 +497,20 @@ export async function generateCvRewrite(params: {
       systemPrompt: params.system,
       userPrompt: params.user,
       temperature: 0.5,
-      maxTokens: 8192,
+      maxTokens: 16384,
       schema: cvRewriteSchema,
       geminiErr,
     });
   }
   const text = result.response.text();
+  const finishReason =
+    result.response.candidates?.[0]?.finishReason ?? null;
+  if (finishReason === "MAX_TOKENS") {
+    throw new GeminiResponseError(
+      `Gemini cv-rewrite truncated (hit max_output_tokens). Output is malformed JSON.`,
+      text,
+    );
+  }
   console.log(`[gemini] cv-rewrite completed in ${Date.now() - start}ms`);
 
   let raw: unknown;
@@ -625,7 +653,10 @@ export async function generateAtsAnalysis(params: {
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: atsResponseSchema,
-          maxOutputTokens: 4096,
+          // 8192 (was 4096): ATS analysis can be verbose with many top_fixes
+          // entries each containing original_cv_language + jd_language +
+          // suggested_rewrite — easily blows past 4096 tokens in PT-BR.
+          maxOutputTokens: 8192,
           // Deterministic-as-possible: same CV + JD should produce the same
           // score and analysis on re-run. temperature=0 + topK=1 collapses the
           // sampling distribution; minor variation may still leak from float
@@ -643,12 +674,20 @@ export async function generateAtsAnalysis(params: {
       systemPrompt: params.system,
       userPrompt: params.user,
       temperature: 0,
-      maxTokens: 4096,
+      maxTokens: 8192,
       schema: atsAnalysisSchema,
       geminiErr,
     });
   }
   const text = result.response.text();
+  const finishReason =
+    result.response.candidates?.[0]?.finishReason ?? null;
+  if (finishReason === "MAX_TOKENS") {
+    throw new GeminiResponseError(
+      `Gemini ats truncated (hit max_output_tokens). Output is malformed JSON.`,
+      text,
+    );
+  }
   console.log(`[gemini] ats completed in ${Date.now() - start}ms`);
 
   let raw: unknown;

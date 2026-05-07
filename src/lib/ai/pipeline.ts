@@ -233,6 +233,9 @@ function userFriendlyAiError(rawMessage: string): string {
   if (/\b(deadline|ECONNRESET|ETIMEDOUT|fetch failed|network)\b/i.test(firstLine)) {
     return "Falha de conexão com o serviço de IA. Verifique sua internet e tente novamente.";
   }
+  if (/truncated|max_output_tokens|hit max/i.test(firstLine)) {
+    return "A resposta da IA foi maior do que o esperado e ficou truncada. Tente novamente — a próxima geração geralmente cabe.";
+  }
   if (/schema validation|safeParse|invalid.*response|non-JSON/i.test(firstLine)) {
     return "A IA produziu uma resposta inesperada desta vez. Geralmente é transitório — tente novamente.";
   }
