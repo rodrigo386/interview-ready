@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { markAllPayablePaid } from "@/app/admin/affiliates/actions";
+import { safeCall } from "@/lib/affiliate/safe-action";
 
 export function PayoutButton({
   partnerId,
@@ -26,7 +27,14 @@ export function PayoutButton({
     }
     setError(null);
     startTransition(async () => {
-      const res = await markAllPayablePaid(partnerId, paidVia.trim());
+      const wrapped = await safeCall(() =>
+        markAllPayablePaid(partnerId, paidVia.trim()),
+      );
+      if (!wrapped.ok) {
+        setError(wrapped.message);
+        return;
+      }
+      const res = wrapped.value;
       if (!res.ok) {
         setError(res.error ?? "Erro");
       } else {

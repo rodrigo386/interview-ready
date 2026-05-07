@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { applyAsAffiliate } from "@/app/parceiros/actions";
 import { generateCodeFromName, validateCode } from "@/lib/affiliate/code";
+import { safeCall } from "@/lib/affiliate/safe-action";
 
 export function PartnerForm({ defaultName = "" }: { defaultName?: string }) {
   const [displayName, setDisplayName] = useState(defaultName);
@@ -43,7 +44,12 @@ export function PartnerForm({ defaultName = "" }: { defaultName?: string }) {
       fd.set("bio", bio);
       fd.set("pix_key", pixKey);
       fd.set("why", why);
-      const res = await applyAsAffiliate(fd);
+      const wrapped = await safeCall(() => applyAsAffiliate(fd));
+      if (!wrapped.ok) {
+        setError(wrapped.message);
+        return;
+      }
+      const res = wrapped.value;
       if (res.ok) {
         setSuccess(true);
       } else {

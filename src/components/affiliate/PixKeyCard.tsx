@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { updatePixKey } from "@/app/(app)/partner/actions";
+import { safeCall } from "@/lib/affiliate/safe-action";
 
 export function PixKeyCard({ initialPixKey }: { initialPixKey: string | null }) {
   const [editing, setEditing] = useState(false);
@@ -14,7 +15,12 @@ export function PixKeyCard({ initialPixKey }: { initialPixKey: string | null }) 
     startTransition(async () => {
       const fd = new FormData();
       fd.set("pix_key", pixKey);
-      const res = await updatePixKey(fd);
+      const wrapped = await safeCall(() => updatePixKey(fd));
+      if (!wrapped.ok) {
+        setError(wrapped.message);
+        return;
+      }
+      const res = wrapped.value;
       if (res.ok) {
         setEditing(false);
       } else {

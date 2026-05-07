@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { approvePartner, denyPartner } from "@/app/admin/affiliates/actions";
+import { safeCall } from "@/lib/affiliate/safe-action";
 
 export function ApprovalDialog({
   partnerId,
@@ -16,8 +17,12 @@ export function ApprovalDialog({
   const handleApprove = () => {
     setError(null);
     startTransition(async () => {
-      const res = await approvePartner(partnerId);
-      if (!res.ok) setError(res.error ?? "Erro");
+      const wrapped = await safeCall(() => approvePartner(partnerId));
+      if (!wrapped.ok) {
+        setError(wrapped.message);
+        return;
+      }
+      if (!wrapped.value.ok) setError(wrapped.value.error ?? "Erro");
     });
   };
 
@@ -25,8 +30,12 @@ export function ApprovalDialog({
     if (!confirm(`Negar aplicação de ${displayName}?`)) return;
     setError(null);
     startTransition(async () => {
-      const res = await denyPartner(partnerId);
-      if (!res.ok) setError(res.error ?? "Erro");
+      const wrapped = await safeCall(() => denyPartner(partnerId));
+      if (!wrapped.ok) {
+        setError(wrapped.message);
+        return;
+      }
+      if (!wrapped.value.ok) setError(wrapped.value.error ?? "Erro");
     });
   };
 
