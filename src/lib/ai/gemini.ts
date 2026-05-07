@@ -29,12 +29,16 @@ const MODEL_ID = "gemini-3.1-flash-lite";
 // Order (per user request 2026-05-07): escalate to bigger/smarter models
 // in the same Gemini family, hoping their separate capacity pools have
 // headroom even when 3.1-flash-lite is surging.
-// - `gemini-3-flash`: bigger flash sibling, separate capacity pool from
-//   3.1-flash-lite, supports responseSchema + googleSearch. Cost ~6x output
-//   ($0.50/$3.00 per 1M) — only fires on primary failure so impact is low.
+// - `gemini-3-flash-preview`: bigger flash sibling. Production confirmed
+//   bare ID `gemini-3-flash` returns 404 — must include `-preview` suffix.
+//   Supports responseSchema + googleSearch. ~6x output cost ($0.50/$3.00
+//   per 1M) — only fires on primary failure so impact is low.
 // - `gemini-3.1-pro-preview`: reasoning-heavy, slowest + most expensive,
 //   last Gemini-family attempt before Cerebras takes over.
-const FALLBACK_MODELS = ["gemini-3-flash", "gemini-3.1-pro-preview"] as const;
+const FALLBACK_MODELS = [
+  "gemini-3-flash-preview",
+  "gemini-3.1-pro-preview",
+] as const;
 
 // Note: company intel call uses MODEL_ID + the fallback chain via
 // callGeminiWithRetry — no separate constant. Gemini 3 supports
@@ -179,6 +183,38 @@ async function callGeminiWithRetry<T>(
 }
 
 /**
+ * Lenient pre-process for Cerebras output: fills common missing fields with
+ * sensible defaults before Zod safeParse. Cerebras's `response_format:
+ * json_object` only guarantees valid JSON, not schema match — Llama / Qwen
+ * habitually skip required fields like card `id` (production-observed
+ * 2026-05-07: "expected string, received undefined" at path cards.0.id).
+ *
+ * Strategy: fill what's safely auto-derivable (ids), leave the rest to Zod.
+ * If still failing, propagation continues normally.
+ */
+function coerceCerebrasOutput(raw: unknown, label: string): unknown {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  const obj = raw as Record<string, unknown>;
+  const out: Record<string, unknown> = { ...obj };
+
+  // Sections schema: cards[].id is required and Cerebras often skips it.
+  if (Array.isArray(obj.cards)) {
+    out.cards = (obj.cards as unknown[]).map((card, i) => {
+      if (!card || typeof card !== "object" || Array.isArray(card)) return card;
+      const c = card as Record<string, unknown>;
+      if (typeof c.id !== "string" || !c.id) {
+        return { ...c, id: `${label}-${i + 1}` };
+      }
+      return c;
+    });
+  }
+
+  // Sections schema: top-level id/title/icon/summary required.
+  if (typeof out.id !== "string" || !out.id) out.id = label;
+  return out;
+}
+
+/**
  * Last-resort fallback: when the entire Gemini chain (primary + 2 GA
  * fallbacks) is exhausted by 503s, try Cerebras Cloud Inference. Returns
  * the parsed Zod result on success, or throws the original Gemini error
@@ -187,8 +223,8 @@ async function callGeminiWithRetry<T>(
  *
  * Cerebras with `response_format: json_object` is looser on schema
  * adherence than Gemini's `responseSchema`, so the Zod safeParse is the
- * only enforcement. If Cerebras output fails Zod, we fall back to the
- * original Gemini error too.
+ * only enforcement. We pre-coerce common missing fields (auto-fill card
+ * ids, etc.) before validation to recover from minor schema drift.
  */
 async function tryCerebrasFallback<T>(opts: {
   label: string;
@@ -224,10 +260,13 @@ async function tryCerebrasFallback<T>(opts: {
       : new Error(String(opts.geminiErr));
   }
 
-  const parsed = opts.schema.safeParse(raw);
+  // Lenient pre-process: fill predictable missing fields (card ids etc).
+  const coerced = coerceCerebrasOutput(raw, opts.label);
+
+  const parsed = opts.schema.safeParse(coerced);
   if (!parsed.success) {
     console.warn(
-      `[cerebras] ${opts.label} schema failed: ${parsed.error.message.slice(0, 200)}`,
+      `[cerebras] ${opts.label} schema failed after coercion: ${parsed.error.message.slice(0, 200)}`,
     );
     throw opts.geminiErr instanceof Error
       ? opts.geminiErr

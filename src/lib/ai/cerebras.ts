@@ -19,13 +19,15 @@ import { env } from "@/lib/env";
 
 const CEREBRAS_ENDPOINT = "https://api.cerebras.ai/v1/chat/completions";
 
-// Primary fallback. GPT-OSS 120B is OpenAI's open-source release, hosted on
-// Cerebras LPU at ~1500 tok/s. Strong on structured output.
-const CEREBRAS_PRIMARY = "gpt-oss-120b";
-// Secondary if primary 503s — Qwen 3 235B-A22B is much better at schema
-// adherence than Llama 3.1 8B (which we initially used and failed Zod
-// validation in prod). Same provider, free tier, similar latency.
-const CEREBRAS_SECONDARY = "qwen-3-235b-a22b-instruct-2507";
+// Primary fallback. Qwen 3 235B-A22B is the best schema-adherence model
+// available on Cerebras free tier (production-confirmed: gpt-oss-120b
+// returns 404 "model does not exist or no access" on our account, so we
+// can't use it). Qwen-3 returned valid JSON in 1.5s in prod tests.
+const CEREBRAS_PRIMARY = "qwen-3-235b-a22b-instruct-2507";
+// Secondary: Llama 3.1 8B as last-resort if Qwen 3 also fails. Smaller,
+// schema adherence is shakier — but combined with the lenient
+// post-processor it usually produces something usable.
+const CEREBRAS_SECONDARY = "llama3.1-8b";
 
 // Suffix appended to the system prompt when calling Cerebras — Cerebras's
 // `response_format: json_object` only guarantees valid JSON, not that the
