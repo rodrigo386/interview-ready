@@ -1,11 +1,7 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { Logo } from "@/components/Logo";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { AvatarMenu } from "@/components/ui/AvatarMenu";
-import { PlanBadge } from "@/components/billing/PlanBadge";
+import { AppHeader } from "@/components/AppHeader";
 import { resolveAvatarUrl } from "@/lib/profile/avatar-url";
 import { reconcileBillingFromAsaas } from "@/lib/billing/reconcile";
 import { logout } from "./dashboard/actions";
@@ -120,28 +116,16 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-border bg-bg">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/dashboard" aria-label="PrepaVaga, ir para o painel">
-            <Logo variant="horizontal" size={32} />
-          </Link>
-          <div className="flex items-center gap-3">
-            <PlanBadge
-              tier={billing.tier}
-              subscriptionStatus={billing.subscription_status}
-              prepsUsedThisMonth={billing.preps_used_this_month}
-              prepCredits={billing.prep_credits}
-            />
-            <ThemeToggle />
-            <AvatarMenu
-              email={user.email!}
-              avatarUrl={resolvedAvatarUrl}
-              logoutAction={logout}
-              isAdmin={billing.is_admin}
-            />
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        email={user.email!}
+        avatarUrl={resolvedAvatarUrl}
+        isAdmin={billing.is_admin}
+        tier={billing.tier}
+        subscriptionStatus={billing.subscription_status}
+        prepsUsedThisMonth={billing.preps_used_this_month}
+        prepCredits={billing.prep_credits}
+        logoutAction={logout}
+      />
       <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
     </div>
   );

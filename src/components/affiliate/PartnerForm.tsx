@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { applyAsAffiliate } from "@/app/parceiros/actions";
 import { generateCodeFromName, validateCode } from "@/lib/affiliate/code";
 import { safeCall } from "@/lib/affiliate/safe-action";
 
+const REDIRECT_SECONDS = 10;
+
 export function PartnerForm({ defaultName = "" }: { defaultName?: string }) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(defaultName);
   const [code, setCode] = useState(generateCodeFromName(defaultName));
   const [autoCode, setAutoCode] = useState(true); // tracks whether code is auto-derived
@@ -59,14 +63,7 @@ export function PartnerForm({ defaultName = "" }: { defaultName?: string }) {
   };
 
   if (success) {
-    return (
-      <div className="rounded-xl border-2 border-green-500 bg-green-soft/30 p-6">
-        <h2 className="text-lg font-bold text-green-700">Aplicação enviada!</h2>
-        <p className="mt-2 text-sm text-ink-2">
-          Recebemos sua aplicação. Respondemos em até 7 dias úteis no e-mail da sua conta.
-        </p>
-      </div>
-    );
+    return <SuccessRedirect router={router} />;
   }
 
   return (
@@ -131,6 +128,72 @@ export function PartnerForm({ defaultName = "" }: { defaultName?: string }) {
         {pending ? "Enviando..." : "Aplicar"}
       </button>
     </form>
+  );
+}
+
+/**
+ * Success state: shows confirmation + 10s countdown, then redirects to
+ * /dashboard via client-side router.push (preserves session). Earlier flow
+ * relied on server-side revalidate which triggered an auth re-check that
+ * sometimes booted users back to /signup, making them feel "logged out".
+ * Calling router.push from the client keeps the existing session cookie.
+ */
+function SuccessRedirect({
+  router,
+}: {
+  router: ReturnType<typeof useRouter>;
+}) {
+  const [secondsLeft, setSecondsLeft] = useState(REDIRECT_SECONDS);
+  const [cancelled, setCancelled] = useState(false);
+
+  useEffect(() => {
+    if (cancelled) return;
+    if (secondsLeft <= 0) {
+      router.push("/dashboard");
+      router.refresh();
+      return;
+    }
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [secondsLeft, cancelled, router]);
+
+  return (
+    <div className="rounded-xl border-2 border-green-500 bg-green-soft/30 p-6">
+      <h2 className="text-lg font-bold text-green-700">
+        Aplicação enviada! 🎉
+      </h2>
+      <p className="mt-2 text-sm text-ink-2">
+        Recebemos sua aplicação. Respondemos em até 7 dias úteis no e-mail
+        da sua conta.
+      </p>
+      {!cancelled && (
+        <p className="mt-4 text-sm text-ink-3">
+          Voltando ao dashboard em <strong>{secondsLeft}s</strong>...
+        </p>
+      )}
+      <div className="mt-4 flex gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            router.push("/dashboard");
+            router.refresh();
+          }}
+          className="rounded-pill bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-700"
+        >
+          Ir agora →
+        </button>
+        {!cancelled && (
+          <button
+            type="button"
+            onClick={() => setCancelled(true)}
+            className="rounded-pill border border-line px-4 py-2 text-xs font-semibold text-ink-2 hover:bg-bg"
+            aria-label="Cancelar redirecionamento automático"
+          >
+            Ficar aqui
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

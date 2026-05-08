@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -71,6 +70,12 @@ export async function applyAsAffiliate(formData: FormData): Promise<{
   });
   if (error) return { ok: false, error: error.message };
 
-  revalidatePath("/parceiros");
+  // Note: deliberately NOT calling revalidatePath("/parceiros") here.
+  // The form re-renders client-side via setSuccess(true), then the
+  // SuccessRedirect component does router.push("/dashboard") + refresh
+  // after 10s. revalidatePath was triggering a server re-render of
+  // /parceiros mid-action that occasionally appeared to invalidate the
+  // user's session — surfacing as the "logged out after applying" bug
+  // reported in prod.
   return { ok: true };
 }

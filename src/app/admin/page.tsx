@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getAdminOverview } from "@/lib/admin/metrics";
+import { getPageViewMetrics } from "@/lib/analytics/page-views";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -21,8 +24,48 @@ const STATUS_BADGE: Record<string, string> = {
   refunded: "bg-neutral-100 text-text-secondary dark:bg-zinc-800 dark:text-zinc-300",
 };
 
+async function getPartnerStats(): Promise<{
+  pending: number;
+  active: number;
+  payable_cents: number;
+}> {
+  try {
+    const sb = createAdminClient();
+    const [pendingRes, activeRes, payableRes] = await Promise.all([
+      sb
+        .from("affiliate_partners")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      sb
+        .from("affiliate_partners")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active"),
+      sb
+        .from("affiliate_commissions")
+        .select("amount_cents")
+        .eq("status", "confirmed")
+        .is("paid_at", null),
+    ]);
+    const payableCents = (payableRes.data ?? []).reduce(
+      (acc, r) => acc + ((r as { amount_cents: number }).amount_cents ?? 0),
+      0,
+    );
+    return {
+      pending: pendingRes.count ?? 0,
+      active: activeRes.count ?? 0,
+      payable_cents: payableCents,
+    };
+  } catch {
+    return { pending: 0, active: 0, payable_cents: 0 };
+  }
+}
+
 export default async function AdminPage() {
-  const overview = await getAdminOverview();
+  const [overview, pageViews, partnerStats] = await Promise.all([
+    getAdminOverview(),
+    getPageViewMetrics().catch(() => null),
+    getPartnerStats(),
+  ]);
 
   return (
     <div className="space-y-12">
@@ -34,6 +77,85 @@ export default async function AdminPage() {
           Métricas em tempo real. Atualiza a cada navegação.
         </p>
       </div>
+
+      <Section title="Visitas ao site">
+        {pageViews ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <KPI
+              label="Últimas 24h"
+              total={pageViews.total_24h}
+              unique={pageViews.unique_24h}
+            />
+            <KPI
+              label="Últimos 7 dias"
+              total={pageViews.total_7d}
+              unique={pageViews.unique_7d}
+            />
+            <KPI
+              label="Últimos 30 dias"
+              total={pageViews.total_30d}
+              unique={pageViews.unique_30d}
+            />
+            <KPI
+              label="All-time"
+              total={pageViews.total_all_time}
+              unique={pageViews.unique_all_time}
+            />
+          </div>
+        ) : (
+          <p className="rounded-xl border border-dashed border-neutral-200 bg-bg p-4 text-sm text-text-tertiary dark:border-zinc-800">
+            Sem dados de visitas ainda. Tracking começa após a próxima visita.
+          </p>
+        )}
+        <p className="mt-2 text-xs text-text-tertiary">
+          Bots filtrados por user-agent. Visitantes únicos identificados via cookie pv_vid (1 ano).
+        </p>
+      </Section>
+
+      <Section title="Programa de parceiros">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Link
+            href="/admin/affiliates?tab=applications"
+            className="rounded-xl border border-orange-500 bg-orange-soft/30 p-5 transition hover:bg-orange-soft/60"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-700">
+              Aplicações pendentes
+            </p>
+            <p className="mt-2 text-3xl font-bold text-ink">
+              {partnerStats.pending}
+            </p>
+            <p className="mt-1 text-xs text-ink-2">
+              Aprovar ou negar →
+            </p>
+          </Link>
+          <Link
+            href="/admin/affiliates?tab=active"
+            className="rounded-xl border border-neutral-200 bg-bg p-5 transition hover:bg-neutral-50 dark:border-zinc-800 dark:hover:bg-zinc-900/40"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
+              Parceiros ativos
+            </p>
+            <p className="mt-2 text-3xl font-bold text-text-primary">
+              {partnerStats.active}
+            </p>
+            <p className="mt-1 text-xs text-text-secondary">Gerenciar →</p>
+          </Link>
+          <Link
+            href="/admin/affiliates?tab=active"
+            className="rounded-xl border border-neutral-200 bg-bg p-5 transition hover:bg-neutral-50 dark:border-zinc-800 dark:hover:bg-zinc-900/40"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
+              A pagar agora
+            </p>
+            <p className="mt-2 text-3xl font-bold text-text-primary">
+              R$ {(partnerStats.payable_cents / 100).toFixed(2)}
+            </p>
+            <p className="mt-1 text-xs text-text-secondary">
+              Comissões confirmadas →
+            </p>
+          </Link>
+        </div>
+      </Section>
 
       <section>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -130,6 +252,30 @@ export default async function AdminPage() {
         </Section>
       )}
     </div>
+  );
+}
+
+function KPI({
+  label,
+  total,
+  unique,
+}: {
+  label: string;
+  total: number;
+  unique: number;
+}) {
+  return (
+    <article className="rounded-xl border border-neutral-200 bg-bg p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-zinc-800">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-semibold text-text-primary">
+        {total.toLocaleString("pt-BR")}
+      </p>
+      <p className="mt-1 text-xs text-text-tertiary">
+        {unique.toLocaleString("pt-BR")} únicos
+      </p>
+    </article>
   );
 }
 
