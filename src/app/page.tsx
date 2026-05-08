@@ -8,6 +8,7 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Features } from "@/components/landing/Features";
 import { PricingChips } from "@/components/landing/PricingChips";
 import { Faq } from "@/components/landing/Faq";
+import { FeaturedArticles } from "@/components/landing/FeaturedArticles";
 import { FinalCta } from "@/components/landing/FinalCta";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
@@ -35,6 +36,7 @@ export default async function LandingPage() {
         <HowItWorks />
         <Features />
         <PricingChips />
+        <FeaturedArticles />
         <Faq />
         <FinalCta />
       </main>
