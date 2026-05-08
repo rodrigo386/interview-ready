@@ -148,8 +148,9 @@ export default async function ParceirosPage() {
                 Pagamento
               </p>
               <p className="mt-2 text-sm text-ink-2">
-                Mensalmente via Pix na sua chave cadastrada. Comissões liberam
-                7 dias após o pagamento (janela de reembolso).
+                Pix automático na sua chave cadastrada quando o saldo atingir{" "}
+                <strong>R$ 100,00</strong>. Comissões liberam 7 dias após o
+                pagamento do cliente (janela de reembolso).
               </p>
             </div>
           </section>

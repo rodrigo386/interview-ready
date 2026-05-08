@@ -9,6 +9,7 @@ import {
 import { CodeBox } from "@/components/affiliate/CodeBox";
 import { EarningsCard } from "@/components/affiliate/EarningsCard";
 import { PixKeyCard } from "@/components/affiliate/PixKeyCard";
+import { MIN_PAYOUT_CENTS } from "@/lib/affiliate/payout";
 
 export const dynamic = "force-dynamic";
 
@@ -215,6 +216,10 @@ export default async function PartnerDashboardPage() {
       </section>
 
       <section className="mt-8">
+        <PayoutThresholdCard payableCents={earnings.payable_cents} />
+      </section>
+
+      <section className="mt-6">
         <PixKeyCard initialPixKey={pixKey} />
       </section>
 
@@ -266,6 +271,51 @@ export default async function PartnerDashboardPage() {
         )}
       </section>
     </main>
+  );
+}
+
+function PayoutThresholdCard({ payableCents }: { payableCents: number }) {
+  const min = MIN_PAYOUT_CENTS;
+  const pct = Math.min(100, Math.round((payableCents / min) * 100));
+  const reached = payableCents >= min;
+  const remaining = Math.max(0, min - payableCents);
+
+  return (
+    <div className="rounded-xl border border-line bg-white p-5 shadow-prep">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-ink">
+          Pagamento automático via Pix
+        </p>
+        {reached ? (
+          <span className="rounded-pill bg-green-soft px-2 py-0.5 text-xs font-semibold text-green-700">
+            Próximo pagamento programado
+          </span>
+        ) : (
+          <span className="rounded-pill bg-yellow-soft px-2 py-0.5 text-xs font-semibold text-yellow-700">
+            Falta R$ {(remaining / 100).toFixed(2)}
+          </span>
+        )}
+      </div>
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-line">
+        <div
+          className={
+            reached
+              ? "h-full bg-green-500 transition-all"
+              : "h-full bg-orange-500 transition-all"
+          }
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="mt-2 flex items-center justify-between text-xs text-ink-3">
+        <span>R$ {(payableCents / 100).toFixed(2)} disponível</span>
+        <span>Mínimo R$ {(min / 100).toFixed(2)}</span>
+      </div>
+      <p className="mt-3 text-xs text-ink-3">
+        Quando seu saldo a receber atinge R$ {(min / 100).toFixed(0)}, o Pix é
+        disparado automaticamente na chave cadastrada abaixo. Abaixo desse
+        valor, o saldo acumula pro próximo ciclo.
+      </p>
+    </div>
   );
 }
 

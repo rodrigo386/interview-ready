@@ -100,7 +100,11 @@ export function PartnerForm({ defaultName = "" }: { defaultName?: string }) {
           className="w-full rounded-md border border-line bg-white px-3 py-2 text-ink"
         />
       </Field>
-      <Field label="Chave Pix (pra receber pagamentos)" required>
+      <Field
+        label="Chave Pix (pra receber pagamentos)"
+        required
+        hint="Pagamento automático via Pix quando o saldo atingir R$ 100,00. Use CPF, e-mail, celular (com +55) ou chave aleatória."
+      >
         <input
           type="text"
           value={pixKey}

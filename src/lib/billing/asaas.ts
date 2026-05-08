@@ -4,9 +4,11 @@ import type {
   AsaasCustomer,
   AsaasPayment,
   AsaasSubscription,
+  AsaasTransfer,
   CreateCustomerInput,
   CreatePaymentInput,
   CreateSubscriptionInput,
+  CreateTransferInput,
 } from "./types";
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -55,4 +57,14 @@ export const asaas = {
       method: "DELETE",
     }),
   getPayment: (id: string) => call<AsaasPayment>(`/payments/${id}`),
+  /**
+   * Sends a Pix transfer from the Asaas account balance to any Pix key.
+   * Used for affiliate payouts. Asaas charges a flat fee per transfer
+   * (currently ~R$1.99) deducted from balance.
+   */
+  createTransfer: (input: CreateTransferInput) =>
+    call<AsaasTransfer>("/transfers", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
 };

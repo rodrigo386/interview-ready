@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/auth";
 import { confirmCommissions } from "@/lib/affiliate/commission";
+import { payPartner, type PayoutResult } from "@/lib/affiliate/payout";
 
 export async function approvePartner(partnerId: string): Promise<{ ok: boolean; error?: string }> {
   const admin = await requireAdmin();
@@ -75,4 +76,68 @@ export async function refreshConfirmations(): Promise<{ confirmed: number }> {
   await requireAdmin();
   const sb = createAdminClient();
   return confirmCommissions(sb);
+}
+
+export type PayPartnerActionResult =
+  | {
+      ok: true;
+      message: string;
+      transferId: string;
+      amountCents: number;
+      commissionsPaid: number;
+      status: string;
+    }
+  | { ok: false; error: string };
+
+const PAYOUT_REASON_MESSAGES: Record<string, string> = {
+  no_pix_key: "Parceiro não cadastrou chave Pix no perfil",
+  below_minimum: "Saldo abaixo do mínimo de R$ 100,00",
+  ambiguous_pix_key:
+    "Chave Pix em formato ambíguo. Peça pra parceiro reformatar (CPF com pontos, telefone com +55, etc.)",
+  no_payable: "Sem comissões confirmadas pra pagar",
+  partner_inactive: "Parceiro não está ativo",
+  asaas_failed: "Asaas rejeitou a transferência",
+  db_failed: "Erro ao gravar no banco",
+};
+
+/**
+ * Trigger an automated Pix payout via Asaas Transfer API for one partner.
+ * Server-side validates: admin-only, partner active, payable >= R$100,
+ * pix_key present and unambiguous. On success, marks all settled
+ * commissions as paid with paid_via=asaas_transfer:<id>.
+ */
+export async function payPartnerViaPix(
+  partnerId: string,
+): Promise<PayPartnerActionResult> {
+  const admin = await requireAdmin();
+  const sb = createAdminClient();
+
+  let result: PayoutResult;
+  try {
+    result = await payPartner(partnerId, admin.id, sb);
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  if (!result.ok) {
+    const base = PAYOUT_REASON_MESSAGES[result.reason] ?? result.reason;
+    return {
+      ok: false,
+      error: result.detail ? `${base}: ${result.detail}` : base,
+    };
+  }
+
+  revalidatePath("/admin/affiliates");
+  revalidatePath("/admin");
+  return {
+    ok: true,
+    message: `Transferência ${result.asaasTransferId} de R$ ${(result.amountCents / 100).toFixed(2)} enviada (${result.commissionsPaid} comissões marcadas como pagas)`,
+    transferId: result.asaasTransferId,
+    amountCents: result.amountCents,
+    commissionsPaid: result.commissionsPaid,
+    status: result.status,
+  };
 }

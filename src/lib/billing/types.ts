@@ -72,3 +72,31 @@ export type CreatePaymentInput = {
   externalReference: string;
   callback?: { successUrl: string; autoRedirect?: boolean };
 };
+
+export type AsaasPixKeyType = "CPF" | "CNPJ" | "EMAIL" | "PHONE" | "EVP";
+
+export type CreateTransferInput = {
+  value: number;
+  operationType: "PIX";
+  pixAddressKey: string;
+  pixAddressKeyType: AsaasPixKeyType;
+  description?: string;
+};
+
+export type AsaasTransfer = {
+  id: string;
+  value: number;
+  netValue?: number;
+  status:
+    | "PENDING"
+    | "BANK_PROCESSING"
+    | "DONE"
+    | "CANCELLED"
+    | "FAILED"
+    | string;
+  description?: string;
+  failReason?: string;
+  scheduleDate?: string;
+  effectiveDate?: string;
+  transferFee?: number;
+};
