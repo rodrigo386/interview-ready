@@ -10,8 +10,8 @@ test.describe("Public pages render without auth", () => {
     await expect(
       page.getByRole("link", { name: /entrar na entrevista preparado/i }),
     ).toBeVisible();
-    // Footer copyright shows current company
-    await expect(page.getByText(/PROAICIRCLE Ltda/i)).toBeVisible();
+    // Footer copyright shows the legal CNPJ (more stable than company name)
+    await expect(page.getByText(/CNPJ 62\.805\.016\/0001-29/)).toBeVisible();
   });
 
   test("/signup form has all required fields including CPF", async ({ page }) => {
