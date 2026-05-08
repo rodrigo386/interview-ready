@@ -61,11 +61,13 @@ async function getPartnerStats(): Promise<{
 }
 
 export default async function AdminPage() {
-  const [overview, pageViews, partnerStats] = await Promise.all([
+  const [overview, pageViewsResult, partnerStats] = await Promise.all([
     getAdminOverview(),
-    getPageViewMetrics().catch(() => null),
+    getPageViewMetrics(),
     getPartnerStats(),
   ]);
+  const pageViews = pageViewsResult.ok ? pageViewsResult.metrics : null;
+  const pageViewsError = pageViewsResult.ok ? null : pageViewsResult;
 
   return (
     <div className="space-y-12">
@@ -101,6 +103,28 @@ export default async function AdminPage() {
               total={pageViews.total_all_time}
               unique={pageViews.unique_all_time}
             />
+          </div>
+        ) : pageViewsError?.reason === "table_missing" ? (
+          <div className="rounded-xl border border-yellow-500/40 bg-yellow-soft p-4 text-sm">
+            <p className="font-semibold text-yellow-700">
+              Tabela page_views não existe
+            </p>
+            <p className="mt-1 text-ink-2">
+              Migration 0018 não foi aplicada. Cole no SQL Editor do Supabase o
+              conteúdo de{" "}
+              <code className="rounded bg-bg px-1 font-mono text-xs">
+                supabase/migrations/0018_page_views.sql
+              </code>
+              .
+            </p>
+            <p className="mt-1 text-xs text-ink-3">{pageViewsError.detail}</p>
+          </div>
+        ) : pageViewsError ? (
+          <div className="rounded-xl border border-red-500/40 bg-red-soft p-4 text-sm">
+            <p className="font-semibold text-red-700">
+              Erro ao consultar visitas
+            </p>
+            <p className="mt-1 text-xs text-ink-3">{pageViewsError.detail}</p>
           </div>
         ) : (
           <p className="rounded-xl border border-dashed border-neutral-200 bg-bg p-4 text-sm text-text-tertiary dark:border-zinc-800">

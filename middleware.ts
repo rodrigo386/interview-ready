@@ -49,8 +49,10 @@ export async function middleware(request: NextRequest) {
 
   const response = await updateSession(request);
 
-  // Page-view analytics: ensure a visitor cookie exists, then fire-and-forget
-  // POST to /api/track. Skipped for static / api / auth paths.
+  // Page-view analytics: ensure a visitor cookie exists, then write a row
+  // directly to Supabase via REST (Edge-compatible, no node client needed).
+  // Awaited with a short timeout so the request actually goes out — Edge
+  // middleware kills fire-and-forget work after the response is sent.
   const { pathname } = request.nextUrl;
   if (shouldTrack(pathname)) {
     let visitorId = request.cookies.get(VISITOR_COOKIE)?.value;
@@ -64,18 +66,59 @@ export async function middleware(request: NextRequest) {
       });
     }
 
-    // Fire-and-forget — don't await. Failures are silently tolerated. The
-    // /api/track route runs in Node runtime and inserts via service-role
-    // client; middleware itself stays in Edge.
-    const origin = request.nextUrl.origin;
-    fetch(`${origin}/api/track`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitorId, path: pathname }),
-    }).catch(() => undefined);
+    await trackPageViewFromMiddleware({
+      visitorId,
+      path: pathname,
+      userAgent: request.headers.get("user-agent"),
+    });
   }
 
   return response;
+}
+
+const BOT_RE =
+  /bot|crawl|spider|scrape|headless|lighthouse|pingdom|uptimerobot|facebookexternalhit|whatsapp|twitterbot|linkedinbot|slackbot|discordbot|telegrambot/i;
+
+async function trackPageViewFromMiddleware(opts: {
+  visitorId: string;
+  path: string;
+  userAgent: string | null;
+}): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
+
+  // 2s budget — if Supabase is slow, drop the row rather than block the page.
+  const ctrl = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), 2000);
+  try {
+    const res = await fetch(`${url}/rest/v1/page_views`, {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        visitor_id: opts.visitorId,
+        path: opts.path,
+        user_agent: opts.userAgent?.slice(0, 500) ?? null,
+        is_bot: !opts.userAgent || BOT_RE.test(opts.userAgent),
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.warn(`[analytics] page_views insert failed (${res.status}): ${body.slice(0, 200)}`);
+    }
+  } catch (err) {
+    if ((err as { name?: string }).name !== "AbortError") {
+      console.warn("[analytics] page_views fetch error:", err);
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export const config = {
