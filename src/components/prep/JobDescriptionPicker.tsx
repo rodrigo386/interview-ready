@@ -52,10 +52,6 @@ export function JobDescriptionPicker({
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm text-text-secondary">
-        Descrição da vaga
-      </label>
-
       <div className="flex items-center gap-3 text-xs">
         <button
           type="button"
