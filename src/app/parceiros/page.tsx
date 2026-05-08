@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { AppHeader } from "@/components/AppHeader";
@@ -46,6 +47,17 @@ export default async function ParceirosPage() {
   const { data } = await sb.auth.getUser();
   const user = data.user;
   const isLoggedIn = !!user;
+
+  // If user already applied (any status), send them to the partner dashboard.
+  // /partner handles pending/active/suspended/rejected with status-aware UI.
+  if (isLoggedIn) {
+    const { data: existing } = await sb
+      .from("affiliate_partners")
+      .select("id")
+      .eq("user_id", user!.id)
+      .maybeSingle();
+    if (existing) redirect("/partner");
+  }
 
   let defaultName = "";
   let profile: Partial<ProfileShape> = {};

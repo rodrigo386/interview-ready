@@ -52,25 +52,77 @@ export default async function PartnerDashboardPage() {
   };
 
   if (p.status === "pending") {
+    const appliedAt = new Date(p.created_at).toLocaleDateString("pt-BR");
     return (
-      <main className="mx-auto max-w-3xl px-6 py-14 text-center">
-        <h1 className="text-2xl font-bold text-ink">Aplicação em análise</h1>
-        <p className="mt-3 text-sm text-ink-2">
-          Recebemos sua aplicação ({p.display_name}). Respondemos em até 7 dias
-          úteis no e-mail da sua conta.
-        </p>
+      <main className="mx-auto max-w-3xl px-6 py-12">
+        <header className="mb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink">
+            Programa de parceiros
+          </h1>
+          <p className="mt-2 text-sm text-ink-2">
+            Olá, {p.display_name}.
+          </p>
+        </header>
+
+        <StatusBanner
+          tone="yellow"
+          title="Aplicação em análise"
+          body={`Enviada em ${appliedAt}. Respondemos em até 7 dias úteis no e-mail da sua conta.`}
+        />
+
+        <section className="mt-8">
+          <h2 className="text-base font-semibold text-ink">
+            Seu link (já funciona pra atribuição)
+          </h2>
+          <p className="mb-3 mt-1 text-xs text-ink-3">
+            Pode compartilhar desde já — toda visita pelo seu link fica gravada.
+            Comissões só passam a ser pagas após a aprovação.
+          </p>
+          <CodeBox code={p.code} />
+        </section>
+
+        <section className="mt-10 rounded-xl border border-line bg-bg p-5">
+          <h3 className="text-sm font-semibold text-ink">Próximos passos</h3>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-ink-2">
+            <li>Aguardar aprovação (até 7 dias úteis)</li>
+            <li>Enquanto isso, divulgue seu link — visitas ficam atribuídas</li>
+            <li>
+              Após aprovação, comissões de 30% começam a contar e você
+              acompanha tudo aqui
+            </li>
+          </ol>
+        </section>
       </main>
     );
   }
 
   if (p.status === "suspended") {
+    const wasApproved = !!p.approved_at;
     return (
-      <main className="mx-auto max-w-3xl px-6 py-14 text-center">
-        <h1 className="text-2xl font-bold text-ink">
-          Sua conta de parceiro foi suspensa
-        </h1>
-        <p className="mt-3 text-sm text-ink-2">
-          Entre em contato:{" "}
+      <main className="mx-auto max-w-3xl px-6 py-12">
+        <header className="mb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink">
+            Programa de parceiros
+          </h1>
+          <p className="mt-2 text-sm text-ink-2">{p.display_name}</p>
+        </header>
+
+        <StatusBanner
+          tone="red"
+          title={
+            wasApproved
+              ? "Conta de parceiro suspensa"
+              : "Aplicação não aprovada"
+          }
+          body={
+            wasApproved
+              ? "Sua conta foi suspensa. Se acha que houve engano, entre em contato."
+              : "Não conseguimos aprovar sua aplicação dessa vez. Se quiser entender o motivo ou tentar de novo, fala com a gente."
+          }
+        />
+
+        <p className="mt-6 text-sm text-ink-2">
+          Contato:{" "}
           <a
             href="mailto:prepavaga@prepavaga.com.br"
             className="text-orange-700 underline"
@@ -104,13 +156,24 @@ export default async function PartnerDashboardPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
-      <header className="mb-8">
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink">
-          Dashboard do parceiro
-        </h1>
+      <header className="mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink">
+            Programa de parceiros
+          </h1>
+          <span className="rounded-pill bg-green-soft px-2.5 py-0.5 text-xs font-semibold text-green-700">
+            Aprovado
+          </span>
+        </div>
         <p className="mt-2 text-sm text-ink-2">
           {p.display_name} · código <code className="font-mono">{p.code}</code> ·
           comissão {p.commission_rate_pct}%
+          {p.approved_at && (
+            <>
+              {" · aprovado em "}
+              {new Date(p.approved_at).toLocaleDateString("pt-BR")}
+            </>
+          )}
         </p>
       </header>
 
@@ -203,6 +266,28 @@ export default async function PartnerDashboardPage() {
         )}
       </section>
     </main>
+  );
+}
+
+function StatusBanner({
+  tone,
+  title,
+  body,
+}: {
+  tone: "yellow" | "red" | "green";
+  title: string;
+  body: string;
+}) {
+  const map = {
+    yellow: "border-yellow-500/40 bg-yellow-soft text-yellow-700",
+    red: "border-red-500/40 bg-red-soft text-red-500",
+    green: "border-green-500/40 bg-green-soft text-green-700",
+  } as const;
+  return (
+    <div className={`rounded-xl border p-5 ${map[tone]}`}>
+      <p className="text-sm font-bold">{title}</p>
+      <p className="mt-1 text-sm text-ink-2">{body}</p>
+    </div>
   );
 }
 

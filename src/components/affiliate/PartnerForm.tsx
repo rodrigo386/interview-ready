@@ -149,7 +149,7 @@ function SuccessRedirect({
   useEffect(() => {
     if (cancelled) return;
     if (secondsLeft <= 0) {
-      router.push("/dashboard");
+      router.push("/partner");
       router.refresh();
       return;
     }
@@ -168,19 +168,19 @@ function SuccessRedirect({
       </p>
       {!cancelled && (
         <p className="mt-4 text-sm text-ink-3">
-          Voltando ao dashboard em <strong>{secondsLeft}s</strong>...
+          Indo pro seu painel em <strong>{secondsLeft}s</strong>...
         </p>
       )}
       <div className="mt-4 flex gap-3">
         <button
           type="button"
           onClick={() => {
-            router.push("/dashboard");
+            router.push("/partner");
             router.refresh();
           }}
           className="rounded-pill bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-700"
         >
-          Ir agora →
+          Ver meu painel →
         </button>
         {!cancelled && (
           <button
