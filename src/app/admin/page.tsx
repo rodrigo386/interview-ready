@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getAdminOverview } from "@/lib/admin/metrics";
 import { getPageViewMetrics } from "@/lib/analytics/page-views";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { IndexNowButton } from "@/components/admin/IndexNowButton";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -134,6 +135,19 @@ export default async function AdminPage() {
         <p className="mt-2 text-xs text-text-tertiary">
           Bots filtrados por user-agent. Visitantes únicos identificados via cookie pv_vid (1 ano).
         </p>
+      </Section>
+
+      <Section title="SEO · IndexNow">
+        <div className="rounded-xl border border-neutral-200 bg-bg p-5 dark:border-zinc-800">
+          <p className="text-sm text-text-secondary">
+            Pinga Bing/Yandex/Seznam pra recrawlar a landing, /pricing,
+            /parceiros, /artigos e todos os artigos. Use após publicar conteúdo
+            novo ou quando indexação parecer estagnada.
+          </p>
+          <div className="mt-4">
+            <IndexNowButton />
+          </div>
+        </div>
       </Section>
 
       <Section title="Programa de parceiros">

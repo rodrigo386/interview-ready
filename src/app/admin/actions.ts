@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { listSlugs } from "@/lib/blog/posts";
+import { submitToIndexNow } from "@/lib/seo/indexnow";
 
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
 export type DeleteUserResult = AdminActionResult;
@@ -56,6 +58,37 @@ export async function grantProAction(userId: string): Promise<AdminActionResult>
   revalidatePath("/admin");
   revalidatePath("/admin/users");
   return { ok: true };
+}
+
+export type IndexNowSubmitResult =
+  | { ok: true; submitted: number; status: number }
+  | { ok: false; error: string };
+
+const SITE_URL_FOR_INDEXNOW = "https://prepavaga.com.br";
+
+/**
+ * Submit all public URLs (landing, /artigos, every article) to IndexNow.
+ * Bing/Yandex/Seznam pick up the changes within hours. Use after publishing
+ * new articles or whenever indexing seems stuck.
+ */
+export async function submitIndexNowAction(): Promise<IndexNowSubmitResult> {
+  await requireAdmin();
+  const slugs = await listSlugs();
+  const urls = [
+    `${SITE_URL_FOR_INDEXNOW}/`,
+    `${SITE_URL_FOR_INDEXNOW}/pricing`,
+    `${SITE_URL_FOR_INDEXNOW}/parceiros`,
+    `${SITE_URL_FOR_INDEXNOW}/artigos`,
+    ...slugs.map((s) => `${SITE_URL_FOR_INDEXNOW}/artigos/${s}`),
+  ];
+  const result = await submitToIndexNow(urls);
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: `IndexNow respondeu ${result.status}: ${result.detail ?? "sem detalhe"}`,
+    };
+  }
+  return { ok: true, submitted: result.submitted, status: result.status };
 }
 
 export async function revokeProAction(userId: string): Promise<AdminActionResult> {
