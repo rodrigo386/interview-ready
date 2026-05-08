@@ -38,6 +38,14 @@ const schema = z.object({
     .union([z.string().min(1), z.literal("")])
     .optional()
     .transform((val) => (val === "" ? undefined : val)),
+  // Resend API key for transactional emails (partner approved, payout sent,
+  // etc). Different from the SMTP creds Supabase Auth uses — this is a
+  // separate key with `Sending Access` scope. When unset, sendEmail() logs
+  // a warning and returns without throwing (keeps dev/CI green).
+  RESEND_API_KEY: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
 });
 
 type Env = z.infer<typeof schema>;
@@ -57,6 +65,7 @@ function parseOrThrow(): Env {
     ASAAS_BASE_URL: process.env.ASAAS_BASE_URL,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
   });
   if (!result.success) {
     console.error("Invalid environment variables:", result.error.flatten().fieldErrors);

@@ -5,10 +5,34 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/auth";
 import { confirmCommissions } from "@/lib/affiliate/commission";
 import { payPartner, type PayoutResult } from "@/lib/affiliate/payout";
+import {
+  sendPartnerApprovedEmail,
+  sendPartnerPayoutSentEmail,
+  sendPartnerRejectedEmail,
+} from "@/lib/email/partner-emails";
 
 export async function approvePartner(partnerId: string): Promise<{ ok: boolean; error?: string }> {
   const admin = await requireAdmin();
   const sb = createAdminClient();
+
+  // Load partner + email BEFORE the update so we can email even if revalidate
+  // races. Email send is fire-and-forget after the DB write succeeds.
+  const { data: partnerRow } = await sb
+    .from("affiliate_partners")
+    .select("user_id, code, display_name, status")
+    .eq("id", partnerId)
+    .maybeSingle();
+  if (!partnerRow) return { ok: false, error: "Parceiro não encontrado" };
+  const partner = partnerRow as {
+    user_id: string;
+    code: string;
+    display_name: string;
+    status: string;
+  };
+  if (partner.status !== "pending") {
+    return { ok: false, error: `Parceiro já está com status ${partner.status}` };
+  }
+
   const { error } = await sb
     .from("affiliate_partners")
     .update({
@@ -19,6 +43,26 @@ export async function approvePartner(partnerId: string): Promise<{ ok: boolean; 
     .eq("id", partnerId)
     .eq("status", "pending");
   if (error) return { ok: false, error: error.message };
+
+  // Email — non-blocking
+  try {
+    const { data: profile } = await sb
+      .from("profiles")
+      .select("email")
+      .eq("id", partner.user_id)
+      .maybeSingle();
+    const email = (profile as { email?: string } | null)?.email;
+    if (email) {
+      await sendPartnerApprovedEmail({
+        to: email,
+        displayName: partner.display_name,
+        code: partner.code,
+      });
+    }
+  } catch (err) {
+    console.warn("[affiliate] sendPartnerApprovedEmail failed:", err);
+  }
+
   revalidatePath("/admin/affiliates");
   return { ok: true };
 }
@@ -26,12 +70,42 @@ export async function approvePartner(partnerId: string): Promise<{ ok: boolean; 
 export async function denyPartner(partnerId: string): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin();
   const sb = createAdminClient();
+
+  // Capture user info before delete so we can email them.
+  const { data: partnerRow } = await sb
+    .from("affiliate_partners")
+    .select("user_id, display_name, status")
+    .eq("id", partnerId)
+    .maybeSingle();
+
   const { error } = await sb
     .from("affiliate_partners")
     .delete()
     .eq("id", partnerId)
     .eq("status", "pending");
   if (error) return { ok: false, error: error.message };
+
+  // Email rejected applicant — non-blocking
+  if (partnerRow) {
+    const partner = partnerRow as { user_id: string; display_name: string };
+    try {
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("email")
+        .eq("id", partner.user_id)
+        .maybeSingle();
+      const email = (profile as { email?: string } | null)?.email;
+      if (email) {
+        await sendPartnerRejectedEmail({
+          to: email,
+          displayName: partner.display_name,
+        });
+      }
+    } catch (err) {
+      console.warn("[affiliate] sendPartnerRejectedEmail failed:", err);
+    }
+  }
+
   revalidatePath("/admin/affiliates");
   return { ok: true };
 }
@@ -128,6 +202,35 @@ export async function payPartnerViaPix(
       ok: false,
       error: result.detail ? `${base}: ${result.detail}` : base,
     };
+  }
+
+  // Email partner that the Pix was sent — non-blocking
+  try {
+    const { data: partnerRow } = await sb
+      .from("affiliate_partners")
+      .select("user_id, display_name")
+      .eq("id", partnerId)
+      .maybeSingle();
+    if (partnerRow) {
+      const p = partnerRow as { user_id: string; display_name: string };
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("email, pix_key")
+        .eq("id", p.user_id)
+        .maybeSingle();
+      const prof = profile as { email?: string; pix_key?: string | null } | null;
+      if (prof?.email && prof.pix_key) {
+        await sendPartnerPayoutSentEmail({
+          to: prof.email,
+          displayName: p.display_name,
+          amountCents: result.amountCents,
+          asaasTransferId: result.asaasTransferId,
+          pixKey: prof.pix_key,
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("[affiliate] sendPartnerPayoutSentEmail failed:", err);
   }
 
   revalidatePath("/admin/affiliates");

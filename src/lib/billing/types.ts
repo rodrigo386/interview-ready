@@ -35,6 +35,7 @@ export type AsaasWebhookEvent = {
   event: string;
   payment?: AsaasPayment;
   subscription?: AsaasSubscription;
+  transfer?: AsaasTransfer;
 };
 
 export type CreateCustomerInput = {

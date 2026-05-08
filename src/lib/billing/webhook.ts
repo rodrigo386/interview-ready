@@ -103,6 +103,13 @@ export async function dispatchEvent(
     case "SUBSCRIPTION_UPDATED":
       if (!userId) return { handled: false, reason: "no_user" };
       return { handled: true, userId };
+    case "TRANSFER_DONE":
+    case "TRANSFER_FAILED":
+    case "TRANSFER_CANCELLED":
+    case "TRANSFER_PENDING":
+    case "TRANSFER_BANK_PROCESSING":
+      // Transfers are payouts to affiliate partners. No user_id involved.
+      return handleTransferUpdate(evt, supabase);
     default:
       return { handled: false, reason: "unhandled" };
   }
@@ -219,5 +226,120 @@ async function handleSubscriptionDeleted(
     p_user_id: userId,
   });
   if (error) return { handled: false, reason: "error", detail: error.message };
+
+  // Affiliate clawback side-effect: if this user was referred by a partner,
+  // any commission already paid for their subscription would be a loss
+  // (subscription was cancelled, partner shouldn't keep credit). Mark all
+  // their pending/confirmed commissions as clawback so they don't pay out.
+  // Already-paid commissions stay paid (no money clawback on Asaas side).
+  try {
+    const { data: payments } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("user_id", userId);
+    const paymentIds = (payments ?? []).map(
+      (p) => (p as { id: string }).id,
+    );
+    if (paymentIds.length > 0) {
+      await supabase
+        .from("affiliate_commissions")
+        .update({ status: "clawback" })
+        .in("payment_id", paymentIds)
+        .in("status", ["pending", "confirmed"]);
+    }
+  } catch (err) {
+    console.warn("[affiliate] subscription cancel clawback failed:", err);
+  }
+
   return { handled: true, userId };
+}
+
+/**
+ * Asaas TRANSFER_* events: status updates on Pix payouts we created via
+ * /transfers (affiliate payouts). Maps Asaas event → affiliate_payouts.status.
+ *
+ * No user_id is involved — this matches our affiliate_payouts row by the
+ * transfer id stored in asaas_transfer_id. Partner is identified via the
+ * payout row's partner_id FK.
+ */
+async function handleTransferUpdate(
+  evt: AsaasWebhookEvent,
+  supabase: SupabaseClient,
+): Promise<DispatchResult> {
+  const t = evt.transfer;
+  if (!t?.id) return { handled: false, reason: "error", detail: "transfer payload missing" };
+
+  const status = mapTransferEventStatus(evt.event, t.status);
+  const completedAt =
+    status === "done" || status === "failed" || status === "cancelled"
+      ? new Date().toISOString()
+      : null;
+
+  const { data: payout, error: updErr } = await supabase
+    .from("affiliate_payouts")
+    .update({
+      status,
+      asaas_response: t as unknown as Record<string, unknown>,
+      error_message: t.failReason ?? null,
+      completed_at: completedAt,
+    })
+    .eq("asaas_transfer_id", t.id)
+    .select("id, partner_id, status")
+    .maybeSingle();
+
+  if (updErr) {
+    return { handled: false, reason: "error", detail: updErr.message };
+  }
+  if (!payout) {
+    // Transfer not in our table — probably from another integration or
+    // manual dashboard transfer. Acknowledge and move on.
+    return { handled: false, reason: "unhandled", detail: "transfer not tracked" };
+  }
+
+  // If the transfer failed AFTER we already marked commissions as paid,
+  // we should revert them so admin can retry. paid_via tag lets us find
+  // the exact rows tied to this transfer.
+  if (status === "failed" || status === "cancelled") {
+    await supabase
+      .from("affiliate_commissions")
+      .update({ status: "confirmed", paid_at: null, paid_via: null })
+      .eq("paid_via", `asaas_transfer:${t.id}`);
+  }
+
+  return {
+    handled: true,
+    userId: (payout as { partner_id: string }).partner_id,
+  };
+}
+
+function mapTransferEventStatus(
+  event: string,
+  asaasStatus: string,
+): "pending" | "processing" | "done" | "failed" | "cancelled" {
+  switch (event) {
+    case "TRANSFER_DONE":
+      return "done";
+    case "TRANSFER_FAILED":
+      return "failed";
+    case "TRANSFER_CANCELLED":
+      return "cancelled";
+    case "TRANSFER_BANK_PROCESSING":
+      return "processing";
+    case "TRANSFER_PENDING":
+      return "pending";
+    default:
+      // Fallback to the status field on the transfer payload
+      switch (asaasStatus) {
+        case "DONE":
+          return "done";
+        case "FAILED":
+          return "failed";
+        case "CANCELLED":
+          return "cancelled";
+        case "BANK_PROCESSING":
+          return "processing";
+        default:
+          return "pending";
+      }
+  }
 }
