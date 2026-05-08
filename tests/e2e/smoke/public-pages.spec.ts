@@ -8,7 +8,7 @@ test.describe("Public pages render without auth", () => {
     ).toContainText(/Entre pronto/i, { timeout: 10_000 });
     // Primary CTA in hero
     await expect(
-      page.getByRole("link", { name: /preparar minha próxima vaga/i }),
+      page.getByRole("link", { name: /entrar na entrevista preparado/i }),
     ).toBeVisible();
     // Footer copyright shows current company
     await expect(page.getByText(/PROAICIRCLE Ltda/i)).toBeVisible();
