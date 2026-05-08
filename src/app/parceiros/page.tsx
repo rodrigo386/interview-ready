@@ -2,8 +2,31 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { AppHeader } from "@/components/AppHeader";
 import { PartnerForm } from "@/components/affiliate/PartnerForm";
 import { createClient } from "@/lib/supabase/server";
+import { resolveAvatarUrl } from "@/lib/profile/avatar-url";
+import { logout } from "@/app/(app)/dashboard/actions";
+
+const PROFILE_COLS =
+  "full_name, avatar_url, avatar_updated_at, tier, subscription_status, preps_used_this_month, prep_credits, is_admin";
+
+type ProfileShape = {
+  full_name: string | null;
+  avatar_url: string | null;
+  avatar_updated_at: string | null;
+  tier: "free" | "pro" | "team";
+  subscription_status:
+    | "active"
+    | "overdue"
+    | "canceled"
+    | "expired"
+    | "none"
+    | null;
+  preps_used_this_month: number;
+  prep_credits: number;
+  is_admin: boolean;
+};
 
 export const metadata: Metadata = {
   title: "Programa de Parceiros — 30% recorrente vitalício",
@@ -21,21 +44,48 @@ export const metadata: Metadata = {
 export default async function ParceirosPage() {
   const sb = await createClient();
   const { data } = await sb.auth.getUser();
-  const isLoggedIn = !!data.user;
+  const user = data.user;
+  const isLoggedIn = !!user;
 
   let defaultName = "";
+  let profile: Partial<ProfileShape> = {};
   if (isLoggedIn) {
-    const { data: profile } = await sb
+    const { data: profileRaw } = await sb
       .from("profiles")
-      .select("full_name")
-      .eq("id", data.user!.id)
+      .select(PROFILE_COLS)
+      .eq("id", user!.id)
       .single();
-    defaultName = (profile as { full_name?: string } | null)?.full_name ?? "";
+    profile = (profileRaw ?? {}) as Partial<ProfileShape>;
+    defaultName = profile.full_name ?? "";
   }
+
+  const avatarUrl = isLoggedIn
+    ? resolveAvatarUrl(
+        {
+          email: user!.email!,
+          avatarPath: profile.avatar_url ?? null,
+          avatarUpdatedAt: profile.avatar_updated_at ?? null,
+        },
+        sb,
+      )
+    : "";
 
   return (
     <>
-      <LandingNavbar />
+      {isLoggedIn ? (
+        <AppHeader
+          email={user!.email!}
+          avatarUrl={avatarUrl}
+          isAdmin={profile.is_admin ?? false}
+          tier={profile.tier ?? "free"}
+          subscriptionStatus={profile.subscription_status ?? null}
+          prepsUsedThisMonth={profile.preps_used_this_month ?? 0}
+          prepCredits={profile.prep_credits ?? 0}
+          logoutAction={logout}
+        />
+      ) : (
+        <LandingNavbar />
+      )}
       <main className="bg-bg">
         <div className="mx-auto max-w-3xl px-6 py-14">
           <nav aria-label="Breadcrumb" className="mb-6 text-xs text-text-tertiary">
@@ -122,7 +172,7 @@ export default async function ParceirosPage() {
           </section>
         </div>
       </main>
-      <LandingFooter />
+      {!isLoggedIn && <LandingFooter />}
     </>
   );
 }
