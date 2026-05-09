@@ -52,33 +52,45 @@ export function JobDescriptionPicker({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3 text-xs">
+      <div
+        role="tablist"
+        aria-label="Como enviar a descrição da vaga"
+        className="grid grid-cols-2 gap-2 rounded-xl border border-line bg-surface p-1"
+      >
         <button
           type="button"
+          role="tab"
+          aria-selected={mode === "paste"}
           onClick={() => setMode("paste")}
           className={
             mode === "paste"
-              ? "font-semibold text-orange-700"
-              : "text-ink-3 hover:text-ink-2"
+              ? "flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition"
+              : "flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-2 transition hover:bg-bg"
           }
         >
+          <span aria-hidden>📋</span>
           Colar texto
         </button>
-        <span aria-hidden className="text-line">
-          ·
-        </span>
         <button
           type="button"
+          role="tab"
+          aria-selected={mode === "url"}
           onClick={() => setMode("url")}
           className={
             mode === "url"
-              ? "font-semibold text-orange-700"
-              : "text-ink-3 hover:text-ink-2"
+              ? "flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition"
+              : "flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-2 transition hover:bg-bg"
           }
         >
+          <span aria-hidden>🔗</span>
           Enviar link da vaga
         </button>
       </div>
+      <p className="text-xs text-ink-3">
+        {mode === "paste"
+          ? "Cole o texto completo da vaga abaixo."
+          : "Funciona melhor com páginas públicas (sem login)."}
+      </p>
 
       {mode === "paste" ? (
         <textarea
@@ -109,8 +121,8 @@ export function JobDescriptionPicker({
             </button>
           </div>
           <p className="text-xs text-ink-3">
-            Funciona melhor com páginas públicas (sem login). LinkedIn e Gupy
-            podem falhar. Se isso acontecer, use &quot;Colar texto&quot;.
+            LinkedIn e Gupy podem falhar (exigem login). Se isso acontecer,
+            use &quot;Colar texto&quot;.
           </p>
           {error && (
             <p role="alert" className="text-sm text-red-500">
