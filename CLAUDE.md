@@ -1,6 +1,6 @@
 # CLAUDE.md — PrepaVAGA / InterviewReady
 
-Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-04-27.
+Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-05-08.
 
 ## 0. Estado atual — produção ao vivo
 
@@ -12,8 +12,11 @@ PrepaVAGA está **em produção** desde 2026-04-27 em `https://prepavaga.com.br`
 - ✅ Páginas legais (`/termos`, `/privacidade`, `/lgpd`)
 - ✅ Rate limit Upstash · OG image dinâmico · Admin role + dashboard expandido
 - ✅ Custom domain workflow (DNS-only, sem proxy laranja na Cloudflare — proxy quebra SSL do Railway)
+- ✅ Programa de parceiros (30% recorrente vitalício, payout automático Pix via Asaas Transfer com saque mín R$100, anti-fraude self-referral por user/CPF/email, auto-clawback ao cancelar assinatura, emails transacionais via Resend)
+- ✅ SEO: sitemap + robots + JSON-LD por artigo + Featured Articles na landing + IndexNow ping (Bing/Yandex/Seznam) via botão `/admin`
+- ✅ Page-view analytics próprio (middleware → Supabase REST direto, dashboard `/admin` com 24h/7d/30d/all-time totais e únicos, bots filtrados por UA)
 
-Próximas alavancas são pós-launch (analytics, Sentry, sitemap, welcome email).
+Próximas alavancas pós-launch: Sentry, Plausible, sitemap automático, welcome email.
 
 ---
 
@@ -39,11 +42,14 @@ Próximas alavancas são pós-launch (analytics, Sentry, sitemap, welcome email)
 | UI | React 19 + Tailwind v4 (`@import "tailwindcss"` + `@config "../../tailwind.config.ts"`) |
 | Lang | TypeScript strict |
 | DB / Auth / Storage | Supabase (project `reslmtzofwczxrswulca`) |
-| AI — sections + ATS + CV rewrite | **Google Gemini** (`gemini-3.1-flash-lite-preview`) via `@google/generative-ai` |
-| AI — Company intel (com Google Search grounding) | **Google Gemini** (`gemini-3.1-flash-lite-preview`) via `@google/generative-ai` |
+| AI — sections + ATS + CV rewrite | **Google Gemini** (`gemini-3.1-flash-lite`) via `@google/generative-ai`. Fallback chain → `gemini-3-flash-preview` → `gemini-3.1-pro-preview` → **Cerebras** (`qwen-3-235b-a22b-instruct-2507` + `llama3.1-8b`) |
+| AI — Company intel (com Google Search grounding) | **Google Gemini** (`gemini-3.1-flash-lite`) via `@google/generative-ai` |
 | File parse | `pdf-parse@2` (PDF), `mammoth` (DOCX) |
 | PDF gen | `pdf-lib` |
 | URL fetch | Jina Reader (`https://r.jina.ai/<URL>`) — free, no key, handles JS-rendered pages |
+| Email transacional | **Resend** REST direto (não SDK), templates HTML inline. Auth flow ainda usa SMTP do Supabase. |
+| SEO ping | **IndexNow** REST → Bing/Yandex/Seznam, key file público em `/public/<KEY>.txt` |
+| Page-view analytics | Middleware Edge → Supabase REST direto, tabela `page_views`, agregação no `/admin` |
 | Tests | Vitest (unit/component) + Playwright (e2e) |
 | Deploy | Railway (Dockerfile, Node 20 Alpine, `node server.js`) |
 | Hosting | Railway service `facccb47-595b-4fd5-8272-dd54354043be` |
@@ -87,6 +93,8 @@ Defesa em camadas contra abuser persistente que fica abaixo do rate limit horár
 - `ASAAS_WEBHOOK_TOKEN` — token arbitrário (recomendo 32 chars). Tem que bater com o header `asaas-access-token` configurado no painel Asaas.
 - `ASAAS_BASE_URL` — `https://sandbox.asaas.com/api/v3` (sandbox) ou `https://api.asaas.com/v3` (prod). Tem default de sandbox no schema. **Não setar como string vazia** (Zod rejeita). **Em produção: usar `api.asaas.com/v3`.**
 - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` — opcionais. Habilitam rate limit em produção. Sem eles, o helper `rateLimit()` falha aberto (sem bloqueio).
+- `RESEND_API_KEY` — opcional, **scope "Sending Access" apenas** (NÃO confundir com SMTP key do Supabase Auth). Habilita emails transacionais de parceiro (aprovação/rejeição/payout). Sem ele, `sendEmail()` loga warn e segue.
+- `CEREBRAS_API_KEY` — opcional, free tier OpenAI-compatible. Último elo do fallback chain de IA quando todos os Geminis dão 503. Get em https://cloud.cerebras.ai
 - `MOCK_ANTHROPIC=1` — kill switch global de AI nos tests (nome legado, vale para Gemini agora)
 
 ### Setup Asaas (sandbox)
@@ -95,9 +103,30 @@ Defesa em camadas contra abuser persistente que fica abaixo do rate limit horár
 3. Integrações → Webhooks → criar webhook:
    - URL: `https://<app>.up.railway.app/api/asaas/webhook`
    - Header customizado: `asaas-access-token` = mesmo valor de `ASAAS_WEBHOOK_TOKEN`
-   - Eventos: `PAYMENT_RECEIVED`, `PAYMENT_CONFIRMED`, `PAYMENT_OVERDUE`, `PAYMENT_REFUNDED`, `SUBSCRIPTION_DELETED` (mínimo)
+   - Eventos pagamento: `PAYMENT_RECEIVED`, `PAYMENT_CONFIRMED`, `PAYMENT_OVERDUE`, `PAYMENT_REFUNDED`, `SUBSCRIPTION_DELETED`
+   - Eventos transfer (afiliados): `TRANSFER_DONE`, `TRANSFER_FAILED`, `TRANSFER_CANCELLED`, `TRANSFER_PENDING`, `TRANSFER_BANK_PROCESSING`
    - Status: **Ativo**
 4. Cartões de teste sandbox: `4444444444444448` aprova, `4444444444444441` recusa
+
+### Programa de parceiros
+
+30% recorrente vitalício. Cliente paga R$30/mês → parceiro recebe R$9/mês enquanto cliente for Pro ativo. Saldo acumula até atingir **R$ 100,00** (`MIN_PAYOUT_CENTS = 10000` em `src/lib/affiliate/payout.ts`); a partir desse threshold o admin clica **"Pagar via Pix"** em `/admin/affiliates` e o sistema dispara Asaas Transfer pra chave do parceiro automaticamente.
+
+**Fluxo do parceiro** (`/parceiros` → aplicação · `/partner` → painel):
+- `/parceiros`: landing pública + form. Se user logado já tem `affiliate_partners` row, redirect server-side pra `/partner`.
+- `/partner` (status-aware): pending → banner amarelo + ref code + próximos passos · suspended → distingue rejeitado (`approved_at IS NULL`) de banido · active → CodeBox + 7 cards earnings + barra progresso R$100 + Pix key card editável + histórico de comissões
+- Anti-fraude na atribuição (`src/lib/affiliate/attribution.ts`):
+  - **Block** mesmo `user_id`, mesmo CPF normalizado, email idêntico case-insensitive
+  - **Flag** mesmo domínio APENAS se NÃO for genérico (gmail/outlook/etc whitelist em `GENERIC_EMAIL_DOMAINS`)
+  - Dia 1 da janela de 7d: comissão fica `pending` · Após 7d: `confirmCommissions()` move pra `confirmed` · Pago: `paid` + `paid_at` + `paid_via=asaas_transfer:<id>` · Reembolsado/cancelado: `clawback`
+- Auto-clawback: webhook `SUBSCRIPTION_DELETED` em `webhook.ts` marca todas as commissions ainda não pagas (`pending`+`confirmed`) do user como `clawback`. Já pagas (`paid`) ficam — sem reverter Pix.
+- Webhook Asaas TRANSFER_*: atualiza `affiliate_payouts.status` em real-time. Se Transfer FALHA depois de marcarmos commissions como pagas, reverte `paid → confirmed` automaticamente pra admin retentar.
+
+**Emails transacionais** (`src/lib/email/partner-emails.ts`):
+- `sendPartnerApprovedEmail` (disparado por `approvePartner`)
+- `sendPartnerRejectedEmail` (disparado por `denyPartner`)
+- `sendPartnerPayoutSentEmail` (disparado por `payPartnerViaPix`, mascara chave Pix)
+- Templates HTML inline mínimos. Falhas de envio NÃO bloqueiam a action principal (try/catch + console.warn). Sem `RESEND_API_KEY`, log "would have sent" e segue.
 
 ---
 
@@ -242,17 +271,37 @@ CSS vars em `globals.css`: `--prep-red/--prep-yellow/--prep-green` (consumidas v
 ### Duplicate prep detection
 - `createPrep` server action hasheia (lowercase + collapse whitespace + SHA256) o JD recebido e compara com preps existentes do user. Match retorna `CreatePrepState.duplicate` em vez de gerar novo. UI renderiza panel amarelo com link "Abrir prep existente →". (PR #23)
 
+### Cerebras como último fallback de IA
+- Quando `gemini-3.1-flash-lite` + `gemini-3-flash-preview` + `gemini-3.1-pro-preview` dão 503/timeout, `callGeminiWithRetry` em `src/lib/ai/gemini.ts` cai pra `tryCerebrasFallback` em `src/lib/ai/cerebras.ts` (Cerebras OpenAI-compatible REST, free tier).
+- Cerebras NÃO suporta `responseSchema` nativo → adicionamos `JSON_STRICT_SUFFIX` no system prompt + `coerceCerebrasOutput()` que preenche IDs faltantes (cards do schema exigem `id`, Qwen-3 às vezes esquece).
+- Sem `CEREBRAS_API_KEY`, fallback é silenciosamente pulado e o erro original do Gemini propaga.
+
+### Page-view analytics no middleware (NÃO em /api/track)
+- Middleware Edge mata fire-and-forget após o response sair. Versão antiga (`fetch('/api/track').catch()`) não disparava confiavelmente.
+- Solução atual: `middleware.ts` chama Supabase REST direto com `await` + timeout 2s. Sem hop intermediário. Eliminamos `/api/track` (route deletada).
+- Se `getPageViewMetrics()` retorna `{ ok: false, reason: "table_missing" }` (Postgres `42P01`), `/admin` mostra banner amarelo dizendo pra rodar migration 0018.
+
+### Email transacional via Resend REST direto
+- Sem SDK — fetch puro pra `https://api.resend.com/emails`. Footprint zero, fácil de mockar.
+- From: `nao-responda@prepavaga.com.br` (apex, mesma do Supabase Auth SMTP). Reply-to: `prepavaga@prepavaga.com.br`.
+- `sendEmail()` em `src/lib/email/send.ts` é graceful: sem `RESEND_API_KEY`, retorna `{ ok: false, reason: "no_api_key" }` + log warn. Callers nunca devem deixar falha de email quebrar a action principal.
+
 ---
 
 ## 7. Schema Supabase (resumo)
 
 Tabelas em `public`:
 
-- **`profiles`** (extends `auth.users`): id (uuid), full_name, email, preferred_language (en|pt-br|es), tier (free|pro|team), preps_used_this_month, preps_reset_at, **avatar_url, avatar_updated_at** (#27), **asaas_customer_id, asaas_subscription_id, subscription_status (active|overdue|canceled|expired|none), subscription_renews_at, prep_credits** (migration 0009), **cpf_cnpj** (migration 0010), **preps_this_billing_cycle, billing_cycle_started_at** (migration 0014)
+- **`profiles`** (extends `auth.users`): id (uuid), full_name, email, preferred_language (en|pt-br|es), tier (free|pro|team), preps_used_this_month, preps_reset_at, **avatar_url, avatar_updated_at** (#27), **asaas_customer_id, asaas_subscription_id, subscription_status (active|overdue|canceled|expired|none), subscription_renews_at, prep_credits** (migration 0009), **cpf_cnpj** (migration 0010), **preps_this_billing_cycle, billing_cycle_started_at** (migration 0014), **address fields** (migration 0015), **is_admin** (migration 0011), **pix_key** (migration 0016, usado pra payouts de afiliado)
 - **`cvs`**: id (uuid), user_id, file_name, file_path, file_size_bytes, mime_type, parsed_text, **display_name** (#27)
-- **`prep_sessions`**: id (uuid), user_id, job_title, company_name, cv_text, cv_id (FK→cvs), job_description, language, prep_guide (jsonb), generation_status (pending|generating|complete|failed), error_message, ats_analysis (jsonb), ats_status (NULL|generating|complete|failed), ats_error_message, company_intel (jsonb), company_intel_status (pending|researching|complete|failed|skipped), company_intel_error, cv_rewrite (jsonb), cv_rewrite_status (pending|generating|complete|failed), cv_rewrite_error
+- **`prep_sessions`**: id (uuid), user_id, job_title, company_name, cv_text, cv_id (FK→cvs), job_description, language, prep_guide (jsonb), generation_status (pending|generating|complete|failed), error_message, ats_analysis (jsonb), ats_status (NULL|generating|complete|failed), ats_error_message, company_intel (jsonb), company_intel_status (pending|researching|complete|failed|skipped), company_intel_error, cv_rewrite (jsonb), cv_rewrite_status (pending|generating|complete|failed), cv_rewrite_error, **progress_step** (migration 0017, indica seção atual durante geração pra skeleton dinâmico)
 - **`payments`** (#37): id, user_id, asaas_payment_id (UNIQUE), kind (pro_subscription|prep_purchase), amount_cents, status (pending|confirmed|received|refunded|overdue|failed), billing_method, paid_at, raw_payload, created_at. RLS: user lê os próprios.
-- **`subscription_events`** (#37): id, user_id, asaas_event_id (UNIQUE — chave de idempotência), event_type, asaas_subscription_id, asaas_payment_id, raw_payload, received_at. RLS: service-role only.
+- **`subscription_events`** (#37): id, user_id (nullable — eventos TRANSFER_* não têm user), asaas_event_id (UNIQUE — chave de idempotência), event_type, asaas_subscription_id, asaas_payment_id, raw_payload, received_at. RLS: service-role only.
+- **`affiliate_partners`** (migration 0016): id, user_id (FK auth.users), code (UNIQUE, A-Z0-9- 2-40), display_name, bio, status (pending|active|suspended), commission_rate_pct (default 30), notes, approved_at, approved_by, created_at. RLS: parceiro lê própria row. Distinção rejected×suspended via `approved_at IS NULL`.
+- **`affiliate_referrals`** (migration 0016): profile_id (PK FK profiles, 1:1), partner_id, attributed_at, flagged_for_review, flag_reason. SEM SELECT policy (privacidade — usuário não sabe quem o indicou).
+- **`affiliate_commissions`** (migration 0016): id, partner_id, payment_id (UNIQUE — idempotência), amount_cents, status (pending|confirmed|paid|clawback), confirmed_at, paid_at, paid_via (`asaas_transfer:<id>` quando automático), created_at. RLS: parceiro lê suas commissions.
+- **`affiliate_payouts`** (migration 0019): id, partner_id, asaas_transfer_id (UNIQUE), amount_cents, pix_key + pix_key_type (CPF|CNPJ|EMAIL|PHONE|EVP), status (pending|processing|done|failed|cancelled), asaas_response (jsonb), error_message, triggered_by, created_at, completed_at. RLS: parceiro lê seus payouts (audit transparency).
+- **`page_views`** (migration 0018): id, visitor_id (cookie pv_vid 1y), path, user_agent, is_bot, created_at. Server-write only (sem policy authenticated).
 
 Storage buckets: `cvs` (privado, org-scoped por user_id), **`avatars`** (público, paths `{uid}/avatar.{ext}`). RLS ativado em todas tabelas.
 
@@ -274,9 +323,18 @@ Storage buckets: `cvs` (privado, org-scoped por user_id), **`avatars`** (públic
 | `/api/cv/[id]/download` | GET route | signed URL redirect pra CV original (privado) |
 | `/api/billing/checkout` | POST | cria customer/subscription/payment Asaas → retorna `checkoutUrl`. 422 `cpf_required` se profile.cpf_cnpj null e body sem cpfCnpj. |
 | `/api/billing/cancel` | POST | cancela subscription Asaas + marca `canceled` localmente |
-| `/api/asaas/webhook` | POST | receiver — valida `asaas-access-token` → `dispatchEvent` idempotente |
+| `/api/asaas/webhook` | POST | receiver — valida `asaas-access-token` → `dispatchEvent` idempotente. Trata PAYMENT_*, SUBSCRIPTION_DELETED (+ auto-clawback de commissions ainda não pagas), TRANSFER_* (atualiza affiliate_payouts.status; se falha após mark-paid, reverte commissions). |
 | `/profile`, `/profile/cvs`, `/profile/account` | server | área de perfil (avatar + CVs + plano + senha + delete) |
 | `/pricing` | server | página de planos: Pro R$30 (promo) + per-use R$10 |
+| `/parceiros` | server | landing pública do programa de parceiros + form de aplicação. Server-side redirect → `/partner` se user já tem `affiliate_partners` row. |
+| `/partner` | server | painel parceiro status-aware (pending/active/suspended/rejected). PayoutThresholdCard mostra barra R$X de R$100. |
+| `/partner` | server action `updatePixKey` | edita pix_key no profile |
+| `/admin/affiliates` | server | tabs: applications/active/suspended/metrics. Botão "Pagar via Pix" desabilitado abaixo de R$100, link "Marcar pago manualmente" como fallback |
+| `/admin/affiliates` | server actions `approvePartner`/`denyPartner`/`suspendPartner` | dispara emails Resend |
+| `/admin/affiliates` | server action `payPartnerViaPix` | guarda payout row → Asaas Transfer → marca commissions paid → email parceiro |
+| `/admin/affiliates` | server action `markAllPayablePaid` | fluxo manual de fallback |
+| `/admin` | server action `submitIndexNowAction` | submete URLs públicas pro IndexNow (Bing/Yandex/Seznam) via fetch direto |
+| `/<INDEXNOW_KEY>.txt` | static (public/) | arquivo de verificação de domínio do IndexNow |
 
 ---
 
@@ -302,29 +360,24 @@ Vitest config: `environment: "node"` por default, jsdom só em `src/components/*
 
 ---
 
-## 10. Histórico recente (PRs #14-#42, abril 2026)
+## 10. Histórico recente
 
-Em ordem cronológica, mais recente embaixo:
+Trabalho organizado por bloco temático, mais recente em cima. Detalhes específicos em `git log` — aqui só o "porquê" pra navegação.
 
-| PR | Descrição |
+**Maio 2026 — Sprint parceiros + SEO + analytics:**
+
+| Bloco | O que entrou |
 |---|---|
-| #14-#25 | (anteriores) Opção A redesign · DOM polyfill · migração sections/CV rewrite p/ Gemini · PrepSidebar · JD via URL · PrepDetails · PT-BR · Export PDF · duplicate JD · schema bumps |
-| #27 | **Profile area** — `/profile` (Perfil/CVs/Conta), avatar (Gravatar fallback) + bucket `avatars`, CV mgmt unificado, change password, delete account via admin client. `(app)/` route group. Migration 0008. |
-| #28 | **Toda IA migrada pra Gemini** — ATS + company intel saem do Anthropic Sonnet. `anthropic.ts` deletado, `@anthropic-ai/sdk` removido das deps, `ANTHROPIC_API_KEY` removido do env. Company intel via `googleSearch`+JSON-no-prompt. |
-| #29 | **Visão geral redesign** — PrepDetails accordion → 3-card grid (CompanyCard/JobCard/IntelCard). Glassdoor + Recrutador removidos. |
-| #30 | `rerunCompanyIntel` action + botão "Pesquisar empresa" + prompt focado em últimos 6 meses |
-| #31 | Grounding fallback chain (`googleSearch` → `googleSearchRetrieval` → ungrounded) + JD parser com bullets/headings |
-| #32 | Schema fixes: `companyIntel.overview` 600→2000 + `questions_this_creates` 200→400 + JD URL cleanup via Gemini |
-| #33 | Strip `source_url` (Vertex redirect URLs gigantes quebravam parser) + `extractJsonObjects` retorna todos blocos + remove "A pesquisa não rodou" |
-| #34 | Company intel **PT-BR** via prompt + simplifica banner prep completo (único botão Exportar PDF) |
-| #35 | PDF emoji crash — `sanitize()` em `prep-summary-pdf.ts` |
-| #36 | ATS determinístico — temp=0 + topK=1 + rubric explícita de 6 steps |
-| #37 | **Billing & paywall (Asaas)** — Free 1/30d · Pro R$30/mês · Per-use R$10. Migration 0009 (profiles cols + payments + subscription_events). Hosted checkout, idempotent webhook, hard-block + dual-CTA modal no createPrep. |
-| #38 | CPF migration 0010 + 422 cpf_required + prompt no checkout (Asaas exige cpfCnpj) |
-| #39 | Stepper clicável + MobileStepNav (sticky bottom, 2 botões) + breadcrumb com step name |
-| #40 | CPF no signup form + `asaas.updateCustomer` (PATCH cpfCnpj em customers existentes) |
-| #41 | Mobile nav: "🏠 Visão geral" sempre visível em sub-rotas + segments stepper maiores (h-3) |
-| #42 | Página `/pricing` (Pro R$50→R$30 promo + per-use R$10). FreeTierBanner + UpgradeModal Pro CTA agora vão pra /pricing. |
+| Affiliate Sprint 1 (#9a91b29) | Emails Resend (aprovado/rejeitado/payout), webhook TRANSFER_*, anti-fraude self-referral hardened (CPF + email idêntico → block; domínio corporativo → flag; gmail/outlook nunca flag), auto-clawback ao SUBSCRIPTION_DELETED |
+| Payout Phase 1 (#44f6211) | Migration 0019 (`affiliate_payouts`), Asaas Transfer integration, `payPartnerViaPix` action, R$100 min threshold, PixKey type detection (CPF/CNPJ/EMAIL/PHONE/EVP), PayoutThresholdCard com barra progresso |
+| SEO push (#1fd53ec, #219e987) | FeaturedArticles na landing (artigos a depth-1 da home pra ajudar indexação), IndexNow ping pra Bing/Yandex/Seznam via botão `/admin`, key file público em `/public/<KEY>.txt` |
+| Analytics próprio (#ac429c8) | Migration 0018 (`page_views`), middleware Edge → Supabase REST direto (eliminou /api/track + fire-and-forget unreliable), `/admin` mostra 24h/7d/30d/all-time totais e únicos com fallback amarelo se tabela faltar |
+| Partner UX (#6c679d5, #6e1dc1b) | `/parceiros` redirect → `/partner` se já aplicou, `/partner` status-aware (rejected×suspended via `approved_at`), AppHeader em `/parceiros` quando logado (era LandingNavbar e parecia "deslogado") |
+| Header consistency (#a2d80b9, #c627fe8) | AppHeader em `/prep/[id]` e `/prep/new` (era inline + saía do shell). Redesign B do `/prep/new` (hero + 3 cards numerados + sticky CTA orange) |
+| Affiliate program base (PR #16, migration 0016) | Tabelas `affiliate_partners` + `affiliate_referrals` + `affiliate_commissions`, ApprovalDialog, attribuição cookie pv_ref 90d, comissão 30% recorrente vitalícia, janela 7d pending→confirmed |
+| AI fallback resilience (várias) | Cerebras como último recurso (`qwen-3-235b-a22b-instruct-2507` + `llama3.1-8b`), `gemini-3.1-flash-lite` GA + `gemini-3-flash-preview` + `gemini-3.1-pro-preview` chain, partial success policy MIN_SECTIONS_TO_SHIP=3, JSON_STRICT_SUFFIX + coerceCerebrasOutput pra schema adherence, max_output_tokens bumps (sections 12k, ATS 16k, CV 16k) |
+
+**Abril 2026 — PRs #14-#42 (consolidado em git log):** Opção A redesign · migração toda IA pra Gemini · Profile area · Billing Asaas + paywall · CPF no signup · `/pricing` · custom domain `prepavaga.com.br` · Resend SMTP no Supabase Auth · Asaas produção · admin dashboard com 6 páginas · soft cap mensal Pro · RLS hardening (migration 0011) · admin perf indexes (0012) · webhook handlers atomic SECURITY DEFINER (0013) · profile address (0015).
 
 ---
 
@@ -341,6 +394,11 @@ Em ordem cronológica, mais recente embaixo:
 - **2 lint warnings** em `src/lib/ai/prompts/section-generator.ts` — pré-existentes.
 - **E2E em CI**: smoke tests (`tests/e2e/smoke/`) rodam sempre via GitHub Actions e cobrem páginas públicas (landing, signup, login, /termos, /privacidade, /lgpd, /icon.svg, /opengraph-image). Auth flow tests (`tests/e2e/auth-required/`) só rodam quando `STAGING_SUPABASE_URL` é setada como GitHub secret — projeto Supabase staging precisa ter email confirmation **OFF**. Especificações: `pnpm test:e2e:smoke` ou `pnpm test:e2e:auth`. Test fixtures usam CPF `12345678909` (formato válido, não precisa ser real).
 - **`server-only` package** não está no `node_modules` real (Next 15 não re-exporta). Vitest aliasa pra stub vazio (`vitest.server-only-stub.ts`). Production funciona porque Next bundler resolve antes.
+- **MCP Supabase frequentemente desconectado** nesta sessão (Anthropic-side). Quando precisar aplicar migration: cole o SQL no Supabase SQL Editor manualmente. CLI `supabase db push` não tá auth'd local (sem `SUPABASE_ACCESS_TOKEN`). DB password também não está no `.env.local`.
+- **Migrations não aplicadas automaticamente:** o CI Supabase Preview tenta rodar mas falha por colisão; aplicação real precisa ser manual. Migrations pendentes pra aplicar agora: **0019** (`affiliate_payouts` — necessária pro botão "Pagar via Pix" funcionar). 0018 (`page_views`) já aplicada em prod.
+- **Env vars novas pra setar no Railway:** `RESEND_API_KEY` (emails parceiro — sem ele só log warn) e `CEREBRAS_API_KEY` (último fallback de IA — sem ele cadeia para no último Gemini).
+- **Eventos TRANSFER_* a habilitar no painel Asaas** pra webhook funcionar end-to-end: TRANSFER_DONE, TRANSFER_FAILED, TRANSFER_CANCELLED, TRANSFER_PENDING, TRANSFER_BANK_PROCESSING.
+- **Saldo da conta Asaas:** `payPartnerViaPix` exige saldo na conta Asaas (alimentado pelos pagamentos recebidos). Cada Transfer Pix tem taxa ~R$1,99 deduzida do saldo (parceiro recebe valor cheio). Não saque tudo da conta Asaas antes do dia de pagar parceiros.
 
 ---
 
