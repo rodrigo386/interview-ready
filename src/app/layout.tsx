@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { PageViewTracker } from "@/components/PageViewTracker";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -121,6 +122,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSONLD) }}
         />
         <ThemeProvider>{children}</ThemeProvider>
+        <PageViewTracker />
       </body>
     </html>
   );

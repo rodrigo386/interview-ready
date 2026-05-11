@@ -2,9 +2,56 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Page-view metrics for the admin dashboard. Inserts happen directly from
- * middleware.ts via Supabase REST (Edge-compatible). This file just reads.
+ * Page-view tracking helpers. Inserts happen via /api/track (Node runtime),
+ * called from the PageViewTracker client component on mount + route change.
+ * Reads (getPageViewMetrics, getPageViewDiagnostic) serve /admin.
  */
+
+const BOT_PATTERNS = [
+  /bot/i,
+  /crawl/i,
+  /spider/i,
+  /scrape/i,
+  /headless/i,
+  /lighthouse/i,
+  /pingdom/i,
+  /uptimerobot/i,
+  /facebookexternalhit/i,
+  /whatsapp/i,
+  /twitterbot/i,
+  /linkedinbot/i,
+  /slackbot/i,
+  /discordbot/i,
+  /telegrambot/i,
+];
+
+export function isBot(userAgent: string | null | undefined): boolean {
+  if (!userAgent) return true; // no UA = likely curl/bot
+  return BOT_PATTERNS.some((p) => p.test(userAgent));
+}
+
+export async function trackPageView(opts: {
+  visitorId: string;
+  path: string;
+  userAgent: string | null;
+}): Promise<void> {
+  try {
+    const sb = createAdminClient();
+    const { error } = await sb.from("page_views").insert({
+      visitor_id: opts.visitorId,
+      path: opts.path,
+      user_agent: opts.userAgent?.slice(0, 500) ?? null,
+      is_bot: isBot(opts.userAgent),
+    });
+    if (error) {
+      console.warn(
+        `[analytics] page_views insert failed: ${error.code ?? "?"} ${error.message}`,
+      );
+    }
+  } catch (err) {
+    console.warn("[analytics] trackPageView failed:", err);
+  }
+}
 
 export type PageViewMetrics = {
   total_24h: number;
