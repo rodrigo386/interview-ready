@@ -79,6 +79,9 @@ export async function middleware(request: NextRequest) {
 const BOT_RE =
   /bot|crawl|spider|scrape|headless|lighthouse|pingdom|uptimerobot|facebookexternalhit|whatsapp|twitterbot|linkedinbot|slackbot|discordbot|telegrambot/i;
 
+// One-shot warning so we don't spam logs on every request when env is broken
+let envWarned = false;
+
 async function trackPageViewFromMiddleware(opts: {
   visitorId: string;
   path: string;
@@ -86,7 +89,16 @@ async function trackPageViewFromMiddleware(opts: {
 }): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return;
+  if (!url || !key) {
+    if (!envWarned) {
+      envWarned = true;
+      console.warn(
+        `[analytics] missing env: url=${url ? "ok" : "MISSING"} key=${key ? "ok" : "MISSING"}. ` +
+          `Tracking disabled. Verify NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in Railway.`,
+      );
+    }
+    return;
+  }
 
   // 2s budget — if Supabase is slow, drop the row rather than block the page.
   const ctrl = new AbortController();

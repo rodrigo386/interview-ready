@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getAdminOverview } from "@/lib/admin/metrics";
-import { getPageViewMetrics } from "@/lib/analytics/page-views";
+import {
+  getPageViewMetrics,
+  getPageViewDiagnostic,
+} from "@/lib/analytics/page-views";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { IndexNowButton } from "@/components/admin/IndexNowButton";
 
@@ -62,11 +65,13 @@ async function getPartnerStats(): Promise<{
 }
 
 export default async function AdminPage() {
-  const [overview, pageViewsResult, partnerStats] = await Promise.all([
-    getAdminOverview(),
-    getPageViewMetrics(),
-    getPartnerStats(),
-  ]);
+  const [overview, pageViewsResult, partnerStats, pageViewDiagnostic] =
+    await Promise.all([
+      getAdminOverview(),
+      getPageViewMetrics(),
+      getPartnerStats(),
+      getPageViewDiagnostic(),
+    ]);
   const pageViews = pageViewsResult.ok ? pageViewsResult.metrics : null;
   const pageViewsError = pageViewsResult.ok ? null : pageViewsResult;
 
@@ -135,6 +140,55 @@ export default async function AdminPage() {
         <p className="mt-2 text-xs text-text-tertiary">
           Bots filtrados por user-agent. Visitantes únicos identificados via cookie pv_vid (1 ano).
         </p>
+
+        {pageViewDiagnostic && (
+          <details className="mt-4 rounded-xl border border-neutral-200 bg-bg p-4 text-sm dark:border-zinc-800">
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-text-secondary">
+              Diagnóstico de tracking (clique para expandir)
+            </summary>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <DiagKpi label="Rows total" value={pageViewDiagnostic.totalRowsAllTime} />
+              <DiagKpi label="Última 1h" value={pageViewDiagnostic.totalRowsLastHour} />
+              <DiagKpi label="Humanos" value={pageViewDiagnostic.humanRows} />
+              <DiagKpi label="Bots" value={pageViewDiagnostic.botRows} />
+            </div>
+            <div className="mt-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                Últimos 5 registros (sem filtro)
+              </p>
+              {pageViewDiagnostic.latestRows.length === 0 ? (
+                <p className="mt-2 text-xs text-text-tertiary">
+                  Nenhum row na tabela — middleware não está escrevendo. Verifica
+                  envs <code>NEXT_PUBLIC_SUPABASE_URL</code> e{" "}
+                  <code>SUPABASE_SERVICE_ROLE_KEY</code> no Railway, ou logs
+                  Railway pra warnings <code>[analytics]</code>.
+                </p>
+              ) : (
+                <ul className="mt-2 space-y-1 font-mono text-[11px]">
+                  {pageViewDiagnostic.latestRows.map((r, i) => (
+                    <li
+                      key={i}
+                      className="rounded bg-bg px-2 py-1 dark:bg-zinc-900"
+                    >
+                      <span className={r.is_bot ? "text-yellow-700" : "text-green-700"}>
+                        {r.is_bot ? "BOT" : "HUMAN"}
+                      </span>{" "}
+                      · {r.path} ·{" "}
+                      <span className="text-text-tertiary">
+                        {new Date(r.created_at).toLocaleString("pt-BR")}
+                      </span>
+                      {r.user_agent_truncated && (
+                        <div className="mt-0.5 truncate text-text-muted">
+                          UA: {r.user_agent_truncated}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </details>
+        )}
       </Section>
 
       <Section title="SEO · IndexNow">
@@ -314,6 +368,19 @@ function KPI({
         {unique.toLocaleString("pt-BR")} únicos
       </p>
     </article>
+  );
+}
+
+function DiagKpi({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-neutral-200 bg-bg p-3 dark:border-zinc-800">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+        {label}
+      </p>
+      <p className="mt-1 text-lg font-semibold text-text-primary">
+        {value.toLocaleString("pt-BR")}
+      </p>
+    </div>
   );
 }
 

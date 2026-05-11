@@ -104,3 +104,70 @@ async function countWindow(
   const set = new Set(data.map((r) => (r as { visitor_id: string }).visitor_id));
   return { total, unique: set.size, error: null };
 }
+
+export type PageViewDiagnostic = {
+  totalRowsAllTime: number;
+  totalRowsLastHour: number;
+  botRows: number;
+  humanRows: number;
+  latestRows: Array<{
+    path: string;
+    is_bot: boolean;
+    user_agent_truncated: string | null;
+    created_at: string;
+  }>;
+};
+
+/**
+ * Raw diagnostic data — ignores is_bot filter and shows the 5 most recent
+ * rows so admin can see if writes are reaching the table at all and whether
+ * the bot detection is over-flagging.
+ *
+ * Surfaced in /admin under the "Diagnóstico de tracking" section to make
+ * silent failures debuggable without digging through Railway logs.
+ */
+export async function getPageViewDiagnostic(): Promise<PageViewDiagnostic | null> {
+  try {
+    const sb = createAdminClient();
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    const [allRes, lastHourRes, latestRes] = await Promise.all([
+      sb.from("page_views").select("is_bot"),
+      sb
+        .from("page_views")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", oneHourAgo),
+      sb
+        .from("page_views")
+        .select("path, is_bot, user_agent, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5),
+    ]);
+
+    if (allRes.error) return null;
+
+    const rows = (allRes.data ?? []) as Array<{ is_bot: boolean }>;
+    const botRows = rows.filter((r) => r.is_bot).length;
+    const humanRows = rows.length - botRows;
+
+    return {
+      totalRowsAllTime: rows.length,
+      totalRowsLastHour: lastHourRes.count ?? 0,
+      botRows,
+      humanRows,
+      latestRows: ((latestRes.data ?? []) as Array<{
+        path: string;
+        is_bot: boolean;
+        user_agent: string | null;
+        created_at: string;
+      }>).map((r) => ({
+        path: r.path,
+        is_bot: r.is_bot,
+        user_agent_truncated: r.user_agent ? r.user_agent.slice(0, 80) : null,
+        created_at: r.created_at,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
