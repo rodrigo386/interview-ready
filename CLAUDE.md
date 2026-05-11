@@ -1,6 +1,6 @@
 # CLAUDE.md — PrepaVAGA / InterviewReady
 
-Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-05-08.
+Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-05-11.
 
 ## 0. Estado atual — produção ao vivo
 
@@ -284,6 +284,11 @@ CSS vars em `globals.css`: `--prep-red/--prep-yellow/--prep-green` (consumidas v
 - `/admin` tem section "Visitas ao site" com 4 KPIs (24h/7d/30d/all-time, totais + únicos) + diagnóstico expandível com últimos 5 rows raw + botão "Testar tracking" (insere via admin client direto, valida tabela/RLS isoladamente).
 - Se `getPageViewMetrics()` retorna `{ ok: false, reason: "table_missing" }` (Postgres `42P01`), `/admin` mostra banner amarelo dizendo pra rodar migration 0018.
 
+### SEO JSON-LD e OG image
+- `/pricing` usa **só** `Service` JSON-LD (não `Product`). Schema Product exigia `aggregateRating` + `review` — sem reviews reais, fingir nota viola Google guidelines. Service comunica oferta sem exigir ratings.
+- `/opengraph-image` (e `/twitter-image` futuro) estão no `robots.ts` PRIVATE_PATHS disallow + response header `X-Robots-Tag: noindex`. Sem isso, GSC marca como "Crawled - currently not indexed" porque a route é uma imagem (não landing page).
+- `/sobre` existe pra fechar 404 do GSC (Google tinha indexed URL externa apontando lá) e reforçar E-E-A-T. JSON-LD `AboutPage` + `Organization`, 6 seções (por que existe, como funciona, quem está atrás, preço, privacidade, contato), linkado do footer LEGAL e do sitemap.
+
 ### Email transacional via Resend REST direto
 - Sem SDK — fetch puro pra `https://api.resend.com/emails`. Footprint zero, fácil de mockar.
 - From: `nao-responda@prepavaga.com.br` (apex, mesma do Supabase Auth SMTP). Reply-to: `prepavaga@prepavaga.com.br`.
@@ -338,6 +343,8 @@ Storage buckets: `cvs` (privado, org-scoped por user_id), **`avatars`** (públic
 | `/admin/affiliates` | server action `markAllPayablePaid` | fluxo manual de fallback |
 | `/admin` | server action `submitIndexNowAction` | submete URLs públicas pro IndexNow (Bing/Yandex/Seznam) via fetch direto |
 | `/<INDEXNOW_KEY>.txt` | static (public/) | arquivo de verificação de domínio do IndexNow |
+| `/sobre` | server (static) | página "Sobre a PrepaVaga" com JSON-LD AboutPage. Existe pra fechar 404 GSC e reforçar E-E-A-T. |
+| `/api/track` | POST (Node runtime) | recebe `{ visitorId, path }` do `<PageViewTracker />` client beacon, insere via admin client. 204 sempre. |
 
 ---
 
@@ -371,6 +378,9 @@ Trabalho organizado por bloco temático, mais recente em cima. Detalhes específ
 
 | Bloco | O que entrou |
 |---|---|
+| Analytics client beacon (#5978e3d) | Removeu tracking do middleware (Edge não expunha service-role key no Railway). `<PageViewTracker />` client component + `/api/track` Node route. Tracking confirmado funcionando após o switch. |
+| SEO GSC fixes (#68f39fe) | Dropei `Product` JSON-LD do `/pricing` (exigia review + aggregateRating). `/opengraph-image` no robots disallow + X-Robots-Tag noindex. Nova página `/sobre` (AboutPage JSON-LD, 6 seções, linkada no footer + sitemap + IndexNow) pra fechar 404 do GSC. |
+| Prep/new picker fix (#262b009) | Toggle "Colar texto · Enviar link" virou tab group em pill container com ícones (📋/🔗) — antes era 2 links pequenos separados por "·" e usuário não notava o link mode. |
 | Affiliate Sprint 1 (#9a91b29) | Emails Resend (aprovado/rejeitado/payout), webhook TRANSFER_*, anti-fraude self-referral hardened (CPF + email idêntico → block; domínio corporativo → flag; gmail/outlook nunca flag), auto-clawback ao SUBSCRIPTION_DELETED |
 | Payout Phase 1 (#44f6211) | Migration 0019 (`affiliate_payouts`), Asaas Transfer integration, `payPartnerViaPix` action, R$100 min threshold, PixKey type detection (CPF/CNPJ/EMAIL/PHONE/EVP), PayoutThresholdCard com barra progresso |
 | SEO push (#1fd53ec, #219e987) | FeaturedArticles na landing (artigos a depth-1 da home pra ajudar indexação), IndexNow ping pra Bing/Yandex/Seznam via botão `/admin`, key file público em `/public/<KEY>.txt` |
@@ -398,10 +408,11 @@ Trabalho organizado por bloco temático, mais recente em cima. Detalhes específ
 - **E2E em CI**: smoke tests (`tests/e2e/smoke/`) rodam sempre via GitHub Actions e cobrem páginas públicas (landing, signup, login, /termos, /privacidade, /lgpd, /icon.svg, /opengraph-image). Auth flow tests (`tests/e2e/auth-required/`) só rodam quando `STAGING_SUPABASE_URL` é setada como GitHub secret — projeto Supabase staging precisa ter email confirmation **OFF**. Especificações: `pnpm test:e2e:smoke` ou `pnpm test:e2e:auth`. Test fixtures usam CPF `12345678909` (formato válido, não precisa ser real).
 - **`server-only` package** não está no `node_modules` real (Next 15 não re-exporta). Vitest aliasa pra stub vazio (`vitest.server-only-stub.ts`). Production funciona porque Next bundler resolve antes.
 - **MCP Supabase frequentemente desconectado** nesta sessão (Anthropic-side). Quando precisar aplicar migration: cole o SQL no Supabase SQL Editor manualmente. CLI `supabase db push` não tá auth'd local (sem `SUPABASE_ACCESS_TOKEN`). DB password também não está no `.env.local`.
-- **Migrations não aplicadas automaticamente:** o CI Supabase Preview tenta rodar mas falha por colisão; aplicação real precisa ser manual. Migrations pendentes pra aplicar agora: **0019** (`affiliate_payouts` — necessária pro botão "Pagar via Pix" funcionar). 0018 (`page_views`) já aplicada em prod.
+- **Migrations não aplicadas automaticamente:** o CI Supabase Preview tenta rodar mas falha por colisão; aplicação real precisa ser manual. Aplicadas em prod até o momento: 0018 (page_views) e 0019 (affiliate_payouts).
 - **Env vars novas pra setar no Railway:** `RESEND_API_KEY` (emails parceiro — sem ele só log warn) e `CEREBRAS_API_KEY` (último fallback de IA — sem ele cadeia para no último Gemini).
 - **Eventos TRANSFER_* a habilitar no painel Asaas** pra webhook funcionar end-to-end: TRANSFER_DONE, TRANSFER_FAILED, TRANSFER_CANCELLED, TRANSFER_PENDING, TRANSFER_BANK_PROCESSING.
 - **Saldo da conta Asaas:** `payPartnerViaPix` exige saldo na conta Asaas (alimentado pelos pagamentos recebidos). Cada Transfer Pix tem taxa ~R$1,99 deduzida do saldo (parceiro recebe valor cheio). Não saque tudo da conta Asaas antes do dia de pagar parceiros.
+- **Edge middleware no Railway standalone**: env vars privadas (sem prefixo `NEXT_PUBLIC_`) NÃO chegam confiavelmente no Edge runtime. Sintoma: silent failure de qualquer fetch que use `SUPABASE_SERVICE_ROLE_KEY` ou similar a partir do middleware. Workaround: tira lógica que precisa de service-role do middleware e move pra API route Node (foi assim que page-view analytics passou pro client beacon). `runtime: 'nodejs'` no middleware config é silenciosamente ignorado em Next 15.5 sem `experimental.nodeMiddleware: true` — flag ainda não tem typings estáveis.
 
 ---
 
