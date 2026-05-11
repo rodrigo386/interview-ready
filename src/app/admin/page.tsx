@@ -7,6 +7,7 @@ import {
 } from "@/lib/analytics/page-views";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { IndexNowButton } from "@/components/admin/IndexNowButton";
+import { TestTrackingButton } from "@/components/admin/TestTrackingButton";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -151,6 +152,9 @@ export default async function AdminPage() {
               <DiagKpi label="Última 1h" value={pageViewDiagnostic.totalRowsLastHour} />
               <DiagKpi label="Humanos" value={pageViewDiagnostic.humanRows} />
               <DiagKpi label="Bots" value={pageViewDiagnostic.botRows} />
+            </div>
+            <div className="mt-4">
+              <TestTrackingButton />
             </div>
             <div className="mt-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">

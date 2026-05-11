@@ -127,3 +127,40 @@ export async function revokeProAction(userId: string): Promise<AdminActionResult
   revalidatePath("/admin/users");
   return { ok: true };
 }
+
+export type TestTrackingResult =
+  | { ok: true; rowId: string }
+  | { ok: false; error: string; code?: string };
+
+/**
+ * Diagnostic: inserts a synthetic row into page_views via the Node-runtime
+ * admin client. Bypasses middleware entirely.
+ *
+ * - If this succeeds AND middleware still doesn't write → problem is Edge-
+ *   runtime (env vars not reaching middleware, or middleware not even firing).
+ * - If this fails → problem is in the table (RLS blocking writes, schema
+ *   mismatch, service_role key invalid).
+ */
+export async function testTracking(): Promise<TestTrackingResult> {
+  await requireAdmin();
+  const sb = createAdminClient();
+  const { data, error } = await sb
+    .from("page_views")
+    .insert({
+      visitor_id: `test-${crypto.randomUUID()}`,
+      path: "/admin/test-tracking",
+      user_agent: "PrepaVaga Admin Test Button",
+      is_bot: false,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    return {
+      ok: false,
+      error: error.message,
+      code: (error as { code?: string }).code,
+    };
+  }
+  revalidatePath("/admin");
+  return { ok: true, rowId: (data as { id: string }).id };
+}

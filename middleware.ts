@@ -28,7 +28,19 @@ function shouldTrack(pathname: string): boolean {
   return !TRACK_SKIP_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
+// Sample logging: one in every N requests gets a debug log to confirm
+// middleware is firing without flooding Railway logs.
+let requestCounter = 0;
+const LOG_EVERY = 10;
+
 export async function middleware(request: NextRequest) {
+  requestCounter++;
+  if (requestCounter % LOG_EVERY === 1) {
+    console.log(
+      `[middleware] fired path=${request.nextUrl.pathname} (sample #${requestCounter})`,
+    );
+  }
+
   // Affiliate ref capture: if URL has ?ref=CODE matching our format, set
   // cookie and redirect to clean URL (without ref param). Cookie persists 90
   // days; on signup, attribution is read from cookie and the user is linked
@@ -134,6 +146,11 @@ async function trackPageViewFromMiddleware(opts: {
 }
 
 export const config = {
+  // Force Node.js runtime (default is Edge). Edge runtime on Railway's
+  // standalone server wasn't exposing SUPABASE_SERVICE_ROLE_KEY, breaking
+  // page-view tracking. Requires `experimental.nodeMiddleware: true` in
+  // next.config.ts.
+  runtime: "nodejs",
   matcher: [
     /*
      * Match all request paths except for:
