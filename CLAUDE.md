@@ -276,9 +276,12 @@ CSS vars em `globals.css`: `--prep-red/--prep-yellow/--prep-green` (consumidas v
 - Cerebras NÃO suporta `responseSchema` nativo → adicionamos `JSON_STRICT_SUFFIX` no system prompt + `coerceCerebrasOutput()` que preenche IDs faltantes (cards do schema exigem `id`, Qwen-3 às vezes esquece).
 - Sem `CEREBRAS_API_KEY`, fallback é silenciosamente pulado e o erro original do Gemini propaga.
 
-### Page-view analytics no middleware (NÃO em /api/track)
-- Middleware Edge mata fire-and-forget após o response sair. Versão antiga (`fetch('/api/track').catch()`) não disparava confiavelmente.
-- Solução atual: `middleware.ts` chama Supabase REST direto com `await` + timeout 2s. Sem hop intermediário. Eliminamos `/api/track` (route deletada).
+### Page-view analytics via client beacon (NÃO middleware)
+- **Histórico:** tentei direct-REST do middleware (Edge não expõe `SUPABASE_SERVICE_ROLE_KEY` no Railway standalone → silent failure) e `runtime: 'nodejs'` no middleware (ignorado no Next 15.5 sem flag experimental).
+- **Solução atual:** `<PageViewTracker />` em `src/components/PageViewTracker.tsx` é client component no root layout. `useEffect` + `usePathname()` dispara fetch pro `/api/track` em mount inicial + toda navegação client-side. `/api/track` roda em **Node runtime** com admin client (env sempre disponível).
+- Cookie `pv_vid` (1 ano) gerado/lido client-side. Paths internos (/admin, /dashboard, /profile, /prep, /partner) filtrados client-side pra economizar round-trip.
+- Trade-off: bots sem JS não contam — mas `isBot()` filtraria mesmo, então o número de "humanos" fica mais limpo.
+- `/admin` tem section "Visitas ao site" com 4 KPIs (24h/7d/30d/all-time, totais + únicos) + diagnóstico expandível com últimos 5 rows raw + botão "Testar tracking" (insere via admin client direto, valida tabela/RLS isoladamente).
 - Se `getPageViewMetrics()` retorna `{ ok: false, reason: "table_missing" }` (Postgres `42P01`), `/admin` mostra banner amarelo dizendo pra rodar migration 0018.
 
 ### Email transacional via Resend REST direto
