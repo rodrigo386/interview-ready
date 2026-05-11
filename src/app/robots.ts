@@ -15,6 +15,12 @@ const PRIVATE_PATHS = [
   "/welcome/",
   "/forgot-password",
   "/reset",
+  // OG image routes — Next.js generates them at /opengraph-image and
+  // /artigos/<slug>/opengraph-image. They're served via metadata, not meant
+  // for direct indexing. Without disallow, Google crawls them and shows
+  // "currently not indexed" warnings in GSC.
+  "/opengraph-image",
+  "/twitter-image",
 ];
 
 const AI_BOTS = [

@@ -151,6 +151,13 @@ export default async function OpengraphImage() {
     {
       ...size,
       ...(fonts ? { fonts } : {}),
+      headers: {
+        // Tell crawlers not to index this raw image URL — it's referenced
+        // via OG meta tags from real pages, not meant to be a landing page.
+        // Without this, GSC reports the URL as "Crawled - currently not indexed".
+        "X-Robots-Tag": "noindex",
+        "Cache-Control": "public, max-age=3600, immutable",
+      },
     },
   );
 }

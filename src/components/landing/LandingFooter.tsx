@@ -23,6 +23,7 @@ const RECURSOS = [
 ];
 
 const LEGAL = [
+  { href: "/sobre", label: "Sobre" },
   { href: "/termos", label: "Termos de uso" },
   { href: "/privacidade", label: "Privacidade" },
   { href: "/lgpd", label: "LGPD" },

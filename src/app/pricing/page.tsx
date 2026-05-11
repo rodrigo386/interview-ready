@@ -19,6 +19,9 @@ export const metadata: Metadata = {
 
 const SITE = "https://prepavaga.com.br";
 
+// Apenas Service JSON-LD. O Product anterior pedia aggregateRating + review
+// (warnings no GSC) — sem reviews reais, fingir nota viola Google guidelines.
+// Service tem o que importa pra rich result de oferta sem exigir ratings.
 const PRICING_SERVICE_JSONLD = {
   "@context": "https://schema.org",
   "@type": "Service",
@@ -59,54 +62,6 @@ const PRICING_SERVICE_JSONLD = {
   ],
 };
 
-const PRICING_PRODUCT_JSONLD = {
-  "@context": "https://schema.org",
-  "@type": "Product",
-  name: "PrepaVaga",
-  description:
-    "Plataforma de preparação para entrevista de emprego com IA: análise ATS, pesquisa da empresa, CV reescrito e roteiros de perguntas personalizados.",
-  brand: { "@type": "Brand", name: "PrepaVaga" },
-  url: SITE,
-  image: `${SITE}/opengraph-image`,
-  category: "Interview preparation software",
-  offers: {
-    "@type": "AggregateOffer",
-    priceCurrency: "BRL",
-    lowPrice: "10.00",
-    highPrice: "30.00",
-    offerCount: 2,
-    availability: "https://schema.org/InStock",
-    offers: [
-      {
-        "@type": "Offer",
-        name: "PrepaVaga Pro",
-        description:
-          "Assinatura mensal com uso ilimitado de preparações. Promo R$30/mês (cheio R$50/mês).",
-        price: "30.00",
-        priceCurrency: "BRL",
-        availability: "https://schema.org/InStock",
-        url: `${SITE}/pricing`,
-        priceSpecification: {
-          "@type": "UnitPriceSpecification",
-          price: "30.00",
-          priceCurrency: "BRL",
-          billingDuration: "P1M",
-          unitText: "MONTH",
-        },
-      },
-      {
-        "@type": "Offer",
-        name: "PrepaVaga Avulso",
-        description: "1 preparação. Pagamento único, crédito não expira.",
-        price: "10.00",
-        priceCurrency: "BRL",
-        availability: "https://schema.org/InStock",
-        url: `${SITE}/pricing`,
-      },
-    ],
-  },
-};
-
 export default async function PricingPage() {
   let isAuthed = false;
   try {
@@ -122,10 +77,6 @@ export default async function PricingPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(PRICING_SERVICE_JSONLD) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(PRICING_PRODUCT_JSONLD) }}
       />
       <LandingNavbar />
       <main className="bg-bg">
