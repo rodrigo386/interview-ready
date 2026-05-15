@@ -9,6 +9,7 @@ import { CvPicker, type CvSummary } from "./CvPicker";
 import { JobDescriptionPicker } from "./JobDescriptionPicker";
 import { UpgradeModal } from "@/components/billing/UpgradeModal";
 import { useCheckoutFlow } from "@/components/billing/useCheckoutFlow";
+import { track } from "@/lib/analytics/client";
 
 export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
   const [state, formAction, pending] = useActionState<CreatePrepState, FormData>(
@@ -43,7 +44,20 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
     <>
       {pending && <GeneratingOverlay />}
 
-      <form action={formAction} className="space-y-5">
+      <form
+        action={(fd) => {
+          // jdText is the source of truth for jd_source — `url` means user
+          // resolved via Jina Reader, `paste` means manual paste. We default
+          // to `unknown` if the picker never reported (shouldn't happen
+          // because canSubmit gates it).
+          track("prep_started", {
+            has_existing_cv: Boolean(cvId),
+            jd_source: jdText ? "paste" : "unknown",
+          });
+          formAction(fd);
+        }}
+        className="space-y-5"
+      >
         <fieldset disabled={pending} className="space-y-5">
           <Card
             number={1}

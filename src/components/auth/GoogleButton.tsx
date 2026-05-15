@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { track } from "@/lib/analytics/client";
 
 export function GoogleButton({ label }: { label: string }) {
   const [loading, setLoading] = useState(false);
 
   async function onClick() {
     setLoading(true);
+    track("signup_started", { method: "google" });
     const supabase = createClient();
     const appUrl =
       typeof window !== "undefined"

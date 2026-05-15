@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { companyIntelSchema, prepGuideSchema } from "@/lib/ai/schemas";
 import { Tela1Visual } from "@/components/prep/Tela1Visual";
 import { PartialPrepBanner } from "@/components/prep/PartialPrepBanner";
+import { PrepCompletedTracker } from "@/components/prep/PrepCompletedTracker";
 import { loadPrepSession } from "@/lib/prep/load-session";
 
 export const metadata: Metadata = {
@@ -34,9 +35,16 @@ export default async function PrepHomePage({
     ? (guideParsed.data.meta.failed_sections ?? [])
     : [];
 
+  const sectionCount = guideParsed?.success
+    ? guideParsed.data.sections?.length
+    : undefined;
+
   return (
     <>
       {isPartial && <PartialPrepBanner failedSections={failedSections} />}
+      {data?.generation_status === "complete" && (
+        <PrepCompletedTracker sessionId={id} sectionCount={sectionCount} />
+      )}
       <Tela1Visual
         sessionId={id}
         jobDescription={data?.job_description ?? null}

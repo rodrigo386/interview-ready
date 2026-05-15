@@ -62,6 +62,8 @@ export function Hero() {
           >
             <Link
               href="/signup"
+              data-analytics-cta="hero_primary"
+              data-analytics-location="landing"
               className="inline-flex max-w-full items-center gap-2 rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 sm:px-7 sm:py-3.5 sm:text-base"
             >
               <span className="truncate">Quero entrar na entrevista preparado</span>

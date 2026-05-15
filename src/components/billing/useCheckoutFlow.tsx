@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useDialogFocus } from "@/components/ui/useDialogFocus";
+import { track } from "@/lib/analytics/client";
 import {
   AddressDialog,
   type AddressDialogValue,
@@ -104,6 +105,7 @@ export function useCheckoutFlow() {
 
   function start(kind: Kind) {
     setError(null);
+    track("checkout_started", { kind });
     startTransition(async () => {
       try {
         let body: CheckoutBody = { kind };

@@ -13,6 +13,8 @@ export function FinalCta() {
         <div className="mt-8 flex justify-center">
           <Link
             href="/signup"
+            data-analytics-cta="final_primary"
+            data-analytics-location="landing"
             className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-base font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.1)] transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
           >
             Começar grátis

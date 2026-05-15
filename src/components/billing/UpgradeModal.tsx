@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useDialogFocus } from "@/components/ui/useDialogFocus";
+import { track } from "@/lib/analytics/client";
 
 type Kind = "pro_subscription" | "prep_purchase";
 
@@ -11,14 +12,24 @@ export function UpgradeModal({
   open,
   onClose,
   onCheckout,
+  reason = "quota_exceeded",
 }: {
   open: boolean;
   onClose: () => void;
   onCheckout: (kind: Kind) => void;
+  reason?: "quota_exceeded" | "soft_cap" | "other";
 }) {
   const [pendingKind, setPendingKind] = useState<Kind | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogFocus(open, dialogRef, onClose);
+
+  // Fire once per open. Multiple effect runs while `open` stays true must
+  // not re-fire — gated by the dep array which only changes on transitions.
+  useEffect(() => {
+    if (open) {
+      track("paywall_view", { reason });
+    }
+  }, [open, reason]);
 
   if (!open) return null;
 

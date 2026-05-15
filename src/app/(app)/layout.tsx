@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AppHeader } from "@/components/AppHeader";
+import { AnalyticsIdentify } from "@/components/AnalyticsIdentify";
 import { resolveAvatarUrl } from "@/lib/profile/avatar-url";
 import { reconcileBillingFromAsaas } from "@/lib/billing/reconcile";
 import { logout } from "./dashboard/actions";
@@ -116,6 +117,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen">
+      <AnalyticsIdentify userId={user.id} tier={billing.tier} />
       <AppHeader
         email={user.email!}
         avatarUrl={resolvedAvatarUrl}
