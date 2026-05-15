@@ -1,16 +1,44 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { signup, type SignupState } from "@/app/(auth)/signup/actions";
 import { isValidCepFormat, lookupCep, normalizeCep } from "@/lib/address/viacep";
+import { track } from "@/lib/analytics/client";
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState<SignupState, FormData>(
     signup,
     {},
   );
+  const firedStart = useRef(false);
+  const firedComplete = useRef(false);
+
+  // signup_started fires on the first interactive event in the form, not on
+  // mount — that lets us distinguish "saw the form" (already PageView) from
+  // "started typing". A focusin handler is cheap and works for both keyboard
+  // and pointer entry.
+  function onFirstInteraction() {
+    if (firedStart.current) return;
+    firedStart.current = true;
+    track("signup_started", { method: "email" });
+  }
+
+  useEffect(() => {
+    if (firedComplete.current) return;
+    if (state.pendingConfirmation || state.error === undefined) {
+      // SignupState arrives as `{ pendingConfirmation: true }` on success
+      // or `{ error: "..." }` on failure. Only fire on the success branch.
+      if (state.pendingConfirmation) {
+        firedComplete.current = true;
+        track("signup_completed", {
+          method: "email",
+          pending_confirmation: true,
+        });
+      }
+    }
+  }, [state]);
   const [postalCode, setPostalCode] = useState("");
   const [street, setStreet] = useState("");
   const [district, setDistrict] = useState("");
@@ -55,7 +83,11 @@ export function SignupForm() {
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form
+      action={formAction}
+      onFocus={onFirstInteraction}
+      className="space-y-4"
+    >
       <div>
         <label htmlFor="fullName" className="block text-sm text-zinc-300">
           Nome completo

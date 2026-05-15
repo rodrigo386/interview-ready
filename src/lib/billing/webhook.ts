@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import type { AsaasWebhookEvent } from "./types";
 import { parseExternalReference } from "./ids";
 import { recordCommission, recordClawback } from "@/lib/affiliate/commission";
+import { trackServer } from "@/lib/analytics/server";
 
 export function verifyToken(provided: string | null | undefined): boolean {
   if (!provided) return false;
@@ -161,6 +162,42 @@ async function handlePaymentReceived(
     }
   } catch (err) {
     console.warn("[affiliate] recordCommission failed:", err);
+  }
+
+  // Funnel analytics: checkout_completed always fires; subscription_started
+  // only on the first PAYMENT_CONFIRMED/RECEIVED for a pro_subscription. We
+  // look at profile.subscription_renews_at — set to null before this RPC
+  // ran on a brand-new sub — to decide. (PAYMENT_CONFIRMED on renewals
+  // already has it set, so we won't double-count.)
+  try {
+    await trackServer(userId, "checkout_completed", {
+      kind,
+      amount_cents: cents,
+      billing_method: p.billingType,
+    });
+    if (kind === "pro_subscription") {
+      const plan: "pro_promo_30" | "pro_full_50" | "other" =
+        cents === 3000 ? "pro_promo_30" : cents === 5000 ? "pro_full_50" : "other";
+      // `is_first_pro_payment`: read renews_at AFTER the RPC ran. Renewals
+      // arrive with renews_at already set from the prior cycle. First
+      // payment writes it during the RPC, so we check the prior state by
+      // looking at how many payments rows exist for this kind for this user.
+      const { count } = await supabase
+        .from("payments")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("kind", "pro_subscription")
+        .in("status", ["confirmed", "received"]);
+      if ((count ?? 0) <= 1) {
+        await trackServer(userId, "subscription_started", {
+          plan,
+          amount_cents: cents,
+          billing_method: p.billingType,
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("[analytics] webhook capture failed:", err);
   }
 
   return { handled: true, userId };

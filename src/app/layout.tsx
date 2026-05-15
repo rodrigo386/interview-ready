@@ -3,6 +3,7 @@ import { Inter, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { PageViewTracker } from "@/components/PageViewTracker";
+import { AnalyticsClient } from "@/components/AnalyticsClient";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -123,6 +124,7 @@ export default function RootLayout({
         />
         <ThemeProvider>{children}</ThemeProvider>
         <PageViewTracker />
+        <AnalyticsClient />
       </body>
     </html>
   );
