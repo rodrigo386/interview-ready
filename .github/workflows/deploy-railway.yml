@@ -1,0 +1,55 @@
+name: Manual Railway deploy
+
+# Manual unblock path when the railway-app[bot] GitHub integration
+# silently stops auto-deploying from main. Fires Railway's "deploy hook"
+# webhook URL (per-service, generated in Railway Settings → Deploy → Deploy
+# Hooks). Without `RAILWAY_DEPLOY_HOOK` set this is a clean no-op.
+#
+# How to wire up (one-time, ~30s):
+# 1. Railway dashboard → interview-ready service → Settings → Deploy → Deploy Hooks → Generate.
+# 2. Copy the URL (https://backboard.railway.com/webhook/...).
+# 3. GitHub repo → Settings → Secrets and variables → Actions → New repository secret.
+#    Name: RAILWAY_DEPLOY_HOOK · Value: the URL.
+# 4. Actions → "Manual Railway deploy" → Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why are you triggering a manual deploy?"
+        required: false
+        default: "Auto-deploy integration not firing"
+
+permissions:
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for deploy hook secret
+        env:
+          HOOK: ${{ secrets.RAILWAY_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::RAILWAY_DEPLOY_HOOK secret is not set. See the steps in .github/workflows/deploy-railway.yml header."
+            exit 1
+          fi
+          echo "Deploy hook is configured."
+
+      - name: Fire Railway deploy hook
+        env:
+          HOOK: ${{ secrets.RAILWAY_DEPLOY_HOOK }}
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o response.txt -w "%{http_code}" -X POST "$HOOK")
+          echo "Status: $status"
+          echo "--- Railway response ---"
+          cat response.txt || true
+          echo
+          if [ "$status" != "200" ] && [ "$status" != "202" ] && [ "$status" != "204" ]; then
+            echo "::error::Railway deploy hook returned $status"
+            exit 1
+          fi
+          echo "Reason: ${{ github.event.inputs.reason }}"
+          echo "Commit: ${{ github.sha }}"
