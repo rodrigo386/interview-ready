@@ -3,6 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  // Force-inline analytics env vars into the client bundle. The automatic
+  // NEXT_PUBLIC_* substitution wasn't reaching the AnalyticsClient module
+  // (compiled chunks contain a runtime `process.env.NEXT_PUBLIC_POSTHOG_KEY`
+  // lookup instead of the value), so initAnalytics never saw the key.
+  // Explicit `env` config is the reliable substitution path.
+  env: {
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "",
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "",
+  },
   // pdf-parse v2 bundles its PDF.js worker as a sibling pdf.worker.mjs file.
   // Next's tracer doesn't copy it into .next/server, so we mark it external
   // and let runtime Node resolve it from node_modules.
@@ -46,7 +55,7 @@ const nextConfig: NextConfig = {
       // Supabase auth + REST + storage. Asaas iframes/redirects (sandbox + prod).
       // r.jina.ai for JD URL fetcher. Google Generative AI for client streaming
       // (we don't use it from client today, kept for future).
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.asaas.com https://sandbox.asaas.com https://r.jina.ai https://generativelanguage.googleapis.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.asaas.com https://sandbox.asaas.com https://r.jina.ai https://generativelanguage.googleapis.com https://*.posthog.com https://*.i.posthog.com",
       "frame-src 'self' https://*.asaas.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
