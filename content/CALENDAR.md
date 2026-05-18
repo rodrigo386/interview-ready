@@ -13,7 +13,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 ---
 
-## ✅ Publicados (15)
+## ✅ Publicados (16)
 
 | Post | Slug | Tags-âncora |
 |---|---|---|
@@ -33,6 +33,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 | ✅ Foto no currículo Brasil 2026 | foto-no-curriculo-brasil-2026 | currículo |
 | ✅ Recrutador não respondeu — o que fazer | recrutador-nao-respondeu-o-que-fazer | processo seletivo, follow-up |
 | ✅ Quanto tempo demora um processo seletivo no Brasil | quanto-tempo-demora-processo-seletivo | processo seletivo, recrutamento |
+| ✅ Como saber se a vaga é fake | como-saber-se-vaga-e-fake | processo seletivo, vagas falsas |
 
 ---
 
@@ -40,20 +41,19 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 | # | Título sugerido | Slug | Por que prioridade | Volume estimado |
 |---|---|---|---|---|
-| 1 | Como saber se a vaga é fake | como-saber-se-vaga-e-fake | Defensivo, candidatos preocupados | Médio-alto |
-| 2 | O que NÃO falar em entrevista | o-que-nao-falar-em-entrevista | Bottom funnel, intenção transacional | Alto |
-| 3 | Como demonstrar liderança sem ter cargo | como-demonstrar-lideranca-sem-cargo | STAR ancora aqui — cross-link forte | Médio |
-| 4 | Pretensão salarial analista pleno em SP | pretensao-salarial-analista-pleno-sp | Long-tail geográfico, baixa concorrência | Médio |
-| 5 | Pretensão salarial analista pleno no RJ | pretensao-salarial-analista-pleno-rj | Long-tail geográfico, baixa concorrência | Médio |
+| 1 | O que NÃO falar em entrevista | o-que-nao-falar-em-entrevista | Bottom funnel, intenção transacional | Alto |
+| 2 | Como demonstrar liderança sem ter cargo | como-demonstrar-lideranca-sem-cargo | STAR ancora aqui — cross-link forte | Médio |
+| 3 | Pretensão salarial analista pleno em SP | pretensao-salarial-analista-pleno-sp | Long-tail geográfico, baixa concorrência | Médio |
+| 4 | Pretensão salarial analista pleno no RJ | pretensao-salarial-analista-pleno-rj | Long-tail geográfico, baixa concorrência | Médio |
+| 5 | Salário de gerente em multinacional Brasil | salario-gerente-multinacional-brasil | BOFU; usa dados Robert Half + Catho | Médio |
 
 ---
 
-## ⚪ Queue (13 — ordem sugerida)
+## ⚪ Queue (12 — ordem sugerida)
 
 | # | Título sugerido | Slug | Notas |
 |---|---|---|---|
-| 6 | Salário de gerente em multinacional Brasil | salario-gerente-multinacional-brasil | BOFU; usa dados Robert Half + Catho |
-| 8 | Soft skills mais pedidas no Brasil em 2026 | soft-skills-mais-pedidas-brasil-2026 | Informacional alto volume |
+| 6 | Soft skills mais pedidas no Brasil em 2026 | soft-skills-mais-pedidas-brasil-2026 | Informacional alto volume |
 | 9 | Hard skills que valem promoção | hard-skills-que-valem-promocao | Cross-link com pleno/sênior post |
 | 10 | Como explicar saída da empresa anterior | como-explicar-saida-empresa-anterior | Pergunta comum, alta dor |
 | 11 | Por que o RH não te chamou de volta | por-que-rh-nao-chamou-de-volta | Pós-rejeição emocional |
