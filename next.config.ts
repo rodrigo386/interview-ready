@@ -37,6 +37,19 @@ const nextConfig: NextConfig = {
         destination: "https://prepavaga.com.br/:path*",
         permanent: true,
       },
+      // /blog was never a route here, but GSC reported a 404 — some external
+      // link or cached redirect pointed there. Permanent redirect to /artigos
+      // captures any residual traffic and clears the 404.
+      {
+        source: "/blog",
+        destination: "/artigos",
+        permanent: true,
+      },
+      {
+        source: "/blog/:path*",
+        destination: "/artigos/:path*",
+        permanent: true,
+      },
     ];
   },
   async headers() {
