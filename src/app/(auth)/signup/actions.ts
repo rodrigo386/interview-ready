@@ -8,37 +8,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { attachReferral } from "@/lib/affiliate/attribution";
 
+// Experiment PRE-4 (signup friction reduction): signup now collects only the
+// 3 fields needed to create an account. CPF/CNPJ + endereço are required only
+// to issue an Asaas invoice and are collected at checkout time via the
+// cpf_required / address_required dialogs in /api/billing/checkout. Keeping
+// them off signup removes 8 fields of friction before the free prep.
 const schema = z.object({
   email: z.string().email("E-mail inválido"),
   password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
   fullName: z.string().min(1, "Informe seu nome"),
-  cpfCnpj: z
-    .string()
-    .trim()
-    .transform((v) => v.replace(/[^0-9]/g, ""))
-    .refine((v) => v.length === 11 || v.length === 14, {
-      message: "CPF (11 dígitos) ou CNPJ (14 dígitos) inválido",
-    }),
-  postalCode: z
-    .string()
-    .trim()
-    .transform((v) => v.replace(/[^0-9]/g, ""))
-    .refine((v) => v.length === 8, { message: "CEP deve ter 8 dígitos" }),
-  addressStreet: z.string().trim().min(1, "Informe o logradouro"),
-  addressNumber: z.string().trim().min(1, "Informe o número"),
-  addressComplement: z
-    .string()
-    .trim()
-    .max(120)
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : null)),
-  addressDistrict: z.string().trim().min(1, "Informe o bairro"),
-  addressCity: z.string().trim().min(1, "Informe a cidade"),
-  addressState: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .length(2, "UF deve ter 2 letras"),
 });
 
 export type SignupState = {
@@ -65,14 +43,6 @@ export async function signup(
     email: formData.get("email"),
     password: formData.get("password"),
     fullName: formData.get("fullName"),
-    cpfCnpj: formData.get("cpfCnpj"),
-    postalCode: formData.get("postalCode"),
-    addressStreet: formData.get("addressStreet"),
-    addressNumber: formData.get("addressNumber"),
-    addressComplement: formData.get("addressComplement"),
-    addressDistrict: formData.get("addressDistrict"),
-    addressCity: formData.get("addressCity"),
-    addressState: formData.get("addressState"),
   });
 
   if (!parsed.success) {
@@ -106,29 +76,12 @@ export async function signup(
       return { error: mapSupabaseError(error.message) };
     }
 
-    // Persist CPF + endereço no profile row criada pelo auth.users trigger.
-    // cpf_cnpj está no denylist de GRANT pra `authenticated` (migration 0011),
-    // então usamos admin client. Os campos de endereço estão no allowlist
-    // (migration 0015) mas a gente passa pelo admin pra simplificar — uma
-    // única round-trip cobre tudo.
+    // CPF + endereço NÃO são mais coletados no signup (experimento PRE-4 de
+    // redução de fricção). O profile row é criada pelo trigger de auth.users
+    // com esses campos nulos; /api/billing/checkout os coleta sob demanda no
+    // primeiro checkout via os diálogos cpf_required / address_required.
     if (data.user) {
       const admin = createAdminClient();
-      const { error: profileErr } = await admin
-        .from("profiles")
-        .update({
-          cpf_cnpj: parsed.data.cpfCnpj,
-          postal_code: parsed.data.postalCode,
-          address_street: parsed.data.addressStreet,
-          address_number: parsed.data.addressNumber,
-          address_complement: parsed.data.addressComplement,
-          address_district: parsed.data.addressDistrict,
-          address_city: parsed.data.addressCity,
-          address_state: parsed.data.addressState,
-        })
-        .eq("id", data.user.id);
-      if (profileErr) {
-        console.warn("[signup] profile update failed:", profileErr.message);
-      }
 
       // Affiliate attribution: same pattern as auth/callback. If user has pv_ref
       // cookie, link to partner. Idempotent. Failure tolerated.

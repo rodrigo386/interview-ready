@@ -10,8 +10,15 @@
 export type FunnelEventMap = {
   landing_view: { path: string };
   cta_click: { cta: string; location: string; href?: string };
-  signup_started: { method: "email" | "google" };
-  signup_completed: { method: "email" | "google"; pending_confirmation: boolean };
+  // `form_variant` tags the signup-friction experiment (PRE-4). It is optional
+  // so Google OAuth signups (which never render the form) stay valid; the
+  // email form always sets it. Before/after lift = filter on this property.
+  signup_started: { method: "email" | "google"; form_variant?: string };
+  signup_completed: {
+    method: "email" | "google";
+    pending_confirmation: boolean;
+    form_variant?: string;
+  };
   prep_started: { has_existing_cv: boolean; jd_source: "paste" | "url" | "unknown" };
   prep_completed: { duration_ms?: number; section_count?: number };
   paywall_view: { reason: "quota_exceeded" | "soft_cap" | "other" };
