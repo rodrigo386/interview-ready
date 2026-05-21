@@ -26,7 +26,7 @@ async function signUpAndLandRaw(
   await page.getByLabel("Nome completo").fill(fullName);
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(PASSWORD);
-  await page.getByRole("button", { name: /^Criar conta/i }).click();
+  await page.getByRole("button", { name: "Criar conta grátis", exact: true }).click();
 
   const result = await Promise.race([
     page

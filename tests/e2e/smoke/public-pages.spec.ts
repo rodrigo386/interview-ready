@@ -23,7 +23,9 @@ test.describe("Public pages render without auth", () => {
     // CPF + endereço are no longer collected at signup — they belong at
     // checkout (collected on demand by useCheckoutFlow.tsx).
     await expect(page.getByLabel(/CPF/i)).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^criar conta/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Criar conta grátis", exact: true }),
+    ).toBeVisible();
   });
 
   test("/login renders with email + password fields", async ({ page }) => {
