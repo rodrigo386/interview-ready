@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { signup, type SignupState } from "@/app/(auth)/signup/actions";
 import { track } from "@/lib/analytics/client";
+import { getStoredUtm } from "@/lib/analytics/utm";
 
 // Experiment PRE-4 (signup friction reduction): the signup form used to
 // collect 11 fields — name, email, CPF/CNPJ, full address (CEP + 6 fields),
@@ -32,7 +33,11 @@ export function SignupForm() {
   function onFirstInteraction() {
     if (firedStart.current) return;
     firedStart.current = true;
-    track("signup_started", { method: "email", form_variant: FORM_VARIANT });
+    track("signup_started", {
+      method: "email",
+      form_variant: FORM_VARIANT,
+      ...getStoredUtm(),
+    });
   }
 
   useEffect(() => {
@@ -45,6 +50,7 @@ export function SignupForm() {
         method: "email",
         pending_confirmation: true,
         form_variant: FORM_VARIANT,
+        ...getStoredUtm(),
       });
     }
   }, [state]);
