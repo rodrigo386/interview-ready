@@ -1,11 +1,21 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { signup, type SignupState } from "@/app/(auth)/signup/actions";
-import { isValidCepFormat, lookupCep, normalizeCep } from "@/lib/address/viacep";
 import { track } from "@/lib/analytics/client";
+
+// Experiment PRE-4 (signup friction reduction): the signup form used to
+// collect 11 fields — name, email, CPF/CNPJ, full address (CEP + 6 fields),
+// password — before the user had run a single free prep. CPF + endereço are
+// only needed to issue an Asaas invoice, which happens at checkout. The
+// checkout flow already collects them on demand via the cpf_required /
+// address_required 422 dialogs (see useCheckoutFlow.tsx), so collecting them
+// at signup was pure friction. This form now asks for the 3 fields actually
+// required to create an account. `form_variant` tags every signup event so
+// the before/after lift is queryable in PostHog.
+const FORM_VARIANT = "minimal_v2";
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState<SignupState, FormData>(
@@ -22,54 +32,22 @@ export function SignupForm() {
   function onFirstInteraction() {
     if (firedStart.current) return;
     firedStart.current = true;
-    track("signup_started", { method: "email" });
+    track("signup_started", { method: "email", form_variant: FORM_VARIANT });
   }
 
   useEffect(() => {
     if (firedComplete.current) return;
-    if (state.pendingConfirmation || state.error === undefined) {
+    if (state.pendingConfirmation) {
       // SignupState arrives as `{ pendingConfirmation: true }` on success
       // or `{ error: "..." }` on failure. Only fire on the success branch.
-      if (state.pendingConfirmation) {
-        firedComplete.current = true;
-        track("signup_completed", {
-          method: "email",
-          pending_confirmation: true,
-        });
-      }
+      firedComplete.current = true;
+      track("signup_completed", {
+        method: "email",
+        pending_confirmation: true,
+        form_variant: FORM_VARIANT,
+      });
     }
   }, [state]);
-  const [postalCode, setPostalCode] = useState("");
-  const [street, setStreet] = useState("");
-  const [district, setDistrict] = useState("");
-  const [city, setCity] = useState("");
-  const [stateUf, setStateUf] = useState("");
-  const [cepLoading, setCepLoading] = useState(false);
-  const [cepError, setCepError] = useState<string | null>(null);
-
-  async function onCepBlur() {
-    const cep = normalizeCep(postalCode);
-    if (cep.length === 0) {
-      setCepError(null);
-      return;
-    }
-    if (!isValidCepFormat(cep)) {
-      setCepError("CEP deve ter 8 dígitos");
-      return;
-    }
-    setCepError(null);
-    setCepLoading(true);
-    const result = await lookupCep(cep);
-    setCepLoading(false);
-    if (!result) {
-      setCepError("CEP não encontrado. Preencha os campos manualmente.");
-      return;
-    }
-    setStreet(result.logradouro);
-    setDistrict(result.bairro);
-    setCity(result.cidade);
-    setStateUf(result.uf);
-  }
 
   if (state.pendingConfirmation) {
     return (
@@ -83,11 +61,7 @@ export function SignupForm() {
   }
 
   return (
-    <form
-      action={formAction}
-      onFocus={onFirstInteraction}
-      className="space-y-4"
-    >
+    <form action={formAction} onFocus={onFirstInteraction} className="space-y-4">
       <div>
         <label htmlFor="fullName" className="block text-sm text-zinc-300">
           Nome completo
@@ -100,170 +74,6 @@ export function SignupForm() {
         </label>
         <Input id="email" name="email" type="email" required className="mt-1" />
       </div>
-      <div>
-        <label htmlFor="cpfCnpj" className="block text-sm text-zinc-300">
-          CPF ou CNPJ
-        </label>
-        <Input
-          id="cpfCnpj"
-          name="cpfCnpj"
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          placeholder="Apenas números"
-          required
-          className="mt-1"
-        />
-        <p className="mt-1 text-xs text-zinc-500">
-          Necessário para emitir cobranças e nota fiscal (Asaas).
-        </p>
-      </div>
-
-      <fieldset className="space-y-3 rounded-md border border-zinc-800 p-4">
-        <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">
-          Endereço (para nota fiscal)
-        </legend>
-
-        <div>
-          <label htmlFor="postalCode" className="block text-sm text-zinc-300">
-            CEP
-          </label>
-          <Input
-            id="postalCode"
-            name="postalCode"
-            type="text"
-            inputMode="numeric"
-            autoComplete="postal-code"
-            placeholder="00000-000"
-            required
-            value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value)}
-            onBlur={onCepBlur}
-            className="mt-1"
-          />
-          {cepLoading && (
-            <p className="mt-1 text-xs text-zinc-500">Buscando endereço…</p>
-          )}
-          {cepError && (
-            <p className="mt-1 text-xs text-red-400" role="alert">
-              {cepError}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="addressStreet" className="block text-sm text-zinc-300">
-            Logradouro
-          </label>
-          <Input
-            id="addressStreet"
-            name="addressStreet"
-            type="text"
-            autoComplete="address-line1"
-            required
-            value={street}
-            onChange={(e) => setStreet(e.target.value)}
-            className="mt-1"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label
-              htmlFor="addressNumber"
-              className="block text-sm text-zinc-300"
-            >
-              Número
-            </label>
-            <Input
-              id="addressNumber"
-              name="addressNumber"
-              type="text"
-              autoComplete="address-line2"
-              placeholder="123 ou S/N"
-              required
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="addressComplement"
-              className="block text-sm text-zinc-300"
-            >
-              Complemento{" "}
-              <span className="text-xs text-zinc-500">(opcional)</span>
-            </label>
-            <Input
-              id="addressComplement"
-              name="addressComplement"
-              type="text"
-              autoComplete="address-line3"
-              placeholder="Apto, sala…"
-              className="mt-1"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label
-            htmlFor="addressDistrict"
-            className="block text-sm text-zinc-300"
-          >
-            Bairro
-          </label>
-          <Input
-            id="addressDistrict"
-            name="addressDistrict"
-            type="text"
-            autoComplete="address-level3"
-            required
-            value={district}
-            onChange={(e) => setDistrict(e.target.value)}
-            className="mt-1"
-          />
-        </div>
-
-        <div className="grid grid-cols-[1fr_80px] gap-3">
-          <div>
-            <label
-              htmlFor="addressCity"
-              className="block text-sm text-zinc-300"
-            >
-              Cidade
-            </label>
-            <Input
-              id="addressCity"
-              name="addressCity"
-              type="text"
-              autoComplete="address-level2"
-              required
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="addressState"
-              className="block text-sm text-zinc-300"
-            >
-              UF
-            </label>
-            <Input
-              id="addressState"
-              name="addressState"
-              type="text"
-              autoComplete="address-level1"
-              maxLength={2}
-              required
-              value={stateUf}
-              onChange={(e) => setStateUf(e.target.value.toUpperCase())}
-              className="mt-1 uppercase"
-            />
-          </div>
-        </div>
-      </fieldset>
-
       <div>
         <label htmlFor="password" className="block text-sm text-zinc-300">
           Senha
@@ -283,8 +93,11 @@ export function SignupForm() {
         </p>
       )}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Criando conta…" : "Criar conta"}
+        {pending ? "Criando conta…" : "Criar conta grátis"}
       </Button>
+      <p className="text-center text-xs text-zinc-500">
+        Sem cartão de crédito. Você informa CPF e endereço só quando assinar.
+      </p>
     </form>
   );
 }
