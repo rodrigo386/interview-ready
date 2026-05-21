@@ -36,6 +36,11 @@ async function postCheckout(body: CheckoutBody): Promise<Response> {
 export function useCheckoutFlow() {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // `posting` = realmente fetchando /api/billing/checkout. Distinto de
+  // `pending` (transition) que fica true enquanto a gente espera o user
+  // preencher o dialog. Sem essa distinção o AddressDialog mostrava
+  // "Salvando..." antes do user submeter (ilusão de form travado).
+  const [posting, setPosting] = useState(false);
 
   // CPF dialog state
   const [cpfOpen, setCpfOpen] = useState(false);
@@ -52,7 +57,7 @@ export function useCheckoutFlow() {
   >(null);
 
   const closeCpf = () => {
-    if (pending) return;
+    if (posting) return;
     setCpfOpen(false);
     setCpfValue("");
     setCpfError(null);
@@ -103,16 +108,27 @@ export function useCheckoutFlow() {
     addressResolverRef.current = null;
   }
 
+  async function doPost(body: CheckoutBody): Promise<Response> {
+    setPosting(true);
+    try {
+      return await postCheckout(body);
+    } finally {
+      setPosting(false);
+    }
+  }
+
   function start(kind: Kind) {
     setError(null);
     track("checkout_started", { kind });
     startTransition(async () => {
       try {
         let body: CheckoutBody = { kind };
-        let res = await postCheckout(body);
+        let res = await doPost(body);
 
         // 2 possíveis 422s: cpf_required, address_required. Pode disparar
-        // ambos em sequência se user veio do OAuth Google sem nada.
+        // ambos em sequência se user veio do OAuth Google sem nada. Entre
+        // POSTs, `posting=false` permite o dialog mostrar "Continuar" em
+        // vez de "Salvando..." enquanto espera o user preencher.
         for (let i = 0; i < 3; i++) {
           if (res.status !== 422) break;
           const data = (await res.clone().json().catch(() => ({}))) as {
@@ -122,14 +138,14 @@ export function useCheckoutFlow() {
             const cpfCnpj = await askCpf();
             if (!cpfCnpj) return;
             body = { ...body, cpfCnpj };
-            res = await postCheckout(body);
+            res = await doPost(body);
             continue;
           }
           if (data.error === "address_required") {
             const address = await askAddress();
             if (!address) return;
             body = { ...body, address };
-            res = await postCheckout(body);
+            res = await doPost(body);
             continue;
           }
           break;
@@ -210,7 +226,7 @@ export function useCheckoutFlow() {
         open={addressOpen}
         onCancel={onAddressCancel}
         onSubmit={onAddressSubmit}
-        pending={pending}
+        pending={posting}
       />
     </>
   );
