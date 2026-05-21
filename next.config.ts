@@ -67,8 +67,9 @@ const nextConfig: NextConfig = {
       "img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com https://secure.gravatar.com",
       // Supabase auth + REST + storage. Asaas iframes/redirects (sandbox + prod).
       // r.jina.ai for JD URL fetcher. Google Generative AI for client streaming
-      // (we don't use it from client today, kept for future).
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.asaas.com https://sandbox.asaas.com https://r.jina.ai https://generativelanguage.googleapis.com https://*.posthog.com https://*.i.posthog.com",
+      // (we don't use it from client today, kept for future). viacep.com.br
+      // for CEP lookup (auto-fill endereço no signup + AddressDialog).
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.asaas.com https://sandbox.asaas.com https://r.jina.ai https://generativelanguage.googleapis.com https://*.posthog.com https://*.i.posthog.com https://viacep.com.br",
       "frame-src 'self' https://*.asaas.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
