@@ -15,12 +15,12 @@ const PRIVATE_PATHS = [
   "/welcome/",
   "/forgot-password",
   "/reset",
-  // OG image routes — Next.js generates them at /opengraph-image and
-  // /artigos/<slug>/opengraph-image. They're served via metadata, not meant
-  // for direct indexing. Without disallow, Google crawls them and shows
-  // "currently not indexed" warnings in GSC.
-  "/opengraph-image",
-  "/twitter-image",
+  // OG/Twitter image routes intentionally NOT here. GSC was reporting them
+  // as "Blocked by robots.txt" (a soft issue) when we tried to disallow.
+  // Cleaner approach: let Google crawl them, but the route itself returns
+  // X-Robots-Tag: noindex (set in src/app/opengraph-image.tsx). Google then
+  // classifies them as "Excluded by 'noindex' tag" — the proper signal for
+  // "URL exists but shouldn't be indexed", and GSC stops flagging.
 ];
 
 const AI_BOTS = [
