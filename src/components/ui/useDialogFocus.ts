@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -17,6 +17,11 @@ const FOCUSABLE =
  *
  * Body scroll is locked while open so the page behind doesn't scroll on
  * mobile when the user touches the dialog backdrop.
+ *
+ * `onClose` is captured via a ref so callers don't need to memoize it.
+ * Without this, a fresh `onClose` reference each render would cause the
+ * effect to re-run on every keystroke (cleanup restores focus → effect
+ * re-runs and re-focuses CEP), making the form impossible to fill out.
  */
 export function useDialogFocus<T extends HTMLElement>(
   open: boolean,
@@ -24,6 +29,11 @@ export function useDialogFocus<T extends HTMLElement>(
   onClose: () => void,
   initialFocusRef?: RefObject<HTMLElement | null>,
 ) {
+  // Stable ref to the latest onClose. Reading from this inside the effect
+  // means the effect itself doesn't depend on the callback identity.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
     const dialog = dialogRef.current;
@@ -46,7 +56,7 @@ export function useDialogFocus<T extends HTMLElement>(
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab") return;
@@ -77,5 +87,9 @@ export function useDialogFocus<T extends HTMLElement>(
         previouslyFocused.focus();
       }
     };
-  }, [open, dialogRef, onClose, initialFocusRef]);
+    // Intentionally only depends on `open`. dialogRef and initialFocusRef
+    // are RefObjects (identity stable across renders). onClose is captured
+    // via onCloseRef so the effect doesn't re-run on every parent render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 }
