@@ -67,7 +67,11 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       // 'unsafe-inline' for Next 15 inline RSC payload + Tailwind runtime;
       // 'unsafe-eval' for the dev hot reload (no-op in prod build).
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // *.posthog.com / *.i.posthog.com: posthog-js lazy-loads remote scripts
+      // (array/<token>/config.js, static/surveys.js) from eu-assets.i.posthog.com.
+      // Without these the SDK boots but the remote config + surveys extension
+      // are CSP-blocked. connect-src already allows the same hosts for /e/ /flags/.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://*.i.posthog.com",
       "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
       "font-src 'self' fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://*.supabase.co https://www.gravatar.com https://secure.gravatar.com",
