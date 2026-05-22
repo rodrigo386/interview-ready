@@ -9,8 +9,13 @@ let client: PostHog | null = null;
 let initPromise: Promise<void> | null = null;
 
 const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+// `||` (not `??`) on purpose: next.config.ts inlines this var, and an unset
+// var in the build environment becomes the empty string `""` — not
+// undefined. `??` would keep `""` and leave PostHog resolving its API URLs
+// against the app's own origin (→ 404 HTML, SDK dies). `||` falls back to the
+// real host for empty strings too.
 const HOST =
-  process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://eu.i.posthog.com";
+  process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com";
 
 export function isAnalyticsEnabled(): boolean {
   return Boolean(KEY);
