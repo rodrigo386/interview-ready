@@ -8,13 +8,15 @@ const nextConfig: NextConfig = {
   // (compiled chunks contain a runtime `process.env.NEXT_PUBLIC_POSTHOG_KEY`
   // lookup instead of the value), so initAnalytics never saw the key.
   // Explicit `env` config is the reliable substitution path.
-  // KEY has no safe default — empty string is correct when unset, and
-  // isAnalyticsEnabled() treats "" as disabled. HOST DOES have a safe default:
-  // if it's left empty, posthog-js resolves /e/, /flags/, /array/... against
-  // the app's own origin and 404s. Inline the real EU host so a missing
-  // Railway env var can never silently break analytics again.
+  //
+  // KEY: empty string is correct when unset — isAnalyticsEnabled() treats ""
+  // as disabled, so the app keeps booting without PostHog. Using `||` (not
+  // `??`) keeps that semantics under an explicit empty-string Railway env.
+  // HOST: real default lives here. If left empty, posthog-js resolves /e/,
+  // /flags/, /array/... against the app's own origin and 404s. Inline the EU
+  // host so a missing Railway env var can never silently break analytics again.
   env: {
-    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "",
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY || "",
     NEXT_PUBLIC_POSTHOG_HOST:
       process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
   },

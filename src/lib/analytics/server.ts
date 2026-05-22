@@ -2,9 +2,12 @@ import "server-only";
 import { PostHog } from "posthog-node";
 import type { FunnelEventMap, FunnelEventName } from "./events";
 
-const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+// `||` (not `??`) so an empty-string env value falls back to the default
+// instead of silently configuring the client with `""`. See client.ts for
+// the same rationale.
+const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || "";
 const HOST =
-  process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://eu.i.posthog.com";
+  process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com";
 
 let client: PostHog | null = null;
 
