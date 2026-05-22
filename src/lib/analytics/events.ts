@@ -8,16 +8,36 @@
  * `client.ts` and `server.ts` will surface any missing properties.
  */
 export type FunnelEventMap = {
-  landing_view: { path: string };
+  landing_view: {
+    path: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
+  };
   cta_click: { cta: string; location: string; href?: string };
   // `form_variant` tags the signup-friction experiment (PRE-4). It is optional
   // so Google OAuth signups (which never render the form) stay valid; the
   // email form always sets it. Before/after lift = filter on this property.
-  signup_started: { method: "email" | "google"; form_variant?: string };
+  // utm_* fields carry attribution from the landing URL through signup for
+  // funnel filtering in PostHog (PRE-13 campaign attribution).
+  signup_started: {
+    method: "email" | "google";
+    form_variant?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+  };
   signup_completed: {
     method: "email" | "google";
     pending_confirmation: boolean;
     form_variant?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
   };
   prep_started: { has_existing_cv: boolean; jd_source: "paste" | "url" | "unknown" };
   prep_completed: { duration_ms?: number; section_count?: number };

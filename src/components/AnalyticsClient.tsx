@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { initAnalytics, track } from "@/lib/analytics/client";
+import { captureUtmFromUrl } from "@/lib/analytics/utm";
 
 /**
  * Mounts once at the root layout. Owns three responsibilities:
@@ -26,7 +27,8 @@ export function AnalyticsClient() {
 
   useEffect(() => {
     if (pathname === "/") {
-      track("landing_view", { path: "/" });
+      const utms = captureUtmFromUrl();
+      track("landing_view", { path: "/", ...utms });
     }
   }, [pathname]);
 
