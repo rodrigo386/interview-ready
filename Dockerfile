@@ -35,7 +35,12 @@ RUN addgroup --system --gid 1001 nodejs \
 
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# public/ is empty (no tracked assets yet) — restored when we add a favicon/og-image
+# Next standalone output does NOT bundle public/ — must be copied explicitly.
+# Without this, every file in public/ returns 404 served by the Next 404
+# handler (which silently looks like a normal "not found"). Affects IndexNow
+# key verification, TikTok Developers domain verification, robots.txt
+# overrides, and any future favicons/images.
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 EXPOSE 3000
