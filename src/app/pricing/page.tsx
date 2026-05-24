@@ -28,6 +28,7 @@ const PRICING_PRODUCT_JSONLD = {
   name: "PrepaVaga — Preparação para entrevista com IA",
   description:
     "Análise ATS + pesquisa da empresa + roteiro de perguntas com IA. Cancele quando quiser.",
+  image: `${SITE}/opengraph-image`,
   brand: { "@type": "Brand", name: "PrepaVaga" },
   offers: [
     {
@@ -51,6 +52,7 @@ const PRICING_PRODUCT_JSONLD = {
       name: "Pro mensal (promo)",
       price: "30",
       priceCurrency: "BRL",
+      priceValidUntil: "2026-06-30",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
         price: "30",
