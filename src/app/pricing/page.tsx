@@ -19,44 +19,46 @@ export const metadata: Metadata = {
 
 const SITE = "https://prepavaga.com.br";
 
-// Apenas Service JSON-LD. O Product anterior pedia aggregateRating + review
-// (warnings no GSC) — sem reviews reais, fingir nota viola Google guidelines.
-// Service tem o que importa pra rich result de oferta sem exigir ratings.
-const PRICING_SERVICE_JSONLD = {
+// Product+Offer (BRL) para elegibilidade a rich snippet de preço no SERP.
+// aggregateRating/review intencionalmente omitidos — sem reviews reais ainda.
+// Quando preço cheio (R$50) substituir promo, atualizar `price` da oferta Pro.
+const PRICING_PRODUCT_JSONLD = {
   "@context": "https://schema.org",
-  "@type": "Service",
-  serviceType: "Preparação para entrevista de emprego com IA",
-  provider: { "@type": "Organization", name: "PrepaVaga", url: SITE },
-  areaServed: { "@type": "Country", name: "Brazil" },
+  "@type": "Product",
+  name: "PrepaVaga — Preparação para entrevista com IA",
   description:
-    "Análise ATS do currículo, pesquisa da empresa em tempo real, CV reescrito para a vaga e roteiros de perguntas personalizados.",
+    "Análise ATS + pesquisa da empresa + roteiro de perguntas com IA. Cancele quando quiser.",
+  brand: { "@type": "Brand", name: "PrepaVaga" },
   offers: [
     {
       "@type": "Offer",
-      name: "Plano Pro (assinatura mensal)",
-      description:
-        "Uso ilimitado para preparação. Promo de lançamento R$30/mês (preço cheio R$50/mês).",
-      price: "30.00",
+      name: "Free — 1 prep grátis vitalícia",
+      price: "0",
       priceCurrency: "BRL",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: "30.00",
-        priceCurrency: "BRL",
-        billingDuration: "P1M",
-        unitText: "MONTH",
-      },
       availability: "https://schema.org/InStock",
-      category: "subscription",
+      url: `${SITE}/signup`,
+    },
+    {
+      "@type": "Offer",
+      name: "Avulso — 1 prep",
+      price: "10",
+      priceCurrency: "BRL",
+      availability: "https://schema.org/InStock",
       url: `${SITE}/pricing`,
     },
     {
       "@type": "Offer",
-      name: "Avulso (1 prep)",
-      description: "Pagamento único por prep. Sem mensalidade.",
-      price: "10.00",
+      name: "Pro mensal (promo)",
+      price: "30",
       priceCurrency: "BRL",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "30",
+        priceCurrency: "BRL",
+        billingDuration: "P1M",
+        billingIncrement: 1,
+      },
       availability: "https://schema.org/InStock",
-      category: "one-time",
       url: `${SITE}/pricing`,
     },
   ],
@@ -76,7 +78,7 @@ export default async function PricingPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(PRICING_SERVICE_JSONLD) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(PRICING_PRODUCT_JSONLD) }}
       />
       <LandingNavbar />
       <main className="bg-bg">
