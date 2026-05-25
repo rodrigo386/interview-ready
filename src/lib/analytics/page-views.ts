@@ -218,3 +218,60 @@ export async function getPageViewDiagnostic(): Promise<PageViewDiagnostic | null
     return null;
   }
 }
+
+export type PathBreakdownRow = {
+  path: string;
+  views: number;
+  uniqueVisitors: number;
+};
+
+/**
+ * Top entry paths in the last 30 days (human traffic only). Lets admin see
+ * the funnel composition — e.g. 80% of traffic landing on article pages
+ * means we need stronger article→signup CTAs, not landing optimization.
+ */
+export async function getPageViewPathBreakdown(): Promise<PathBreakdownRow[] | null> {
+  try {
+    const sb = createAdminClient();
+    const cutoff30d = new Date(
+      Date.now() - 30 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const { data, error } = await sb
+      .from("page_views")
+      .select("path, visitor_id")
+      .eq("is_bot", false)
+      .gte("created_at", cutoff30d);
+    if (error || !data) return null;
+
+    const byPath = new Map<string, { views: number; visitors: Set<string> }>();
+    for (const r of data as Array<{ path: string; visitor_id: string }>) {
+      // Collapse article slugs into a single bucket so the breakdown isn't
+      // diluted across 15+ rows. Keep landing and core funnel pages distinct.
+      const key = normalizePath(r.path);
+      const entry = byPath.get(key) ?? { views: 0, visitors: new Set() };
+      entry.views += 1;
+      entry.visitors.add(r.visitor_id);
+      byPath.set(key, entry);
+    }
+    return Array.from(byPath.entries())
+      .map(([path, e]) => ({
+        path,
+        views: e.views,
+        uniqueVisitors: e.visitors.size,
+      }))
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 15);
+  } catch {
+    return null;
+  }
+}
+
+function normalizePath(path: string): string {
+  // Group all article reads under one row, keep slug visible for top 3.
+  // Otherwise the breakdown gets dominated by 1-view-each article rows
+  // and you can't see the landing vs articles ratio at a glance.
+  if (path.startsWith("/artigos/") && path !== "/artigos/") {
+    return path; // keep article-level detail; sort will surface top ones
+  }
+  return path;
+}

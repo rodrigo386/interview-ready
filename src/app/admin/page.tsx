@@ -4,6 +4,7 @@ import { getAdminOverview } from "@/lib/admin/metrics";
 import {
   getPageViewMetrics,
   getPageViewDiagnostic,
+  getPageViewPathBreakdown,
 } from "@/lib/analytics/page-views";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { IndexNowButton } from "@/components/admin/IndexNowButton";
@@ -66,13 +67,19 @@ async function getPartnerStats(): Promise<{
 }
 
 export default async function AdminPage() {
-  const [overview, pageViewsResult, partnerStats, pageViewDiagnostic] =
-    await Promise.all([
-      getAdminOverview(),
-      getPageViewMetrics(),
-      getPartnerStats(),
-      getPageViewDiagnostic(),
-    ]);
+  const [
+    overview,
+    pageViewsResult,
+    partnerStats,
+    pageViewDiagnostic,
+    pathBreakdown,
+  ] = await Promise.all([
+    getAdminOverview(),
+    getPageViewMetrics(),
+    getPartnerStats(),
+    getPageViewDiagnostic(),
+    getPageViewPathBreakdown(),
+  ]);
   const pageViews = pageViewsResult.ok ? pageViewsResult.metrics : null;
   const pageViewsError = pageViewsResult.ok ? null : pageViewsResult;
 
@@ -141,6 +148,47 @@ export default async function AdminPage() {
         <p className="mt-2 text-xs text-text-tertiary">
           Bots filtrados por user-agent. Visitantes únicos identificados via cookie pv_vid (1 ano).
         </p>
+
+        {pathBreakdown && pathBreakdown.length > 0 && (
+          <div className="mt-6">
+            <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+              Top páginas (últimos 30 dias)
+            </p>
+            <p className="mt-1 text-xs text-text-tertiary">
+              Onde os visitantes caem. Ajuda a decidir se o gargalo é tráfego
+              (acima) ou conversão (abaixo).
+            </p>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs font-semibold uppercase text-text-tertiary">
+                  <tr className="border-b border-neutral-200 dark:border-zinc-800">
+                    <th className="py-2 pr-3">Path</th>
+                    <th className="py-2 pr-3 text-right">Visualizações</th>
+                    <th className="py-2 text-right">Visitantes únicos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pathBreakdown.map((row) => (
+                    <tr
+                      key={row.path}
+                      className="border-b border-neutral-100 last:border-0 dark:border-zinc-900"
+                    >
+                      <td className="py-2 pr-3 font-mono text-xs text-text-primary">
+                        {row.path}
+                      </td>
+                      <td className="py-2 pr-3 text-right text-text-secondary">
+                        {row.views.toLocaleString("pt-BR")}
+                      </td>
+                      <td className="py-2 text-right text-text-secondary">
+                        {row.uniqueVisitors.toLocaleString("pt-BR")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {pageViewDiagnostic && (
           <details className="mt-4 rounded-xl border border-neutral-200 bg-bg p-4 text-sm dark:border-zinc-800">
