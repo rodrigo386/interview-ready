@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getAdminOverview } from "@/lib/admin/metrics";
+import { getConversionFunnel } from "@/lib/admin/funnel";
 import {
   getPageViewMetrics,
   getPageViewDiagnostic,
@@ -73,12 +74,14 @@ export default async function AdminPage() {
     partnerStats,
     pageViewDiagnostic,
     pathBreakdown,
+    funnel,
   ] = await Promise.all([
     getAdminOverview(),
     getPageViewMetrics(),
     getPartnerStats(),
     getPageViewDiagnostic(),
     getPageViewPathBreakdown(),
+    getConversionFunnel(),
   ]);
   const pageViews = pageViewsResult.ok ? pageViewsResult.metrics : null;
   const pageViewsError = pageViewsResult.ok ? null : pageViewsResult;
@@ -93,6 +96,79 @@ export default async function AdminPage() {
           Métricas em tempo real. Atualiza a cada navegação.
         </p>
       </div>
+
+      {funnel && funnel.length > 0 && (
+        <Section title="Funil de conversão (all-time, excluindo admins)">
+          <p className="text-xs text-text-tertiary">
+            Onde o usuário cai entre tentar cadastro e virar pagante. % verde
+            = conversão pra próximo stage. % cinza = do topo.
+          </p>
+          <div className="mt-4 space-y-2">
+            {funnel.map((stage, i) => {
+              const isFirst = i === 0;
+              const dropPct = isFirst
+                ? null
+                : Math.max(0, 100 - stage.conversionFromPrev);
+              return (
+                <div
+                  key={stage.key}
+                  className="rounded-xl border border-neutral-200 bg-bg p-4 dark:border-zinc-800"
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-text-primary">
+                        {stage.label}
+                      </p>
+                      {stage.hint && (
+                        <p className="mt-0.5 truncate text-xs text-text-tertiary">
+                          {stage.hint}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-baseline gap-3 text-right">
+                      <span className="text-2xl font-bold text-text-primary">
+                        {stage.count.toLocaleString("pt-BR")}
+                      </span>
+                      {!isFirst && (
+                        <>
+                          <span
+                            className={
+                              dropPct !== null && dropPct > 50
+                                ? "text-xs font-semibold text-red-700"
+                                : dropPct !== null && dropPct > 30
+                                  ? "text-xs font-semibold text-yellow-700"
+                                  : "text-xs font-semibold text-green-700"
+                            }
+                          >
+                            {stage.conversionFromPrev.toFixed(1)}%
+                          </span>
+                          <span className="text-xs text-text-tertiary">
+                            ({stage.conversionFromTop.toFixed(1)}% do topo)
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {dropPct !== null && (
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-line">
+                      <div
+                        className={
+                          dropPct > 50
+                            ? "h-full bg-red-500"
+                            : dropPct > 30
+                              ? "h-full bg-yellow-500"
+                              : "h-full bg-green-500"
+                        }
+                        style={{ width: `${stage.conversionFromPrev}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
 
       <Section title="Visitas ao site">
         {pageViews ? (

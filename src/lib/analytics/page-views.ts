@@ -245,6 +245,7 @@ export async function getPageViewPathBreakdown(): Promise<PathBreakdownRow[] | n
 
     const byPath = new Map<string, { views: number; visitors: Set<string> }>();
     for (const r of data as Array<{ path: string; visitor_id: string }>) {
+      if (isInternalOrProbe(r.path)) continue;
       // Collapse article slugs into a single bucket so the breakdown isn't
       // diluted across 15+ rows. Keep landing and core funnel pages distinct.
       const key = normalizePath(r.path);
@@ -274,4 +275,20 @@ function normalizePath(path: string): string {
     return path; // keep article-level detail; sort will surface top ones
   }
   return path;
+}
+
+const BOT_PROBE_RE =
+  /^\/(\.env|\.git|\.aws|\.htaccess|\.well-known\/security|wp-|wordpress|phpmyadmin|admin\.php|xmlrpc|superadmin|server-status|cgi-bin)/i;
+
+function isInternalOrProbe(path: string): boolean {
+  // Internal traffic (admin button presses, dashboard) — already filtered
+  // client-side but server-side admin actions (testTracking) bypass that.
+  if (path.startsWith("/admin")) return true;
+  if (path.startsWith("/dashboard")) return true;
+  if (path.startsWith("/profile")) return true;
+  if (path.startsWith("/prep/")) return true;
+  if (path.startsWith("/partner")) return true;
+  // Hostile scanners probing for misconfig — pollutes the breakdown.
+  if (BOT_PROBE_RE.test(path)) return true;
+  return false;
 }
