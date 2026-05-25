@@ -6,7 +6,6 @@ import { reconcileBillingFromAsaas } from "@/lib/billing/reconcile";
 import { Button } from "@/components/ui/Button";
 import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
 import { DeletePrepButton } from "@/components/prep/DeletePrepButton";
-import { Logo } from "@/components/Logo";
 import { FreeTierBanner } from "@/components/billing/FreeTierBanner";
 
 type SessionRow = {
@@ -106,18 +105,79 @@ export default async function DashboardPage({
             credits={billing.prep_credits ?? 0}
           />
         )}
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Logo variant="symbol" size={120} className="opacity-80" />
-          <h1 className="mt-8 text-2xl font-semibold text-text-primary">
-            Prepare sua primeira vaga
-          </h1>
-          <p className="mt-3 max-w-md text-sm text-text-secondary">
-            Em minutos, você recebe o dossiê completo da vaga: empresa, CV, roteiros.
-          </p>
-          <Link href="/prep/new" className="mt-8">
-            <Button size="lg">Criar meu primeiro prep</Button>
-          </Link>
-        </div>
+        <section className="mx-auto max-w-3xl py-10 md:py-16">
+          <div className="text-center">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-700">
+              Bem-vindo
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
+              Sua primeira preparação é grátis
+              <span className="text-orange-500"> e vitalícia</span>
+            </h1>
+            <p className="mt-4 max-w-xl mx-auto text-base text-text-secondary md:text-lg">
+              Cola o link da vaga e seu CV. Em ~60 segundos volta com o dossiê
+              completo: ATS, empresa pesquisada, perguntas prováveis e roteiros.
+            </p>
+
+            <div className="mt-7">
+              <Link href="/prep/new">
+                <Button size="lg">Criar meu primeiro prep →</Button>
+              </Link>
+              <p className="mt-3 text-xs text-text-tertiary">
+                Sem cartão. Pode usar agora.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <PreviewCard
+              eyebrow="Tela 1 · Visão geral"
+              title="Pesquisa da empresa"
+              body="Notícias recentes, contexto estratégico, pessoas-chave e perguntas que isso cria."
+              accent="orange"
+            />
+            <PreviewCard
+              eyebrow="Tela 2 · ATS"
+              title="Score do seu CV vs. a vaga"
+              body="Gauge + 3 issues prioritárias. CV reescrito pronto pra baixar em DOCX."
+              accent="red"
+            />
+            <PreviewCard
+              eyebrow="Telas 3-5 · Perguntas"
+              title="Roteiros prontos pra resposta"
+              body="Perguntas básicas, aprofundamento e perguntas estratégicas pra você fazer ao recrutador."
+              accent="green"
+            />
+          </div>
+
+          <div className="mt-10 rounded-2xl border border-line bg-bg p-5 text-sm text-text-secondary">
+            <p className="font-medium text-text-primary">
+              Tudo que você precisa pra começar:
+            </p>
+            <ul className="mt-3 space-y-1.5">
+              <li className="flex items-start gap-2">
+                <span aria-hidden className="text-orange-500">1.</span>
+                <span>
+                  <strong className="text-text-primary">Link da vaga</strong>{" "}
+                  (LinkedIn, Gupy, Catho, site da empresa) — ou cola o texto.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span aria-hidden className="text-orange-500">2.</span>
+                <span>
+                  <strong className="text-text-primary">Seu CV</strong> em PDF,
+                  DOCX ou texto colado.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span aria-hidden className="text-orange-500">3.</span>
+                <span>
+                  Aperta gerar. Em ~60 segundos o dossiê está pronto.
+                </span>
+              </li>
+            </ul>
+          </div>
+        </section>
       </div>
     );
   }
@@ -220,4 +280,35 @@ function atsScoreFromRow(row: SessionRow): number | null {
   if (row.ats_score == null) return null;
   const n = Number(row.ats_score);
   return Number.isFinite(n) ? n : null;
+}
+
+function PreviewCard({
+  eyebrow,
+  title,
+  body,
+  accent,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+  accent: "orange" | "red" | "green";
+}) {
+  const dot =
+    accent === "orange"
+      ? "bg-orange-500"
+      : accent === "red"
+        ? "bg-red-500"
+        : "bg-green-500";
+  return (
+    <div className="rounded-2xl border border-line bg-bg p-5 shadow-prep">
+      <div className="flex items-center gap-2">
+        <span aria-hidden className={`h-2 w-2 rounded-full ${dot}`} />
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text-tertiary">
+          {eyebrow}
+        </p>
+      </div>
+      <h3 className="mt-2 text-base font-semibold text-text-primary">{title}</h3>
+      <p className="mt-1.5 text-sm leading-snug text-text-secondary">{body}</p>
+    </div>
+  );
 }

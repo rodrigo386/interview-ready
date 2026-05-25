@@ -115,8 +115,12 @@ export async function getConversionFunnel(): Promise<FunnelStage[] | null> {
     const top = stages[0].count || 1; // avoid /0
     return stages.map((s, i) => {
       const prev = i === 0 ? s.count : stages[i - 1].count;
-      const conversionFromPrev = prev > 0 ? (s.count / prev) * 100 : 0;
-      const conversionFromTop = (s.count / top) * 100;
+      // Cap at 100% — `paying` can exceed `activated_prep` (someone pays
+      // before generating a prep, especially in test/seeded accounts). The
+      // funnel display reads cleaner if we never show >100% conversion.
+      const rawConv = prev > 0 ? (s.count / prev) * 100 : 0;
+      const conversionFromPrev = Math.min(100, rawConv);
+      const conversionFromTop = Math.min(100, (s.count / top) * 100);
       return {
         ...s,
         conversionFromPrev: Math.round(conversionFromPrev * 10) / 10,
