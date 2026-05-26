@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { attachReferral } from "@/lib/affiliate/attribution";
+import { deriveNameFromEmail } from "@/lib/auth/derive-name";
 
 // Experiment PRE-14 (signup friction reduction, second pass): only email +
 // password. Full name is derived from the email local-part with light cleanup
@@ -18,27 +19,6 @@ const schema = z.object({
   password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
 });
 
-/**
- * Best-effort guess at a display name from the email local-part. Used as the
- * default `full_name` when the user signs up. Always overridable in /profile.
- * Examples:
- *   ana.silva@x.com → "Ana Silva"
- *   joao_pedro_123@x.com → "Joao Pedro 123"
- *   anaSilva@x.com → "Ana Silva"  (split on camelHumps)
- *   x@x.com → "X"
- */
-export function deriveNameFromEmail(email: string): string {
-  const local = email.split("@")[0] ?? "";
-  if (!local) return "";
-  return local
-    .replace(/[._+-]+/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => (w[0] ? w[0].toUpperCase() + w.slice(1) : w))
-    .join(" ");
-}
 
 export type SignupState = {
   error?: string;

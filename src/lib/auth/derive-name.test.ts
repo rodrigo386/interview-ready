@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveNameFromEmail } from "./actions";
+import { deriveNameFromEmail } from "./derive-name";
 
 describe("deriveNameFromEmail", () => {
   it("splits on dots", () => {
