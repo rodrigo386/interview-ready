@@ -11,6 +11,8 @@ import { Faq } from "@/components/landing/Faq";
 import { FeaturedArticles } from "@/components/landing/FeaturedArticles";
 import { FinalCta } from "@/components/landing/FinalCta";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { SocialProof } from "@/components/landing/SocialProof";
+import { ExitIntentPopup } from "@/components/landing/ExitIntentPopup";
 
 export default async function LandingPage() {
   let user = null;
@@ -31,6 +33,7 @@ export default async function LandingPage() {
       <LandingNavbar />
       <main className="bg-bg">
         <Hero />
+        <SocialProof />
         <WhatIs />
         <UseCases />
         <HowItWorks />
@@ -41,6 +44,8 @@ export default async function LandingPage() {
         <FinalCta />
       </main>
       <LandingFooter />
+      {/* Anon-only branch (line above redirects logged-in users to /dashboard) */}
+      <ExitIntentPopup />
     </>
   );
 }

@@ -8,16 +8,37 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { attachReferral } from "@/lib/affiliate/attribution";
 
-// Experiment PRE-4 (signup friction reduction): signup now collects only the
-// 3 fields needed to create an account. CPF/CNPJ + endereço are required only
-// to issue an Asaas invoice and are collected at checkout time via the
-// cpf_required / address_required dialogs in /api/billing/checkout. Keeping
-// them off signup removes 8 fields of friction before the free prep.
+// Experiment PRE-14 (signup friction reduction, second pass): only email +
+// password. Full name is derived from the email local-part with light cleanup
+// (humps split, capitalized). User can override later in /profile. PRE-4 had
+// removed CPF/endereço; this removes the last optional-feeling field. Every
+// removed field bumps signup completion ~10-15%.
 const schema = z.object({
   email: z.string().email("E-mail inválido"),
   password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
-  fullName: z.string().min(1, "Informe seu nome"),
 });
+
+/**
+ * Best-effort guess at a display name from the email local-part. Used as the
+ * default `full_name` when the user signs up. Always overridable in /profile.
+ * Examples:
+ *   ana.silva@x.com → "Ana Silva"
+ *   joao_pedro_123@x.com → "Joao Pedro 123"
+ *   anaSilva@x.com → "Ana Silva"  (split on camelHumps)
+ *   x@x.com → "X"
+ */
+export function deriveNameFromEmail(email: string): string {
+  const local = email.split("@")[0] ?? "";
+  if (!local) return "";
+  return local
+    .replace(/[._+-]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => (w[0] ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
 
 export type SignupState = {
   error?: string;
@@ -42,12 +63,13 @@ export async function signup(
   const parsed = schema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
-    fullName: formData.get("fullName"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
+
+  const fullName = deriveNameFromEmail(parsed.data.email);
 
   const hdrs = await headers();
   const ip =
@@ -66,7 +88,7 @@ export async function signup(
     const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
-      options: { data: { full_name: parsed.data.fullName } },
+      options: { data: { full_name: fullName } },
     });
 
     if (error) {

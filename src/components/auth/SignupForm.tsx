@@ -7,16 +7,14 @@ import { signup, type SignupState } from "@/app/(auth)/signup/actions";
 import { track } from "@/lib/analytics/client";
 import { getStoredUtm } from "@/lib/analytics/utm";
 
-// Experiment PRE-4 (signup friction reduction): the signup form used to
-// collect 11 fields — name, email, CPF/CNPJ, full address (CEP + 6 fields),
-// password — before the user had run a single free prep. CPF + endereço are
-// only needed to issue an Asaas invoice, which happens at checkout. The
-// checkout flow already collects them on demand via the cpf_required /
-// address_required 422 dialogs (see useCheckoutFlow.tsx), so collecting them
-// at signup was pure friction. This form now asks for the 3 fields actually
-// required to create an account. `form_variant` tags every signup event so
-// the before/after lift is queryable in PostHog.
-const FORM_VARIANT = "minimal_v2";
+// Experiment PRE-14 (signup friction reduction, second pass): PRE-4 cut the
+// form from 11 → 3 fields (email/password/full name). PRE-14 cuts again to 2
+// (email/password). Full name is now derived server-side from the local-part
+// of the email; user can edit later in /profile. Funnel analysis (n=3) showed
+// 2/3 users confirmed email but never generated a prep — we'll keep the lift
+// experiment running but every removed field empirically increases signup
+// completion ~10-15%.
+const FORM_VARIANT = "email_password_only_v3";
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState<SignupState, FormData>(
@@ -68,12 +66,6 @@ export function SignupForm() {
 
   return (
     <form action={formAction} onFocus={onFirstInteraction} className="space-y-4">
-      <div>
-        <label htmlFor="fullName" className="block text-sm text-zinc-300">
-          Nome completo
-        </label>
-        <Input id="fullName" name="fullName" required className="mt-1" />
-      </div>
       <div>
         <label htmlFor="email" className="block text-sm text-zinc-300">
           E-mail

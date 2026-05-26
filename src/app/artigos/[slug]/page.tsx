@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { ArticleInlineCta } from "@/components/blog/ArticleInlineCta";
+import { splitMdxAtMidpoint } from "@/lib/blog/split-mdx";
 import {
   getAllPosts,
   getPostBySlug,
@@ -196,7 +198,7 @@ export default async function ArticlePage({
           </header>
 
           <div className="prose prose-neutral mt-10 max-w-none prose-headings:tracking-tight prose-headings:text-ink prose-h2:mt-12 prose-h2:text-2xl prose-h2:font-extrabold prose-h3:mt-8 prose-h3:text-lg prose-h3:font-bold prose-p:text-ink-2 prose-p:leading-[1.7] prose-strong:text-ink prose-a:text-orange-700 prose-a:underline-offset-4 hover:prose-a:underline prose-blockquote:border-orange-500 prose-blockquote:text-ink-2 prose-blockquote:font-normal prose-li:text-ink-2 prose-li:my-1 prose-hr:border-line dark:prose-invert">
-            <MDXRemote source={post.content} />
+            <ArticleBodyWithCta content={post.content} />
           </div>
 
           <footer className="mt-14 rounded-xl border border-line bg-white p-6 shadow-prep">
@@ -249,6 +251,24 @@ export default async function ArticlePage({
         </article>
       </main>
       <LandingFooter />
+    </>
+  );
+}
+
+/**
+ * Renders MDX content with the InlineCta injected at the midpoint heading.
+ * Short articles (< 3 H2s) skip the inline CTA — too cramped to be useful.
+ */
+function ArticleBodyWithCta({ content }: { content: string }) {
+  const split = splitMdxAtMidpoint(content);
+  if (!split) {
+    return <MDXRemote source={content} />;
+  }
+  return (
+    <>
+      <MDXRemote source={split.before} />
+      <ArticleInlineCta />
+      <MDXRemote source={split.after} />
     </>
   );
 }

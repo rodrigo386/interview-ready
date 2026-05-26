@@ -14,12 +14,14 @@ test.describe("Public pages render without auth", () => {
     await expect(page.getByText(/CNPJ 62\.805\.016\/0001-29/)).toBeVisible();
   });
 
-  test("/signup form has the 3 account fields (PRE-4: CPF + address moved to checkout)", async ({ page }) => {
+  test("/signup form has only email + password (PRE-14: name derived from email)", async ({ page }) => {
     await page.goto("/signup");
     await expect(page.getByRole("heading", { name: /Criar sua conta/i })).toBeVisible();
-    await expect(page.getByLabel("Nome completo")).toBeVisible();
     await expect(page.getByLabel("E-mail")).toBeVisible();
     await expect(page.getByLabel("Senha")).toBeVisible();
+    // PRE-14: full name was the last "tell me about you" field — removed.
+    // Derived server-side from the email local-part.
+    await expect(page.getByLabel(/Nome completo/i)).toHaveCount(0);
     // CPF + endereço are no longer collected at signup — they belong at
     // checkout (collected on demand by useCheckoutFlow.tsx).
     await expect(page.getByLabel(/CPF/i)).toHaveCount(0);
