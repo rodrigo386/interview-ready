@@ -5,10 +5,12 @@ import {
   atsAnalysisSchema,
   companyIntelSchema,
   cvRewriteSchema,
+  salaryBenchmarkSchema,
   type PrepSection,
   type AtsAnalysis,
   type CompanyIntel,
   type CvRewrite,
+  type SalaryBenchmark,
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
 import { callCerebrasJson } from "@/lib/ai/cerebras";
@@ -1020,6 +1022,189 @@ export async function generateCompanyIntel(params: {
     `Gemini company-intel: no candidate parsed (${candidates.length} tried). Last error: ${parseErr ?? "unknown"}`,
     text,
   );
+}
+
+// Stub returned when MOCK_ANTHROPIC=1 — keeps E2E tests fast + offline.
+const MOCK_SALARY_BENCHMARK: SalaryBenchmark = {
+  seniority: "pleno",
+  min_brl: 8000,
+  median_brl: 12000,
+  max_brl: 18000,
+  currency: "BRL",
+  employment_type_hint: "CLT",
+  region_hint: "Brasil (média nacional)",
+  notes: "Mock salary benchmark — não usar como referência real.",
+  confidence: "low",
+};
+
+/**
+ * Generate a salary range for the role+company combo using Gemini with
+ * Google Search grounding. Mirrors generateCompanyIntel exactly:
+ *  - grounded call first (current Brazilian salary sources)
+ *  - fallback to ungrounded (training knowledge — still gives a usable range)
+ *  - lenient JSON parsing (multiple ```json blocks → try each, pick first
+ *    matching schema)
+ *  - returns null on no-parseable-output (Stage marks skipped, UI shows
+ *    retry button — never blocks the rest of the prep)
+ *
+ * Output is small (~300-500 chars JSON) so maxOutputTokens stays tight.
+ * Temperature is lower than company_intel (0.3 vs 0.4) because we want
+ * deterministic factual extraction, not narrative.
+ */
+export async function generateSalaryBenchmark(params: {
+  system: string;
+  user: string;
+}): Promise<SalaryBenchmark | null> {
+  if (process.env.MOCK_ANTHROPIC === "1") {
+    return MOCK_SALARY_BENCHMARK;
+  }
+  if (!env.GOOGLE_API_KEY) {
+    throw new Error("GOOGLE_API_KEY is not set");
+  }
+
+  const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
+
+  async function callOnce(opts: {
+    modelId: string;
+    grounded: boolean;
+    label: string;
+  }): Promise<string> {
+    const model = client.getGenerativeModel({
+      model: opts.modelId,
+      systemInstruction: params.system,
+      ...(opts.grounded ? { tools: [{ googleSearch: {} }] as never } : {}),
+      generationConfig: {
+        // Salary output JSON is small (~500 chars). Grounding adds citation
+        // overhead so we still allow 4k tokens — plenty of headroom without
+        // wasting budget like company_intel's 12k.
+        maxOutputTokens: 4000,
+        temperature: 0.3,
+      },
+    });
+    console.log(`[gemini] salary-benchmark ${opts.label} (${opts.modelId}) starting`);
+    const t0 = Date.now();
+    const result = await model.generateContent(params.user);
+    const text = result.response.text();
+    console.log(
+      `[gemini] salary-benchmark ${opts.label} completed in ${Date.now() - t0}ms (${text.length} chars)`,
+    );
+    return text;
+  }
+
+  let text = "";
+  let groundedErr: unknown = null;
+  try {
+    text = await callGeminiWithRetry("salary-benchmark-grounded", (modelId) =>
+      callOnce({ modelId, grounded: true, label: "googleSearch" }),
+    );
+  } catch (err) {
+    groundedErr = err;
+  }
+
+  if (!text) {
+    try {
+      console.warn("[gemini] salary-benchmark falling back to ungrounded call");
+      text = await callGeminiWithRetry(
+        "salary-benchmark-ungrounded",
+        (modelId) => callOnce({ modelId, grounded: false, label: "ungrounded" }),
+      );
+    } catch (err) {
+      const groundedMsg = groundedErr instanceof Error ? groundedErr.message : String(groundedErr);
+      const ungroundedMsg = err instanceof Error ? err.message : String(err);
+      const bothTransient =
+        isTransientGeminiError(groundedErr) && isTransientGeminiError(err);
+      const userMessage = bothTransient
+        ? "O serviço de pesquisa salarial está temporariamente sobrecarregado. Tente novamente em alguns minutos."
+        : `Falha na pesquisa salarial. Detalhes: ${ungroundedMsg}`;
+      throw new GeminiResponseError(
+        `${userMessage}\n\n[grounded] ${groundedMsg}\n[ungrounded] ${ungroundedMsg}`,
+        "",
+      );
+    }
+  }
+
+  const stripped = stripCodeFences(text);
+  const candidates = stripped.startsWith("{") ? [stripped] : extractJsonObjects(stripped);
+
+  if (candidates.length === 0) {
+    console.warn("[gemini] salary-benchmark produced no parseable JSON; skipping");
+    return null;
+  }
+
+  let parseErr: string | null = null;
+  for (const jsonStr of candidates) {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(jsonStr);
+    } catch (err) {
+      parseErr = `JSON.parse: ${err instanceof Error ? err.message : String(err)}`;
+      continue;
+    }
+    const clean = stripUrlFields(raw);
+    const sanitized = sanitizeSalaryBenchmark(clean);
+    const parsed = salaryBenchmarkSchema.safeParse(sanitized);
+    if (parsed.success) return parsed.data;
+    parseErr = `schema: ${parsed.error.message}`;
+  }
+
+  throw new GeminiResponseError(
+    `Gemini salary-benchmark: no candidate parsed (${candidates.length} tried). Last error: ${parseErr ?? "unknown"}`,
+    text,
+  );
+}
+
+/**
+ * Best-effort cleanup of a parsed salary JSON before strict schema validation.
+ * Handles common Gemini output drift:
+ *  - String amounts ("R$ 8.000" or "8000") → integer
+ *  - Missing currency → default "BRL"
+ *  - Out-of-range numbers (model occasionally emits salary as centavos) →
+ *    if value > 1M and looks like centavos, divide by 100
+ *  - Trim string fields to schema max
+ */
+function sanitizeSalaryBenchmark(value: unknown): unknown {
+  if (!value || typeof value !== "object") return value;
+  const v = { ...(value as Record<string, unknown>) };
+
+  // Coerce amounts
+  for (const field of ["min_brl", "median_brl", "max_brl"] as const) {
+    const raw = v[field];
+    if (typeof raw === "string") {
+      // "R$ 8.000,00" → 8000. Strip currency, dots (thousands), comma decimals.
+      const cleaned = raw
+        .replace(/R\$\s*/i, "")
+        .replace(/\./g, "")
+        .replace(/,\d{0,2}$/, "")
+        .trim();
+      const n = parseInt(cleaned, 10);
+      if (Number.isFinite(n)) v[field] = n;
+    }
+    if (typeof v[field] === "number") {
+      const n = v[field] as number;
+      // If value is suspiciously huge (>1M) AND divisible by 100, assume
+      // model gave centavos. R$ 8.500,00 → 850000 → divide back to 8500.
+      if (n > 1_000_000 && n % 100 === 0) {
+        v[field] = Math.floor(n / 100);
+      }
+    }
+  }
+
+  // Default currency
+  if (!v.currency) v.currency = "BRL";
+
+  // Trim long string fields to schema max so we don't reject on overflow
+  for (const [field, max] of [
+    ["region_hint", 200],
+    ["employment_type_hint", 200],
+    ["notes", 500],
+  ] as const) {
+    const raw = v[field];
+    if (typeof raw === "string" && raw.length > max) {
+      v[field] = raw.slice(0, max);
+    }
+  }
+
+  return v;
 }
 
 function stripUrlFields(value: unknown): unknown {

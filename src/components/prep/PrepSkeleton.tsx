@@ -10,6 +10,7 @@ import { PrepSkeletonRefresh } from "./PrepSkeletonRefresh";
  */
 const PIPELINE_STEPS: { key: NonNullable<PrepProgressStep>; label: string }[] = [
   { key: "company_research", label: "Pesquisando a empresa" },
+  { key: "salary_benchmark", label: "Estimando faixa salarial" },
   { key: "likely", label: "Perguntas prováveis" },
   { key: "deep-dive", label: "Perguntas de aprofundamento" },
   { key: "tricky", label: "Perguntas difíceis" },
@@ -35,8 +36,10 @@ export function PrepSkeleton({
     ? PIPELINE_STEPS.findIndex((s) => s.key === progressStep)
     : -1;
 
-  // For the "Gerando 3/5" counter, only sections count (skip company_research).
-  const sectionIndexInPipeline = currentIndex - 1; // 0-based section index, -1 if on company_research
+  // For the "Gerando 3/5" counter, only sections count. Two non-section
+  // stages run first (company_research → salary_benchmark), so the section
+  // index is currentIndex - 2.
+  const sectionIndexInPipeline = currentIndex - 2; // negative while on pre-section stages
   const isOnSection = sectionIndexInPipeline >= 0;
 
   return (

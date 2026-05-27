@@ -9,8 +9,9 @@ import { DeletePrepButton } from "./DeletePrepButton";
 import { CompanyCard } from "./CompanyCard";
 import { JobCard } from "./JobCard";
 import { IntelCard } from "./IntelCard";
+import { SalaryCard } from "./SalaryCard";
 import type { StepNumber } from "@/lib/prep/types";
-import type { CompanyIntel } from "@/lib/ai/schemas";
+import type { CompanyIntel, SalaryBenchmark } from "@/lib/ai/schemas";
 
 const FOCUS_BY_STEP: Record<
   StepNumber,
@@ -69,11 +70,15 @@ export function Tela1Visual({
   jobDescription,
   companyIntel,
   companyIntelStatus,
+  salaryBenchmark,
+  salaryBenchmarkStatus,
 }: {
   sessionId: string;
   jobDescription?: string | null;
   companyIntel?: CompanyIntel | null;
   companyIntelStatus?: string | null;
+  salaryBenchmark?: SalaryBenchmark | null;
+  salaryBenchmarkStatus?: string | null;
 }) {
   const { company, role, estimatedMinutes, currentStep, completedSteps } = usePrepShell();
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -122,7 +127,7 @@ export function Tela1Visual({
         <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.6px] text-ink-3">
           Inteligência da vaga
         </h2>
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <CompanyCard
             sessionId={sessionId}
             companyName={company}
@@ -134,6 +139,11 @@ export function Tela1Visual({
             sessionId={sessionId}
             intel={companyIntel ?? null}
             status={companyIntelStatus ?? null}
+          />
+          <SalaryCard
+            sessionId={sessionId}
+            benchmark={salaryBenchmark ?? null}
+            status={salaryBenchmarkStatus ?? null}
           />
         </div>
       </section>

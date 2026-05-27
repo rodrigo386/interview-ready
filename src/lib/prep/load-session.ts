@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type PrepProgressStep =
   | "company_research"
+  | "salary_benchmark"
   | "likely"
   | "deep-dive"
   | "tricky"
@@ -25,6 +26,9 @@ export type PrepSessionRow = {
   job_description: string | null;
   company_intel: unknown;
   company_intel_status: string | null;
+  salary_benchmark: unknown;
+  salary_benchmark_status: string | null;
+  salary_benchmark_error: string | null;
   progress_step: PrepProgressStep;
 };
 
@@ -60,6 +64,9 @@ export const loadPrepSession = cache(async (id: string): Promise<PrepSessionRow 
         "job_description",
         "company_intel",
         "company_intel_status",
+        "salary_benchmark",
+        "salary_benchmark_status",
+        "salary_benchmark_error",
         "progress_step",
       ].join(", "),
     )

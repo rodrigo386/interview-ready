@@ -2,9 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import {
   generateSection,
   generateCompanyIntel,
+  generateSalaryBenchmark,
   GeminiResponseError,
 } from "@/lib/ai/gemini";
 import { buildCompanyResearchPrompt } from "@/lib/ai/prompts/company-research";
+import { buildSalaryBenchmarkPrompt } from "@/lib/ai/prompts/salary-benchmark";
 import {
   buildSectionPrompt,
   SECTION_KINDS,
@@ -63,6 +65,13 @@ export async function runPipeline(sessionId: string): Promise<void> {
 
   // ---------------- Stage A: Company research ----------------
   const intel = await runStageA(sessionId, session, supabase);
+
+  // ---------------- Stage Salary: Salary benchmark ----------------
+  // Independent of Stage A — uses job_description directly, not intel.
+  // Runs sequentially after A to avoid hammering the Gemini quota; ~3s
+  // extra in the pipeline. Failure is graceful (writes 'failed' status,
+  // user retries from the UI).
+  await runStageSalary(sessionId, session, supabase);
 
   // ---------------- Stage B: 5 sequential sections ----------------
   await runStageB(sessionId, session, intel, meta, supabase);
@@ -130,6 +139,62 @@ async function runStageA(
       })
       .eq("id", sessionId);
     return null;
+  }
+}
+
+/**
+ * Stage Salary: Brazilian salary benchmark for the role.
+ * Mirrors runStageA shape exactly — graceful degradation, writes status,
+ * never throws. Independent of Stage A intel; uses job_description directly
+ * to infer seniority + region.
+ */
+async function runStageSalary(
+  sessionId: string,
+  session: {
+    company_name: string;
+    job_title: string;
+    job_description: string;
+  },
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<void> {
+  await setProgress(sessionId, "salary_benchmark", supabase);
+  await supabase
+    .from("prep_sessions")
+    .update({ salary_benchmark_status: "researching" })
+    .eq("id", sessionId);
+
+  const prompt = buildSalaryBenchmarkPrompt({
+    companyName: session.company_name,
+    jobTitle: session.job_title,
+    jobDescription: session.job_description,
+  });
+
+  try {
+    const benchmark = await generateSalaryBenchmark(prompt);
+    if (benchmark) {
+      await supabase
+        .from("prep_sessions")
+        .update({
+          salary_benchmark: benchmark,
+          salary_benchmark_status: "complete",
+        })
+        .eq("id", sessionId);
+      return;
+    }
+    await supabase
+      .from("prep_sessions")
+      .update({ salary_benchmark_status: "skipped" })
+      .eq("id", sessionId);
+  } catch (err) {
+    console.error(`[pipeline ${sessionId}] Stage Salary failed:`, err);
+    const message = formatIntelError(err).slice(0, 8000);
+    await supabase
+      .from("prep_sessions")
+      .update({
+        salary_benchmark_status: "failed",
+        salary_benchmark_error: message,
+      })
+      .eq("id", sessionId);
   }
 }
 

@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { companyIntelSchema, prepGuideSchema } from "@/lib/ai/schemas";
+import {
+  companyIntelSchema,
+  prepGuideSchema,
+  salaryBenchmarkSchema,
+} from "@/lib/ai/schemas";
 import { Tela1Visual } from "@/components/prep/Tela1Visual";
 import { PartialPrepBanner } from "@/components/prep/PartialPrepBanner";
 import { PrepCompletedTracker } from "@/components/prep/PrepCompletedTracker";
@@ -22,6 +26,12 @@ export default async function PrepHomePage({
       ? companyIntelSchema.safeParse(data?.company_intel)
       : null;
   const companyIntel = intelParsed?.success ? intelParsed.data : null;
+
+  const salaryParsed =
+    data?.salary_benchmark_status === "complete"
+      ? salaryBenchmarkSchema.safeParse(data?.salary_benchmark)
+      : null;
+  const salaryBenchmark = salaryParsed?.success ? salaryParsed.data : null;
 
   // Check for partial-generation flag — pipeline sets meta.partial=true and
   // populates meta.failed_sections when 3-4 of 5 sections succeeded.
@@ -50,6 +60,8 @@ export default async function PrepHomePage({
         jobDescription={data?.job_description ?? null}
         companyIntel={companyIntel}
         companyIntelStatus={data?.company_intel_status ?? null}
+        salaryBenchmark={salaryBenchmark}
+        salaryBenchmarkStatus={data?.salary_benchmark_status ?? null}
       />
     </>
   );

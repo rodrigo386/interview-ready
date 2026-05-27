@@ -88,6 +88,7 @@ export const LIMITS = {
   ats: { key: "ats", limit: 10, windowSeconds: 3600 },
   cvRewrite: { key: "cvRewrite", limit: 10, windowSeconds: 3600 },
   companyIntel: { key: "companyIntel", limit: 10, windowSeconds: 3600 },
+  salaryBenchmark: { key: "salaryBenchmark", limit: 10, windowSeconds: 3600 },
   fetchJd: { key: "fetchJd", limit: 30, windowSeconds: 3600 },
   // Auth limits — generous enough for legitimate "I mistyped" but kills
   // credential stuffing / password spraying. Bucket per ip+email so an
