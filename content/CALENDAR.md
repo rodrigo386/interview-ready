@@ -13,7 +13,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 ---
 
-## ✅ Publicados (18)
+## ✅ Publicados (19)
 
 | Post | Slug | Tags-âncora |
 |---|---|---|
@@ -35,6 +35,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 | ✅ Quanto tempo demora um processo seletivo no Brasil | quanto-tempo-demora-processo-seletivo | processo seletivo, recrutamento |
 | ✅ Como saber se a vaga é fake | como-saber-se-vaga-e-fake | processo seletivo, vagas falsas |
 | ✅ O que NÃO falar em entrevista de emprego | o-que-nao-falar-em-entrevista | processo seletivo, erros, entrevista |
+| ✅ Como demonstrar liderança sem ter cargo | como-demonstrar-lideranca-sem-cargo | liderança, comportamental, STAR |
 
 ---
 
@@ -42,29 +43,28 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 | # | Título sugerido | Slug | Por que prioridade | Volume estimado |
 |---|---|---|---|---|
-| 1 | Como demonstrar liderança sem ter cargo | como-demonstrar-lideranca-sem-cargo | STAR ancora aqui — cross-link forte | Médio |
-| 2 | Pretensão salarial analista pleno em SP | pretensao-salarial-analista-pleno-sp | Long-tail geográfico, baixa concorrência | Médio |
-| 3 | Pretensão salarial analista pleno no RJ | pretensao-salarial-analista-pleno-rj | Long-tail geográfico, baixa concorrência | Médio |
-| 4 | Salário de gerente em multinacional Brasil | salario-gerente-multinacional-brasil | BOFU; usa dados Robert Half + Catho | Médio |
-| 5 | Soft skills mais pedidas no Brasil em 2026 | soft-skills-mais-pedidas-brasil-2026 | Informacional alto volume | Alto |
+| 1 | Pretensão salarial analista pleno em SP | pretensao-salarial-analista-pleno-sp | Long-tail geográfico, baixa concorrência | Médio |
+| 2 | Pretensão salarial analista pleno no RJ | pretensao-salarial-analista-pleno-rj | Long-tail geográfico, baixa concorrência | Médio |
+| 3 | Salário de gerente em multinacional Brasil | salario-gerente-multinacional-brasil | BOFU; usa dados Robert Half + Catho | Médio |
+| 4 | Soft skills mais pedidas no Brasil em 2026 | soft-skills-mais-pedidas-brasil-2026 | Informacional alto volume | Alto |
+| 5 | Hard skills que valem promoção | hard-skills-que-valem-promocao | Cross-link com pleno/sênior post | Médio |
 
 ---
 
-## ⚪ Queue (11 — ordem sugerida)
+## ⚪ Queue (10 — ordem sugerida)
 
 | # | Título sugerido | Slug | Notas |
 |---|---|---|---|
-| 6 | Hard skills que valem promoção | hard-skills-que-valem-promocao | Cross-link com pleno/sênior post |
-| 7 | Como explicar saída da empresa anterior | como-explicar-saida-empresa-anterior | Pergunta comum, alta dor |
-| 8 | Por que o RH não te chamou de volta | por-que-rh-nao-chamou-de-volta | Pós-rejeição emocional |
-| 9 | Vagas que pedem inglês mas não usam | vagas-pedem-ingles-mas-nao-usam | Engajamento alto, niche |
-| 10 | Entrevista de promoção interna | entrevista-promocao-interna | Cross-link com pleno/sênior |
-| 11 | Dinâmica de grupo trainee 2026 | dinamica-grupo-trainee-2026 | Sazonal — agendar Q1/Q2 |
-| 12 | Carta de apresentação serve em 2026? | carta-apresentacao-serve-2026 | Atemporal, alto volume |
-| 13 | Currículo de 1 página vs 2 páginas | curriculo-1-pagina-vs-2-paginas | Decisão prática, alto volume |
-| 14 | Currículo Lattes serve pra vaga corporativa? | curriculo-lattes-vaga-corporativa | Long-tail mas defensivo |
-| 15 | Entrevista por vídeo — o que vestir e setup | entrevista-video-o-que-vestir-setup | Cross-link com Gupy post |
-| 16 | Resposta para "onde se vê em 5 anos" | onde-se-ve-em-5-anos-resposta | Pergunta comum clássica |
+| 6 | Como explicar saída da empresa anterior | como-explicar-saida-empresa-anterior | Pergunta comum, alta dor |
+| 7 | Por que o RH não te chamou de volta | por-que-rh-nao-chamou-de-volta | Pós-rejeição emocional |
+| 8 | Vagas que pedem inglês mas não usam | vagas-pedem-ingles-mas-nao-usam | Engajamento alto, niche |
+| 9 | Entrevista de promoção interna | entrevista-promocao-interna | Cross-link com pleno/sênior |
+| 10 | Dinâmica de grupo trainee 2026 | dinamica-grupo-trainee-2026 | Sazonal — agendar Q1/Q2 |
+| 11 | Carta de apresentação serve em 2026? | carta-apresentacao-serve-2026 | Atemporal, alto volume |
+| 12 | Currículo de 1 página vs 2 páginas | curriculo-1-pagina-vs-2-paginas | Decisão prática, alto volume |
+| 13 | Currículo Lattes serve pra vaga corporativa? | curriculo-lattes-vaga-corporativa | Long-tail mas defensivo |
+| 14 | Entrevista por vídeo — o que vestir e setup | entrevista-video-o-que-vestir-setup | Cross-link com Gupy post |
+| 15 | Resposta para "onde se vê em 5 anos" | onde-se-ve-em-5-anos-resposta | Pergunta comum clássica |
 
 ---
 
