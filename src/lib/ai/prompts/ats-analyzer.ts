@@ -1,3 +1,5 @@
+import { clampJobDescription } from "@/lib/ai/clamp-jd";
+
 export function buildAtsAnalyzerPrompt(params: {
   cvText: string;
   jdText: string;
@@ -59,7 +61,7 @@ RULES:
 ${params.cvText}
 
 TARGET JOB DESCRIPTION:
-${params.jdText}
+${clampJobDescription(params.jdText)}
 
 TARGET ROLE: ${params.jobTitle}
 TARGET COMPANY: ${params.companyName}

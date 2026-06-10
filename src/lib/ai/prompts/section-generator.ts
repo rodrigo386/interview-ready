@@ -1,4 +1,5 @@
 import type { CompanyIntel } from "@/lib/ai/schemas";
+import { clampJobDescription } from "@/lib/ai/clamp-jd";
 
 export type SectionKind =
   | "likely"
@@ -105,7 +106,7 @@ Retorne agora a seção completa.`;
 ${params.cvText}
 
 DESCRIÇÃO DA VAGA-ALVO:
-${params.jdText}
+${clampJobDescription(params.jdText)}
 
 CARGO-ALVO: ${params.jobTitle}
 EMPRESA-ALVO: ${params.companyName}${intelBlock}`;

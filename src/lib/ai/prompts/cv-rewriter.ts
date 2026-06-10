@@ -1,4 +1,5 @@
 import type { AtsAnalysis } from "@/lib/ai/schemas";
+import { clampJobDescription } from "@/lib/ai/clamp-jd";
 
 export function buildCvRewritePrompt(params: {
   cvText: string;
@@ -40,7 +41,7 @@ ORIGINAL CV:
 ${cvText}
 
 JOB DESCRIPTION:
-${jobDescription}
+${clampJobDescription(jobDescription)}
 
 TOP FIXES (from ATS analysis — prioritize these):
 ${fixesBlock}
