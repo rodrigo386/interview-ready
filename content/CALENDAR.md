@@ -13,7 +13,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 ---
 
-## ✅ Publicados (20)
+## ✅ Publicados (21)
 
 | Post | Slug | Tags-âncora |
 |---|---|---|
@@ -37,6 +37,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 | ✅ O que NÃO falar em entrevista de emprego | o-que-nao-falar-em-entrevista | processo seletivo, erros, entrevista |
 | ✅ Como demonstrar liderança sem ter cargo | como-demonstrar-lideranca-sem-cargo | liderança, comportamental, STAR |
 | ✅ Pretensão salarial analista pleno em SP | pretensao-salarial-analista-pleno-sp | salário, negociação |
+| ✅ Pretensão salarial analista pleno no RJ | pretensao-salarial-analista-pleno-rj | salário, negociação |
 
 ---
 
@@ -44,27 +45,26 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 | # | Título sugerido | Slug | Por que prioridade | Volume estimado |
 |---|---|---|---|---|
-| 1 | Pretensão salarial analista pleno no RJ | pretensao-salarial-analista-pleno-rj | Long-tail geográfico, baixa concorrência | Médio |
-| 2 | Salário de gerente em multinacional Brasil | salario-gerente-multinacional-brasil | BOFU; usa dados Robert Half + Catho | Médio |
-| 3 | Soft skills mais pedidas no Brasil em 2026 | soft-skills-mais-pedidas-brasil-2026 | Informacional alto volume | Alto |
-| 4 | Hard skills que valem promoção | hard-skills-que-valem-promocao | Cross-link com pleno/sênior post | Médio |
-| 5 | Como explicar saída da empresa anterior | como-explicar-saida-empresa-anterior | Pergunta comum, alta dor | Médio |
+| 1 | Salário de gerente em multinacional Brasil | salario-gerente-multinacional-brasil | BOFU; usa dados Robert Half + Catho | Médio |
+| 2 | Soft skills mais pedidas no Brasil em 2026 | soft-skills-mais-pedidas-brasil-2026 | Informacional alto volume | Alto |
+| 3 | Hard skills que valem promoção | hard-skills-que-valem-promocao | Cross-link com pleno/sênior post | Médio |
+| 4 | Como explicar saída da empresa anterior | como-explicar-saida-empresa-anterior | Pergunta comum, alta dor | Médio |
+| 5 | Por que o RH não te chamou de volta | por-que-rh-nao-chamou-de-volta | Pós-rejeição emocional | Médio |
 
 ---
 
-## ⚪ Queue (9 — ordem sugerida)
+## ⚪ Queue (8 — ordem sugerida)
 
 | # | Título sugerido | Slug | Notas |
 |---|---|---|---|
-| 6 | Por que o RH não te chamou de volta | por-que-rh-nao-chamou-de-volta | Pós-rejeição emocional |
-| 7 | Vagas que pedem inglês mas não usam | vagas-pedem-ingles-mas-nao-usam | Engajamento alto, niche |
-| 8 | Entrevista de promoção interna | entrevista-promocao-interna | Cross-link com pleno/sênior |
-| 9 | Dinâmica de grupo trainee 2026 | dinamica-grupo-trainee-2026 | Sazonal — agendar Q1/Q2 |
-| 10 | Carta de apresentação serve em 2026? | carta-apresentacao-serve-2026 | Atemporal, alto volume |
-| 11 | Currículo de 1 página vs 2 páginas | curriculo-1-pagina-vs-2-paginas | Decisão prática, alto volume |
-| 12 | Currículo Lattes serve pra vaga corporativa? | curriculo-lattes-vaga-corporativa | Long-tail mas defensivo |
-| 13 | Entrevista por vídeo — o que vestir e setup | entrevista-video-o-que-vestir-setup | Cross-link com Gupy post |
-| 14 | Resposta para "onde se vê em 5 anos" | onde-se-ve-em-5-anos-resposta | Pergunta comum clássica |
+| 6 | Vagas que pedem inglês mas não usam | vagas-pedem-ingles-mas-nao-usam | Engajamento alto, niche |
+| 7 | Entrevista de promoção interna | entrevista-promocao-interna | Cross-link com pleno/sênior |
+| 8 | Dinâmica de grupo trainee 2026 | dinamica-grupo-trainee-2026 | Sazonal — agendar Q1/Q2 |
+| 9 | Carta de apresentação serve em 2026? | carta-apresentacao-serve-2026 | Atemporal, alto volume |
+| 10 | Currículo de 1 página vs 2 páginas | curriculo-1-pagina-vs-2-paginas | Decisão prática, alto volume |
+| 11 | Currículo Lattes serve pra vaga corporativa? | curriculo-lattes-vaga-corporativa | Long-tail mas defensivo |
+| 12 | Entrevista por vídeo — o que vestir e setup | entrevista-video-o-que-vestir-setup | Cross-link com Gupy post |
+| 13 | Resposta para "onde se vê em 5 anos" | onde-se-ve-em-5-anos-resposta | Pergunta comum clássica |
 
 ---
 
