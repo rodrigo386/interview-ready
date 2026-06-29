@@ -13,7 +13,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 ---
 
-## ✅ Publicados (22)
+## ✅ Publicados (23)
 
 | Post | Slug | Tags-âncora |
 |---|---|---|
@@ -39,6 +39,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 | ✅ Pretensão salarial analista pleno em SP | pretensao-salarial-analista-pleno-sp | salário, negociação |
 | ✅ Pretensão salarial analista pleno no RJ | pretensao-salarial-analista-pleno-rj | salário, negociação |
 | ✅ Salário de gerente em multinacional Brasil | salario-gerente-multinacional-brasil | salário, negociação, gerente, multinacional |
+| ✅ Soft skills mais pedidas no Brasil em 2026 | soft-skills-mais-pedidas-brasil-2026 | soft skills, comportamental, entrevista |
 
 ---
 
@@ -46,25 +47,24 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 | # | Título sugerido | Slug | Por que prioridade | Volume estimado |
 |---|---|---|---|---|
-| 1 | Soft skills mais pedidas no Brasil em 2026 | soft-skills-mais-pedidas-brasil-2026 | Informacional alto volume | Alto |
-| 2 | Hard skills que valem promoção | hard-skills-que-valem-promocao | Cross-link com pleno/sênior post | Médio |
-| 3 | Como explicar saída da empresa anterior | como-explicar-saida-empresa-anterior | Pergunta comum, alta dor | Médio |
-| 4 | Por que o RH não te chamou de volta | por-que-rh-nao-chamou-de-volta | Pós-rejeição emocional | Médio |
-| 5 | Vagas que pedem inglês mas não usam | vagas-pedem-ingles-mas-nao-usam | Engajamento alto, niche | Médio |
+| 1 | Hard skills que valem promoção | hard-skills-que-valem-promocao | Cross-link com pleno/sênior post | Médio |
+| 2 | Como explicar saída da empresa anterior | como-explicar-saida-empresa-anterior | Pergunta comum, alta dor | Médio |
+| 3 | Por que o RH não te chamou de volta | por-que-rh-nao-chamou-de-volta | Pós-rejeição emocional | Médio |
+| 4 | Vagas que pedem inglês mas não usam | vagas-pedem-ingles-mas-nao-usam | Engajamento alto, niche | Médio |
+| 5 | Entrevista de promoção interna | entrevista-promocao-interna | Cross-link com pleno/sênior | Médio |
 
 ---
 
-## ⚪ Queue (7 — ordem sugerida)
+## ⚪ Queue (6 — ordem sugerida)
 
 | # | Título sugerido | Slug | Notas |
 |---|---|---|---|
-| 6 | Entrevista de promoção interna | entrevista-promocao-interna | Cross-link com pleno/sênior |
-| 7 | Dinâmica de grupo trainee 2026 | dinamica-grupo-trainee-2026 | Sazonal — agendar Q1/Q2 |
-| 8 | Carta de apresentação serve em 2026? | carta-apresentacao-serve-2026 | Atemporal, alto volume |
-| 9 | Currículo de 1 página vs 2 páginas | curriculo-1-pagina-vs-2-paginas | Decisão prática, alto volume |
-| 10 | Currículo Lattes serve pra vaga corporativa? | curriculo-lattes-vaga-corporativa | Long-tail mas defensivo |
-| 11 | Entrevista por vídeo — o que vestir e setup | entrevista-video-o-que-vestir-setup | Cross-link com Gupy post |
-| 12 | Resposta para "onde se vê em 5 anos" | onde-se-ve-em-5-anos-resposta | Pergunta comum clássica |
+| 6 | Dinâmica de grupo trainee 2026 | dinamica-grupo-trainee-2026 | Sazonal — agendar Q1/Q2 |
+| 7 | Carta de apresentação serve em 2026? | carta-apresentacao-serve-2026 | Atemporal, alto volume |
+| 8 | Currículo de 1 página vs 2 páginas | curriculo-1-pagina-vs-2-paginas | Decisão prática, alto volume |
+| 9 | Currículo Lattes serve pra vaga corporativa? | curriculo-lattes-vaga-corporativa | Long-tail mas defensivo |
+| 10 | Entrevista por vídeo — o que vestir e setup | entrevista-video-o-que-vestir-setup | Cross-link com Gupy post |
+| 11 | Resposta para "onde se vê em 5 anos" | onde-se-ve-em-5-anos-resposta | Pergunta comum clássica |
 
 ---
 
