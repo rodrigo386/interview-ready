@@ -14,6 +14,7 @@ export type PrepProgressStep =
 
 export type PrepSessionRow = {
   id: string;
+  created_at: string;
   generation_status: "pending" | "generating" | "complete" | "failed" | null;
   prep_guide: unknown;
   error_message: string | null;
@@ -52,6 +53,7 @@ export const loadPrepSession = cache(async (id: string): Promise<PrepSessionRow 
     .select(
       [
         "id",
+        "created_at",
         "generation_status",
         "prep_guide",
         "error_message",

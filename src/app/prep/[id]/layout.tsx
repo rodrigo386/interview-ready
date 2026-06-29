@@ -12,6 +12,7 @@ import { computeServerCompleted } from "@/lib/prep/step-state";
 import { PrepSkeleton } from "@/components/prep/PrepSkeleton";
 import { PrepFailed } from "@/components/prep/PrepFailed";
 import { loadPrepSession } from "@/lib/prep/load-session";
+import { isGenerationStale } from "@/lib/prep/generation-stale";
 import { resolveAvatarUrl } from "@/lib/profile/avatar-url";
 import { logout } from "@/app/(app)/dashboard/actions";
 
@@ -101,6 +102,22 @@ export default async function PrepLayout({
   );
 
   if (session.generation_status === "generating" || session.generation_status === "pending") {
+    // A prep stuck "generating" past the threshold is a zombie (background job
+    // died on a redeploy/crash). Show the retry UI instead of an eternal
+    // skeleton so the user can recover with one click.
+    if (isGenerationStale(session.generation_status, session.created_at, Date.now())) {
+      return (
+        <>
+          {headerEl}
+          <PrepFailed
+            id={session.id}
+            errorMessage={
+              'A geração travou — provavelmente uma instabilidade temporária do serviço de IA. Clique em "Tentar novamente"; seu CV e a descrição da vaga foram preservados.'
+            }
+          />
+        </>
+      );
+    }
     return (
       <>
         {headerEl}
