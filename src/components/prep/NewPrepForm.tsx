@@ -22,6 +22,8 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
   );
   const [cvText, setCvText] = useState<string | null>(null);
   const [jdText, setJdText] = useState<string | null>(null);
+  const [company, setCompany] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
   const checkout = useCheckoutFlow();
 
   const onCvResolved = useCallback(
@@ -38,7 +40,18 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
 
   const cvReady = Boolean(cvId) || Boolean(cvText);
   const jdReady = Boolean(jdText);
-  const canSubmit = cvReady && jdReady;
+  const companyReady = company.trim().length > 0;
+  const jobTitleReady = jobTitle.trim().length > 0;
+  const canSubmit = companyReady && jobTitleReady && cvReady && jdReady;
+  // Tell the user EXACTLY what's still blocking submission instead of a generic
+  // "preencha tudo" — the disabled button with no guidance was a likely cause of
+  // users uploading a CV and then abandoning without generating.
+  const missing = [
+    !companyReady && "empresa",
+    !jobTitleReady && "cargo",
+    !cvReady && "seu CV",
+    !jdReady && "descrição da vaga",
+  ].filter(Boolean) as string[];
 
   return (
     <>
@@ -63,7 +76,7 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
             number={1}
             title="Sobre a vaga"
             subtitle="Onde você está se candidatando."
-            done={false}
+            done={companyReady && jobTitleReady}
           >
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
@@ -79,6 +92,8 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
                   placeholder="Ex: Hexion"
                   required
                   className="mt-1.5"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
                 />
               </div>
               <div>
@@ -94,6 +109,8 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
                   placeholder="Ex: Diretor Sênior, AI & Procurement"
                   required
                   className="mt-1.5"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
                 />
               </div>
             </div>
@@ -204,7 +221,7 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
               <p className="font-medium text-text-primary">
                 {canSubmit
                   ? "Tudo pronto. Vamos gerar seu dossiê."
-                  : "Preencha empresa, cargo, CV e descrição."}
+                  : `Falta preencher: ${missing.join(", ")}.`}
               </p>
               <p className="mt-0.5 text-xs text-text-muted">
                 Cerca de 60 segundos. Você pode ficar nesta página.
