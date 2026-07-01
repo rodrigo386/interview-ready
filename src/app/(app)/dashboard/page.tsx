@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { reconcileBillingFromAsaas } from "@/lib/billing/reconcile";
+import { sendWelcomeEmail } from "@/lib/email/welcome-email";
 import { Button } from "@/components/ui/Button";
 import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
 import { DeletePrepButton } from "@/components/prep/DeletePrepButton";
@@ -83,15 +84,44 @@ export default async function DashboardPage({
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("subscription_status, preps_used_this_month, preps_reset_at, prep_credits")
+    .select(
+      "full_name, is_admin, subscription_status, preps_used_this_month, preps_reset_at, prep_credits, welcome_email_sent_at",
+    )
     .eq("id", user.id)
     .single();
   const billing = (profileRow ?? {}) as {
+    full_name?: string | null;
+    is_admin?: boolean;
     subscription_status?: "active" | "overdue" | "canceled" | "expired" | "none" | null;
     preps_used_this_month?: number;
     preps_reset_at?: string;
     prep_credits?: number;
+    welcome_email_sent_at?: string | null;
   };
+
+  // One-time welcome / first-prep nudge on first dashboard load. The conditional
+  // update via the admin client is an atomic claim: it flips the flag only if
+  // still null, so the email goes out at most once even under concurrent renders.
+  // Never blocks the page; without RESEND_API_KEY sendEmail is a no-op.
+  if (!billing.is_admin && billing.welcome_email_sent_at == null) {
+    try {
+      const admin = createAdminClient();
+      const { data: claimed } = await admin
+        .from("profiles")
+        .update({ welcome_email_sent_at: new Date().toISOString() })
+        .eq("id", user.id)
+        .is("welcome_email_sent_at", null)
+        .select("id")
+        .maybeSingle();
+      if (claimed) {
+        void sendWelcomeEmail({ to: user.email!, name: billing.full_name ?? null }).catch(
+          (err) => console.warn("[dashboard] welcome email failed:", err),
+        );
+      }
+    } catch (err) {
+      console.warn("[dashboard] welcome email claim failed:", err);
+    }
+  }
 
   const showFreeTierBanner =
     billing.subscription_status !== "active" && billing.subscription_status !== "overdue";
