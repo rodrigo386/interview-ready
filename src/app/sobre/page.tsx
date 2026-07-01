@@ -128,9 +128,6 @@ export default function SobrePage() {
                 prepavaga@prepavaga.com.br
               </a>
               <br />
-              <strong>Programa de parceiros</strong> (30% recorrente vitalício):{" "}
-              <Link href="/parceiros">/parceiros</Link>
-              <br />
               <strong>Artigos sobre entrevista e carreira:</strong>{" "}
               <Link href="/artigos">/artigos</Link>
             </p>

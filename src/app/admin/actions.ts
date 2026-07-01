@@ -79,7 +79,6 @@ export async function submitIndexNowAction(): Promise<IndexNowSubmitResult> {
     `${SITE_URL_FOR_INDEXNOW}/`,
     `${SITE_URL_FOR_INDEXNOW}/pricing`,
     `${SITE_URL_FOR_INDEXNOW}/sobre`,
-    `${SITE_URL_FOR_INDEXNOW}/parceiros`,
     `${SITE_URL_FOR_INDEXNOW}/artigos`,
     ...slugs.map((s) => `${SITE_URL_FOR_INDEXNOW}/artigos/${s}`),
   ];

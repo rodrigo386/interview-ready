@@ -324,7 +324,7 @@ export default async function AdminPage() {
         <div className="rounded-xl border border-neutral-200 bg-bg p-5 dark:border-zinc-800">
           <p className="text-sm text-text-secondary">
             Pinga Bing/Yandex/Seznam pra recrawlar a landing, /pricing,
-            /parceiros, /artigos e todos os artigos. Use após publicar conteúdo
+            /artigos e todos os artigos. Use após publicar conteúdo
             novo ou quando indexação parecer estagnada.
           </p>
           <div className="mt-4">

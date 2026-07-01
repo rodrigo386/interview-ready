@@ -63,14 +63,6 @@ export function AvatarMenu({
           >
             Meu perfil
           </Link>
-          <Link
-            href="/parceiros"
-            role="menuitem"
-            onClick={() => setOpen(false)}
-            className="block px-3 py-2 text-sm text-text-primary hover:bg-line"
-          >
-            Programa de parceiros
-          </Link>
           {isAdmin && (
             <Link
               href="/admin"

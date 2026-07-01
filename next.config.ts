@@ -58,6 +58,21 @@ const nextConfig: NextConfig = {
         destination: "/artigos/:path*",
         permanent: true,
       },
+      // Programa de parceiros pausado ("por enquanto"). Front-end desligado:
+      // as rotas públicas redirecionam pra home. Backend (tabelas, webhook,
+      // clawback, admin/affiliates) fica intacto pra reativar sem esforço —
+      // basta remover estes 2 blocos e o link no AvatarMenu. Temporary (307)
+      // porque a pausa é reversível, não uma remoção definitiva.
+      {
+        source: "/parceiros",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/partner",
+        destination: "/",
+        permanent: false,
+      },
     ];
   },
   async headers() {
