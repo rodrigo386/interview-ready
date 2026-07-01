@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listSlugs } from "@/lib/blog/posts";
 import { submitToIndexNow } from "@/lib/seo/indexnow";
+import { sendReengagementEmail } from "@/lib/email/reengagement-email";
 
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
 export type DeleteUserResult = AdminActionResult;
@@ -90,6 +91,64 @@ export async function submitIndexNowAction(): Promise<IndexNowSubmitResult> {
     };
   }
   return { ok: true, submitted: result.submitted, status: result.status };
+}
+
+export type ReengageResult =
+  | { ok: true; sent: number; skipped: number }
+  | { ok: false; error: string };
+
+/**
+ * One-off re-engagement to dormant free users: free tier, non-admin, account
+ * older than 2 days (brand-new signups already got the welcome), no completed
+ * prep, and not yet re-engaged. Sends the nudge and stamps
+ * reengagement_email_sent_at so repeat clicks don't re-spam. Idempotent.
+ */
+export async function reengageDormantUsersAction(): Promise<ReengageResult> {
+  await requireAdmin();
+  const sb = createAdminClient();
+
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: rows, error } = await sb
+    .from("profiles")
+    .select("id, email, full_name, is_admin, created_at")
+    .eq("tier", "free")
+    .is("reengagement_email_sent_at", null)
+    .lt("created_at", twoDaysAgo);
+  if (error) return { ok: false, error: error.message };
+
+  const candidates = (rows ?? []).filter(
+    (r): r is { id: string; email: string; full_name: string | null; is_admin: boolean | null; created_at: string } =>
+      Boolean(r.email) && !(r as { is_admin?: boolean }).is_admin,
+  );
+  if (candidates.length === 0) return { ok: true, sent: 0, skipped: 0 };
+
+  // Exclude anyone who already generated a successful prep.
+  const { data: completed } = await sb
+    .from("prep_sessions")
+    .select("user_id")
+    .eq("generation_status", "complete")
+    .in(
+      "user_id",
+      candidates.map((c) => c.id),
+    );
+  const activated = new Set((completed ?? []).map((r) => (r as { user_id: string }).user_id));
+  const dormant = candidates.filter((c) => !activated.has(c.id));
+
+  const sentIds: string[] = [];
+  for (const u of dormant) {
+    const r = await sendReengagementEmail({ to: u.email, name: u.full_name });
+    if (r.ok) sentIds.push(u.id);
+  }
+
+  if (sentIds.length > 0) {
+    await sb
+      .from("profiles")
+      .update({ reengagement_email_sent_at: new Date().toISOString() })
+      .in("id", sentIds);
+  }
+
+  revalidatePath("/admin");
+  return { ok: true, sent: sentIds.length, skipped: dormant.length - sentIds.length };
 }
 
 export async function revokeProAction(userId: string): Promise<AdminActionResult> {

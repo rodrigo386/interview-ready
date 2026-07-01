@@ -10,6 +10,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 import { IndexNowButton } from "@/components/admin/IndexNowButton";
 import { TestTrackingButton } from "@/components/admin/TestTrackingButton";
+import { ReengageDormantButton } from "@/components/admin/ReengageDormantButton";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -328,6 +329,19 @@ export default async function AdminPage() {
           </p>
           <div className="mt-4">
             <IndexNowButton />
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Ativação · Reengajar dormentes">
+        <div className="rounded-xl border border-neutral-200 bg-bg p-5 dark:border-zinc-800">
+          <p className="text-sm text-text-secondary">
+            Envia um email de nudge pros usuários free que se cadastraram há mais
+            de 2 dias e nunca geraram um prep com sucesso. Cada um recebe no
+            máximo uma vez (novos cadastros já recebem o welcome automático).
+          </p>
+          <div className="mt-4">
+            <ReengageDormantButton />
           </div>
         </div>
       </Section>
