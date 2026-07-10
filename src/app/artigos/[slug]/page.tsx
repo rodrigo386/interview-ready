@@ -120,6 +120,19 @@ export default async function ArticlePage({
         }
       : null;
 
+  const faq = post.faq && post.faq.length >= 2 ? post.faq : null;
+  const faqJsonLd = faq
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faq.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      }
+    : null;
+
   const allPosts = await getAllPosts();
   const related = pickRelatedPosts(post, allPosts, 3);
 
@@ -157,6 +170,12 @@ export default async function ArticlePage({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+        />
+      ) : null}
+      {faqJsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       ) : null}
       <LandingNavbar />
@@ -200,6 +219,27 @@ export default async function ArticlePage({
           <div className="prose prose-neutral mt-10 max-w-none prose-headings:tracking-tight prose-headings:text-ink prose-h2:mt-12 prose-h2:text-2xl prose-h2:font-extrabold prose-h3:mt-8 prose-h3:text-lg prose-h3:font-bold prose-p:text-ink-2 prose-p:leading-[1.7] prose-strong:text-ink prose-a:text-orange-700 prose-a:underline-offset-4 hover:prose-a:underline prose-blockquote:border-orange-500 prose-blockquote:text-ink-2 prose-blockquote:font-normal prose-li:text-ink-2 prose-li:my-1 prose-hr:border-line dark:prose-invert">
             <ArticleBodyWithCta content={post.content} />
           </div>
+
+          {faq ? (
+            <section aria-labelledby="faq" className="mt-14">
+              <h2
+                id="faq"
+                className="text-2xl font-extrabold tracking-tight text-ink"
+              >
+                Perguntas frequentes
+              </h2>
+              <dl className="mt-6 space-y-6">
+                {faq.map((f) => (
+                  <div key={f.q}>
+                    <dt className="text-base font-bold text-ink">{f.q}</dt>
+                    <dd className="mt-2 text-[15px] leading-[1.7] text-ink-2">
+                      {f.a}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ) : null}
 
           <footer className="mt-14 rounded-xl border border-line bg-white p-6 shadow-prep">
             <h2 className="text-lg font-bold text-ink">

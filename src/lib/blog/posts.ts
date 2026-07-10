@@ -10,6 +10,13 @@ export type PostFrontmatter = {
   updatedAt?: string;
   author?: string;
   tags?: string[];
+  /**
+   * Optional Q&A pairs rendered as a visible "Perguntas frequentes" section
+   * + FAQPage JSON-LD. Google restricted FAQ rich results to gov/health sites
+   * (2023), but Bing still shows them and the visible section adds long-tail
+   * coverage. Only emitted with 2+ entries.
+   */
+  faq?: { q: string; a: string }[];
 };
 
 export type PostSummary = PostFrontmatter & {
