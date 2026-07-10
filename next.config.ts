@@ -58,6 +58,15 @@ const nextConfig: NextConfig = {
         destination: "/artigos/:path*",
         permanent: true,
       },
+      // GSC reportou 404 em /contato (nunca existiu — Google adivinhou o
+      // path ou achou link externo). /sobre tem a seção de contato. Os
+      // outros 404s do GSC (/$ e /mês) são lixo de parsing de texto
+      // ("R$ X/mês" nos artigos) — 404 é a resposta correta pra esses.
+      {
+        source: "/contato",
+        destination: "/sobre",
+        permanent: true,
+      },
       // Programa de parceiros pausado ("por enquanto"). Front-end desligado:
       // as rotas públicas redirecionam pra home. Backend (tabelas, webhook,
       // clawback, admin/affiliates) fica intacto pra reativar sem esforço —
