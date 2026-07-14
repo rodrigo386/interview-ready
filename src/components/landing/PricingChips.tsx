@@ -4,12 +4,13 @@ type Plan = {
   label: string;
   sub: string;
   strike?: string;
+  badge?: string;
 };
 
 const PLANS: Plan[] = [
   { label: "1ª prep grátis", sub: "ao criar sua conta" },
   { label: "R$10 por uso", sub: "1 prep avulso" },
-  { label: "R$30/mês", sub: "ilimitado", strike: "R$50" },
+  { label: "R$30/mês", sub: "ilimitado", strike: "R$50", badge: "Promo de lançamento" },
 ];
 
 export function PricingChips() {
@@ -31,8 +32,18 @@ export function PricingChips() {
           {PLANS.map((p) => (
             <div
               key={p.label}
-              className="rounded-xl border border-neutral-200 bg-bg px-5 py-4 dark:border-zinc-800"
+              className={
+                "relative rounded-xl border bg-bg px-5 py-4 " +
+                (p.badge
+                  ? "border-orange-500"
+                  : "border-neutral-200 dark:border-zinc-800")
+              }
             >
+              {p.badge ? (
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-pill bg-orange-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                  {p.badge}
+                </span>
+              ) : null}
               <p className="text-base font-semibold text-text-primary">
                 {p.strike ? (
                   <>
@@ -49,6 +60,11 @@ export function PricingChips() {
             </div>
           ))}
         </div>
+
+        <p className="mt-4 text-xs text-text-tertiary">
+          O Pro volta a R$50/mês quando a promoção de lançamento encerrar —
+          quem assina agora mantém R$30.
+        </p>
 
         <div className="mt-8">
           <Link

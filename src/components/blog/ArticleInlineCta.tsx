@@ -10,29 +10,69 @@ import Link from "next/link";
  * Styled to be visually distinct from article paragraphs (orange border +
  * soft fill) but not aggressive — looks like an editorial callout, not an ad.
  */
-export function ArticleInlineCta() {
+const COPY = {
+  default: {
+    kicker: "Aplicar isso na sua próxima entrevista",
+    heading: (
+      <>
+        Em 60 segundos, um dossiê pronto pra <em>sua</em> vaga
+      </>
+    ),
+    body: (
+      <>
+        Cola o link da vaga + seu CV. A gente devolve análise ATS, pesquisa
+        recente da empresa e roteiros prontos pra cada pergunta.{" "}
+        <strong>Primeira preparação grátis e vitalícia. Sem cartão.</strong>
+      </>
+    ),
+    cta: "Criar minha preparação grátis",
+  },
+  ats: {
+    kicker: "Teste com o seu currículo",
+    heading: (
+      <>
+        Descubra se o <em>seu</em> currículo passa no ATS desta vaga
+      </>
+    ),
+    body: (
+      <>
+        Cola o link da vaga + seu CV. A gente devolve o score ATS, os pontos
+        críticos que estão te barrando e o CV reescrito pronto pra baixar.{" "}
+        <strong>Primeira análise grátis e vitalícia. Sem cartão.</strong>
+      </>
+    ),
+    cta: "Analisar meu currículo grátis",
+  },
+} as const;
+
+export type ArticleCtaVariant = keyof typeof COPY;
+
+export function ArticleInlineCta({
+  variant = "default",
+}: {
+  variant?: ArticleCtaVariant;
+}) {
+  const copy = COPY[variant];
   return (
     <aside
       aria-label="Crie sua preparação grátis"
       className="not-prose my-10 rounded-2xl border-2 border-orange-500 bg-orange-soft/40 p-5 shadow-prep sm:p-6"
     >
       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-700">
-        Aplicar isso na sua próxima entrevista
+        {copy.kicker}
       </p>
       <h3 className="mt-1 text-lg font-bold text-ink sm:text-xl">
-        Em 60 segundos, um dossiê pronto pra <em>sua</em> vaga
+        {copy.heading}
       </h3>
       <p className="mt-2 text-sm leading-snug text-ink-2 sm:text-base">
-        Cola o link da vaga + seu CV. A gente devolve análise ATS, pesquisa
-        recente da empresa e roteiros prontos pra cada pergunta.{" "}
-        <strong>Primeira preparação grátis e vitalícia. Sem cartão.</strong>
+        {copy.body}
       </p>
       <div className="mt-4">
         <Link
           href="/signup"
           className="inline-flex items-center gap-2 rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700"
         >
-          Criar minha preparação grátis
+          {copy.cta}
           <span aria-hidden>→</span>
         </Link>
       </div>

@@ -13,6 +13,7 @@ import { FinalCta } from "@/components/landing/FinalCta";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { SocialProof } from "@/components/landing/SocialProof";
 import { ExitIntentPopup } from "@/components/landing/ExitIntentPopup";
+import { MobileStickyCta } from "@/components/landing/MobileStickyCta";
 
 export default async function LandingPage() {
   let user = null;
@@ -46,6 +47,7 @@ export default async function LandingPage() {
       <LandingFooter />
       {/* Anon-only branch (line above redirects logged-in users to /dashboard) */}
       <ExitIntentPopup />
+      <MobileStickyCta />
     </>
   );
 }

@@ -70,6 +70,14 @@ export function Hero() {
               <span aria-hidden>→</span>
             </Link>
             <p className="text-xs text-text-tertiary">Sem cartão. Primeira prep grátis.</p>
+            <Link
+              href="/exemplo"
+              data-analytics-cta="hero_secondary_exemplo"
+              data-analytics-location="landing"
+              className="text-sm font-semibold text-brand-600 underline-offset-4 hover:underline"
+            >
+              Ver um exemplo pronto antes de criar conta →
+            </Link>
           </div>
         </div>
 

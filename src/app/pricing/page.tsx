@@ -119,7 +119,9 @@ export default async function PricingPage() {
                 <span className="text-sm text-ink-2">/mês</span>
               </div>
               <p className="mt-1 text-xs text-orange-700">
-                Preço promocional de lançamento.
+                Preço de lançamento — volta a R$ 50 quando a promoção encerrar.
+                Assinando agora, você mantém R$ 30/mês enquanto sua assinatura
+                estiver ativa.
               </p>
 
               <ul className="mt-6 space-y-2.5 text-sm text-ink-2">

@@ -15,7 +15,7 @@ const TOP_LEAVE_THRESHOLD_PX = 12;
  *
  * Constraints:
  *  - Desktop only (mouseleave is unreliable on touch — mobile gets the
- *    sticky bottom CTA pattern from the Hero anyway).
+ *    MobileStickyCta bottom bar instead).
  *  - Respects prefers-reduced-motion implicitly (no big animation).
  *  - Stored in localStorage so it doesn't re-fire on every page in a
  *    session. Re-shows after 1 week so returning prospects get a nudge.

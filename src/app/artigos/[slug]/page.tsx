@@ -4,7 +4,10 @@ import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
-import { ArticleInlineCta } from "@/components/blog/ArticleInlineCta";
+import {
+  ArticleInlineCta,
+  type ArticleCtaVariant,
+} from "@/components/blog/ArticleInlineCta";
 import { splitMdxAtMidpoint } from "@/lib/blog/split-mdx";
 import {
   getAllPosts,
@@ -133,6 +136,15 @@ export default async function ArticlePage({
       }
     : null;
 
+  // ATS/currículo cluster gets a CV-analysis CTA instead of the generic
+  // interview one — the reader is thinking about their resume, not the
+  // interview yet. Message match converts better than a stronger verb.
+  const ctaVariant: ArticleCtaVariant =
+    /ats|curriculo/.test(post.slug) ||
+    (post.tags ?? []).some((t) => /ats|curr[íi]culo/i.test(t))
+      ? "ats"
+      : "default";
+
   const allPosts = await getAllPosts();
   const related = pickRelatedPosts(post, allPosts, 3);
 
@@ -217,7 +229,7 @@ export default async function ArticlePage({
           </header>
 
           <div className="prose prose-neutral mt-10 max-w-none prose-headings:tracking-tight prose-headings:text-ink prose-h2:mt-12 prose-h2:text-2xl prose-h2:font-extrabold prose-h3:mt-8 prose-h3:text-lg prose-h3:font-bold prose-p:text-ink-2 prose-p:leading-[1.7] prose-strong:text-ink prose-a:text-orange-700 prose-a:underline-offset-4 hover:prose-a:underline prose-blockquote:border-orange-500 prose-blockquote:text-ink-2 prose-blockquote:font-normal prose-li:text-ink-2 prose-li:my-1 prose-hr:border-line dark:prose-invert">
-            <ArticleBodyWithCta content={post.content} />
+            <ArticleBodyWithCta content={post.content} ctaVariant={ctaVariant} />
           </div>
 
           {faq ? (
@@ -243,19 +255,31 @@ export default async function ArticlePage({
 
           <footer className="mt-14 rounded-xl border border-line bg-white p-6 shadow-prep">
             <h2 className="text-lg font-bold text-ink">
-              Quer aplicar isso na sua próxima entrevista?
+              {ctaVariant === "ats"
+                ? "Será que o seu currículo passa no ATS?"
+                : "Quer aplicar isso na sua próxima entrevista?"}
             </h2>
             <p className="mt-2 text-sm text-ink-2">
-              A PrepaVaga gera um pitch personalizado de 90 segundos para uma vaga específica,
-              junto com análise ATS do seu currículo, pesquisa atualizada da empresa e perguntas
-              prováveis. A primeira preparação é grátis.
+              {ctaVariant === "ats"
+                ? "A PrepaVaga compara seu currículo com a vaga real que você quer, mostra o score ATS, os pontos que estão te barrando e entrega o CV reescrito pronto pra baixar. A primeira análise é grátis."
+                : "A PrepaVaga gera um pitch personalizado de 90 segundos para uma vaga específica, junto com análise ATS do seu currículo, pesquisa atualizada da empresa e perguntas prováveis. A primeira preparação é grátis."}
             </p>
-            <Link
-              href="/signup"
-              className="mt-4 inline-block rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
-            >
-              Gerar minha preparação grátis →
-            </Link>
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              <Link
+                href="/signup"
+                className="inline-block rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
+              >
+                {ctaVariant === "ats"
+                  ? "Analisar meu currículo grátis →"
+                  : "Gerar minha preparação grátis →"}
+              </Link>
+              <Link
+                href="/exemplo"
+                className="text-sm font-semibold text-orange-700 underline-offset-4 hover:underline"
+              >
+                Ver um exemplo pronto
+              </Link>
+            </div>
           </footer>
 
           {related.length > 0 ? (
@@ -299,7 +323,13 @@ export default async function ArticlePage({
  * Renders MDX content with the InlineCta injected at the midpoint heading.
  * Short articles (< 3 H2s) skip the inline CTA — too cramped to be useful.
  */
-function ArticleBodyWithCta({ content }: { content: string }) {
+function ArticleBodyWithCta({
+  content,
+  ctaVariant,
+}: {
+  content: string;
+  ctaVariant: ArticleCtaVariant;
+}) {
   const split = splitMdxAtMidpoint(content);
   if (!split) {
     return <MDXRemote source={content} />;
@@ -307,7 +337,7 @@ function ArticleBodyWithCta({ content }: { content: string }) {
   return (
     <>
       <MDXRemote source={split.before} />
-      <ArticleInlineCta />
+      <ArticleInlineCta variant={ctaVariant} />
       <MDXRemote source={split.after} />
     </>
   );
