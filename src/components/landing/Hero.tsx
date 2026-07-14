@@ -2,7 +2,8 @@ import Link from "next/link";
 import { HeroMockup } from "./HeroMockup";
 
 const HEADLINE = "Entre pronto. Saia contratado.";
-const CHIPS = ["1ª prep grátis", "R$30/mês ilimitado"];
+// "1ª prep grátis" saiu dos chips — virou o selo destacado acima do headline.
+const CHIPS = ["Sem cartão", "R$30/mês ilimitado"];
 
 const CHAR_STAGGER_MS = 32;
 const HEADLINE_TOTAL_MS = HEADLINE.length * CHAR_STAGGER_MS;
@@ -17,8 +18,14 @@ export function Hero() {
       <BackdropPattern />
       <FlyingCvs />
 
-      <div className="relative mx-auto max-w-6xl px-5 pt-20 pb-10 sm:px-6 md:pt-32 md:pb-16">
+      <div className="relative mx-auto max-w-6xl px-5 pt-16 pb-10 sm:px-6 md:pt-24 md:pb-16">
         <div className="mx-auto max-w-3xl text-center">
+          <p className="mb-6 flex justify-center motion-safe:animate-[heroFadeUp_500ms_ease-out_both]">
+            <span className="inline-flex items-center gap-2 rounded-full border-2 border-orange-500 bg-orange-soft px-4 py-2 text-sm font-bold text-orange-700 shadow-[0_4px_16px_-6px_rgba(241,90,36,0.4)] sm:px-5 sm:text-base">
+              <span aria-hidden>🎁</span>
+              Sua 1ª preparação é grátis — sem cartão
+            </span>
+          </p>
           <h1 className="font-serif font-normal tracking-tight text-text-primary leading-[1.02] text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl">
             {HEADLINE.split("").map((char, i) => (
               <span
