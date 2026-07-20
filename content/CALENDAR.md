@@ -13,7 +13,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 ---
 
-## ✅ Publicados (25)
+## ✅ Publicados (26)
 
 | Post | Slug | Tags-âncora |
 |---|---|---|
@@ -42,6 +42,7 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 | ✅ Soft skills mais pedidas no Brasil em 2026 | soft-skills-mais-pedidas-brasil-2026 | soft skills, comportamental, entrevista |
 | ✅ Hard skills que valem promoção | hard-skills-que-valem-promocao | promoção, hard skills, carreira, salário |
 | ✅ Como explicar saída da empresa anterior | como-explicar-saida-empresa-anterior | entrevista, perguntas comuns, processo seletivo |
+| ✅ Por que o RH não te chamou de volta | por-que-rh-nao-chamou-de-volta | processo seletivo, recrutador, currículo |
 
 ---
 
@@ -49,22 +50,21 @@ Cada artigo: 1500-2500 palavras, formato Q+A com headings H2/H3 navegáveis,
 
 | # | Título sugerido | Slug | Por que prioridade | Volume estimado |
 |---|---|---|---|---|
-| 1 | Por que o RH não te chamou de volta | por-que-rh-nao-chamou-de-volta | Pós-rejeição emocional | Médio |
-| 2 | Vagas que pedem inglês mas não usam | vagas-pedem-ingles-mas-nao-usam | Engajamento alto, niche | Médio |
-| 3 | Entrevista de promoção interna | entrevista-promocao-interna | Cross-link com pleno/sênior | Médio |
-| 4 | Dinâmica de grupo trainee 2026 | dinamica-grupo-trainee-2026 | Sazonal — agendar Q1/Q2 | Médio |
-| 5 | Carta de apresentação serve em 2026? | carta-apresentacao-serve-2026 | Atemporal, alto volume | Médio |
+| 1 | Vagas que pedem inglês mas não usam | vagas-pedem-ingles-mas-nao-usam | Engajamento alto, niche | Médio |
+| 2 | Entrevista de promoção interna | entrevista-promocao-interna | Cross-link com pleno/sênior | Médio |
+| 3 | Dinâmica de grupo trainee 2026 | dinamica-grupo-trainee-2026 | Sazonal — agendar Q1/Q2 | Médio |
+| 4 | Carta de apresentação serve em 2026? | carta-apresentacao-serve-2026 | Atemporal, alto volume | Médio |
+| 5 | Currículo de 1 página vs 2 páginas | curriculo-1-pagina-vs-2-paginas | Decisão prática, alto volume | Médio |
 
 ---
 
-## ⚪ Queue (4 — ordem sugerida)
+## ⚪ Queue (3 — ordem sugerida)
 
 | # | Título sugerido | Slug | Notas |
 |---|---|---|---|
-| 6 | Currículo de 1 página vs 2 páginas | curriculo-1-pagina-vs-2-paginas | Decisão prática, alto volume |
-| 7 | Currículo Lattes serve pra vaga corporativa? | curriculo-lattes-vaga-corporativa | Long-tail mas defensivo |
-| 8 | Entrevista por vídeo — o que vestir e setup | entrevista-video-o-que-vestir-setup | Cross-link com Gupy post |
-| 9 | Resposta para "onde se vê em 5 anos" | onde-se-ve-em-5-anos-resposta | Pergunta comum clássica |
+| 6 | Currículo Lattes serve pra vaga corporativa? | curriculo-lattes-vaga-corporativa | Long-tail mas defensivo |
+| 7 | Entrevista por vídeo — o que vestir e setup | entrevista-video-o-que-vestir-setup | Cross-link com Gupy post |
+| 8 | Resposta para "onde se vê em 5 anos" | onde-se-ve-em-5-anos-resposta | Pergunta comum clássica |
 
 ---
 
