@@ -1,8 +1,40 @@
 import "server-only";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "./send";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
 const SUPPORT_EMAIL = "prepavaga@prepavaga.com.br";
+
+/**
+ * Atomically claims the one-shot welcome email for a user and sends it.
+ * The conditional update flips welcome_email_sent_at only if still null, so
+ * concurrent callers (email confirmation route + dashboard fallback) send at
+ * most once. Pulls full_name from the claimed row itself. Never throws —
+ * welcome email must never break auth or page rendering.
+ */
+export async function claimAndSendWelcomeEmail(opts: {
+  userId: string;
+  email: string;
+}): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { data: claimed } = await admin
+      .from("profiles")
+      .update({ welcome_email_sent_at: new Date().toISOString() })
+      .eq("id", opts.userId)
+      .is("welcome_email_sent_at", null)
+      .select("id, full_name")
+      .maybeSingle();
+    if (claimed) {
+      const name = (claimed as { full_name?: string | null }).full_name ?? null;
+      void sendWelcomeEmail({ to: opts.email, name }).catch((err) =>
+        console.warn("[welcome-email] send failed:", err),
+      );
+    }
+  } catch (err) {
+    console.warn("[welcome-email] claim failed:", err);
+  }
+}
 
 /** First name only, for a friendlier greeting. Empty string when unusable. */
 function firstName(name?: string | null): string {

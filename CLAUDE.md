@@ -347,6 +347,7 @@ Storage buckets: `cvs` (privado, org-scoped por user_id), **`avatars`** (públic
 | `/<INDEXNOW_KEY>.txt` | static (public/) | arquivo de verificação de domínio do IndexNow |
 | `/sobre` | server (static) | página "Sobre a PrepaVaga" com JSON-LD AboutPage. Existe pra fechar 404 GSC e reforçar E-E-A-T. |
 | `/api/track` | POST (Node runtime) | recebe `{ visitorId, path }` do `<PageViewTracker />` client beacon, insere via admin client. 204 sempre. |
+| `/auth/confirm` | GET page + server action `confirmEmail` | destino dos links de email do Supabase (`?token_hash=...&type=signup`). Página clique-pra-confirmar: GET não consome o token (imune a prefetch de Outlook SafeLinks/Gmail); o clique (POST) chama `verifyOtp` por token_hash — funciona em navegador diferente do cadastro (sem PKCE). No sucesso de signup, dispara welcome email (`claimAndSendWelcomeEmail`, claim atômica; dashboard mantém fallback pra OAuth). Template do Supabase TEM que apontar pra cá — ver `docs/email-setup.md`. |
 
 ---
 

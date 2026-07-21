@@ -54,6 +54,8 @@ Painel Supabase → **Authentication** → **Emails** → cada aba (Confirm sign
 
 ### Confirm signup
 
+> ⚠️ **Este template usa `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`**, NÃO `{{ .ConfirmationURL }}`. Motivo (2026-07-21): o ConfirmationURL usa fluxo PKCE — quebra quando o link é aberto em navegador diferente do cadastro (webview de app de email) e é consumido por scanners (Outlook SafeLinks, Gmail) que fazem GET no link de uso único. A rota `/auth/confirm` verifica por `token_hash` via `verifyOtp` (funciona em qualquer navegador) e só consome o token no CLIQUE do botão (POST) — prefetch de robô é inofensivo. Dois cadastros reais foram perdidos assim (confirmaram e nunca conseguiram logar).
+
 **Subject**: `Confirme seu cadastro na PrepaVAGA`
 
 **Body**:
@@ -62,12 +64,12 @@ Painel Supabase → **Authentication** → **Emails** → cada aba (Confirm sign
 <p>Olá!</p>
 <p>Recebemos seu cadastro com o e-mail <strong>{{ .Email }}</strong>. Pra ativar sua conta e usar a sua primeira prep grátis, clique no botão abaixo:</p>
 <p>
-  <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:12px 24px;background:#EA580C;color:#fff;border-radius:999px;text-decoration:none;font-weight:600">
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup" style="display:inline-block;padding:12px 24px;background:#EA580C;color:#fff;border-radius:999px;text-decoration:none;font-weight:600">
     Confirmar cadastro
   </a>
 </p>
 <p>Ou copie e cole este link no navegador:</p>
-<p style="color:#666;word-break:break-all;font-size:13px">{{ .ConfirmationURL }}</p>
+<p style="color:#666;word-break:break-all;font-size:13px">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup</p>
 <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
 <p style="color:#888;font-size:13px">
   Se você não criou uma conta na PrepaVAGA, pode ignorar este e-mail.
