@@ -60,6 +60,11 @@ export function SignupForm() {
         <p className="mt-1 text-zinc-400">
           Enviamos um link de confirmação. Clique nele e volte aqui para entrar.
         </p>
+        <p className="mt-2 text-zinc-400">
+          Não achou? Olhe a caixa de <strong>spam / lixo eletrônico</strong> —
+          principalmente no Hotmail e Outlook. Se estiver lá, marque
+          &ldquo;não é spam&rdquo; pra receber os próximos na caixa de entrada.
+        </p>
       </div>
     );
   }
