@@ -35,13 +35,17 @@ export function AnonAtsForm() {
           className="mt-2 block w-full text-sm text-ink-2"
         />
         <p className="mt-2 text-xs text-ink-3">
-          PDF, DOCX ou TXT. O arquivo é lido e descartado — não guardamos ele.
+          PDF, DOCX ou TXT. Não guardamos o arquivo — só o texto extraído, que é apagado automaticamente em 7 dias.
         </p>
         <details className="mt-3">
           <summary className="cursor-pointer text-sm text-orange-700">
             Prefiro colar o texto
           </summary>
+          <label htmlFor="cvText" className="mt-3 block text-sm font-bold text-ink">
+            Cole o texto do seu currículo
+          </label>
           <textarea
+            id="cvText"
             name="cvText"
             rows={8}
             placeholder="Cole aqui o conteúdo do seu currículo."
