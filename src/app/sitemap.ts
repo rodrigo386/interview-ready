@@ -21,6 +21,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      // Ativo linkável — ferramenta grátis sem cadastro, prioridade acima
+      // dos artigos que a linkam.
+      url: `${SITE_URL}/analise-ats-gratis`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: `${SITE_URL}/sobre`,
       lastModified: now,
       changeFrequency: "monthly",

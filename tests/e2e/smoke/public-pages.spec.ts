@@ -65,6 +65,15 @@ test.describe("Public pages render without auth", () => {
     await expect(page.getByText(/Revogação do consentimento/)).toBeVisible();
   });
 
+  test("a ferramenta ATS anônima carrega e não vaza análise", async ({ page }) => {
+    const res = await page.goto("/analise-ats-gratis");
+    expect(res?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // Sem cookie de token, o resultado redireciona pra ferramenta.
+    await page.goto("/analise-ats-gratis/resultado");
+    await expect(page).toHaveURL(/\/analise-ats-gratis$/);
+  });
+
   test("favicon and OG image routes are reachable", async ({ request }) => {
     const icon = await request.get("/icon.svg");
     expect(icon.status()).toBeLessThan(400);

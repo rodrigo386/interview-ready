@@ -268,7 +268,7 @@ export default async function ArticlePage({
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
               <Link
-                href="/signup"
+                href={ctaVariant === "ats" ? "/analise-ats-gratis" : "/signup"}
                 className="inline-block rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
               >
                 {ctaVariant === "ats"

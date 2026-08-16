@@ -85,6 +85,14 @@ export function Hero() {
             >
               Ver um exemplo pronto antes de criar conta →
             </Link>
+            <Link
+              href="/analise-ats-gratis"
+              data-analytics-cta="hero_secondary_ats"
+              data-analytics-location="landing"
+              className="text-sm font-semibold text-brand-600 underline-offset-4 hover:underline"
+            >
+              Testar meu currículo sem criar conta →
+            </Link>
           </div>
         </div>
 
