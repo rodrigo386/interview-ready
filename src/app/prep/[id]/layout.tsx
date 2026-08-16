@@ -162,7 +162,7 @@ export default async function PrepLayout({
         sessionId={session.id}
         company={guideReady ? parsed.data.meta.company : (session.company_name ?? "")}
         role={guideReady ? parsed.data.meta.role : (session.job_title ?? "")}
-        estimatedMinutes={guideReady ? parsed.data.meta.estimated_prep_time_minutes : 0}
+        estimatedMinutes={guideReady ? parsed.data.meta.estimated_prep_time_minutes : null}
         serverCompleted={serverCompleted}
       >
         <div className="mx-auto max-w-[1280px] px-4 py-6 md:px-6 md:py-10">

@@ -98,7 +98,8 @@ export function Tela1Visual({
           {company}
         </h1>
         <p className="mt-2 text-sm text-ink-2">
-          {role} · {estimatedMinutes} min
+          {role}
+          {estimatedMinutes !== null ? ` · ${estimatedMinutes} min` : ""}
         </p>
       </header>
 

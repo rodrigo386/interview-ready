@@ -33,7 +33,7 @@ export function PrepShellProvider({
   sessionId: string;
   company: string;
   role: string;
-  estimatedMinutes: number;
+  estimatedMinutes: number | null;
   serverCompleted: StepNumber[];
   children: ReactNode;
 }) {

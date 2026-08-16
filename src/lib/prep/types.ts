@@ -13,7 +13,9 @@ export type PrepShellData = {
   sessionId: string;
   company: string;
   role: string;
-  estimatedMinutes: number;
+  // null quando prep_guide ainda não existe (prep reivindicada da
+  // ferramenta ATS anônima) — nesse caso não há estimativa pra mostrar.
+  estimatedMinutes: number | null;
   currentStep: StepNumber;
   completedSteps: StepNumber[];
 };

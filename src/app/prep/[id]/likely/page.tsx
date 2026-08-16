@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prepGuideSchema } from "@/lib/ai/schemas";
 import { classifyPrepSections } from "@/lib/prep/section-classifier";
 import { QuestionPager, type PagerPage } from "@/components/prep/QuestionPager";
+import { StepNotGenerated } from "@/components/prep/StepNotGenerated";
 import { loadPrepSession } from "@/lib/prep/load-session";
 
 export default async function LikelyPage({
@@ -14,7 +15,15 @@ export default async function LikelyPage({
   const session = await loadPrepSession(id);
   if (!session) notFound();
   const parsed = prepGuideSchema.safeParse(session.prep_guide);
-  if (!parsed.success) notFound();
+  if (!parsed.success) {
+    // prep_guide nulo é estado válido (prep reivindicada da ferramenta ATS
+    // anônima, só com a etapa 2 pronta) — não é erro, é "ainda não gerado".
+    // Guide presente mas corrompido continua sendo 404 de verdade.
+    if (session.prep_guide === null) {
+      return <StepNotGenerated sessionId={id} />;
+    }
+    notFound();
+  }
 
   const { likely } = classifyPrepSections(parsed.data.sections);
   if (!likely || likely.cards.length === 0) {
