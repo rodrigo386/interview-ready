@@ -60,7 +60,7 @@ export default async function ResultadoPage() {
                   number={primeiro.priority}
                   title={primeiro.gap}
                   description={primeiro.jd_language}
-                  impact="+12 pts"
+                  impact="Crítico"
                 />
               </ul>
               <p className="mt-3 rounded-md bg-green-soft px-4 py-3 text-sm text-ink">
