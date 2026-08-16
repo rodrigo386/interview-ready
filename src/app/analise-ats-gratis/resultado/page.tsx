@@ -6,6 +6,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Gauge } from "@/components/prep/Gauge";
 import { IssueRow } from "@/components/prep/IssueRow";
 import { LockedFix } from "@/components/anon-ats/LockedFix";
+import { AnonAtsCompletedTracker } from "@/components/anon-ats/AnonAtsCompletedTracker";
 import {
   ANON_COOKIE,
   getAnonAnalysisByToken,
@@ -42,6 +43,12 @@ export default async function ResultadoPage() {
 
   return (
     <>
+      <AnonAtsCompletedTracker
+        analysisId={row.id}
+        score={analysis.score}
+        fixesCount={analysis.top_fixes.length}
+        modelUsed={row.model_used ?? undefined}
+      />
       <LandingNavbar />
       <main className="bg-bg">
         <div className="mx-auto max-w-2xl space-y-6 px-6 py-14">

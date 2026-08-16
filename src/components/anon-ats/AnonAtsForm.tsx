@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { runAnonAtsAnalysis } from "@/app/analise-ats-gratis/actions";
 import { PendingButton } from "@/components/prep/PendingButton";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/anon-ats/core";
+import { track } from "@/lib/analytics/client";
 
 export function AnonAtsForm() {
   const [state, action] = useActionState(runAnonAtsAnalysis, null);
@@ -31,7 +32,17 @@ export function AnonAtsForm() {
   const erro = fileError ?? state?.error ?? null;
 
   return (
-    <form action={action} className="space-y-6">
+    <form
+      action={(fd) => {
+        const arquivo = fd.get("cvFile");
+        track("anon_ats_started", {
+          cv_source:
+            arquivo instanceof File && arquivo.size > 0 ? "file" : "paste",
+        });
+        action(fd);
+      }}
+      className="space-y-6"
+    >
       <div>
         <label htmlFor="jobDescription" className="text-sm font-bold text-ink">
           1. Cole a descrição da vaga

@@ -10,6 +10,7 @@ import { attachReferral } from "@/lib/affiliate/attribution";
 import { deriveNameFromEmail } from "@/lib/auth/derive-name";
 import { claimAnonAnalysis } from "@/lib/anon-ats/claim";
 import { ANON_COOKIE } from "@/lib/anon-ats/repo";
+import { trackServer } from "@/lib/analytics/server";
 
 // Experiment PRE-14 (signup friction reduction, second pass): only email +
 // password. Full name is derived from the email local-part with light cleanup
@@ -135,7 +136,12 @@ export async function signup(
           // cadastrado veria de novo o teaser com cadeado mandando criar
           // conta. Falha transitória mantém o cookie (a análise ainda pode
           // ser reivindicada depois).
-          if (prepId) cookieStore.delete(ANON_COOKIE);
+          if (prepId) {
+            cookieStore.delete(ANON_COOKIE);
+            await trackServer(data.user.id, "anon_ats_claimed", {
+              method: "email",
+            });
+          }
         } catch (err) {
           console.warn("[signup] claim anon ats falhou:", err);
         }

@@ -48,6 +48,20 @@ export type FunnelEventMap = {
     amount_cents: number;
     billing_method?: string;
   };
+  // Ferramenta ATS anônima (/analise-ats-gratis). São os três passos que as
+  // métricas de sucesso da spec pedem: quantas análises rodam, quantas
+  // chegam ao resultado, e quantas viram conta. `anon_ats_started` e
+  // `anon_ats_completed` saem do navegador com distinctId anônimo do
+  // PostHog; `anon_ats_claimed` sai do servidor já com o user id, e é o
+  // ponto onde o PostHog costura a pessoa anônima com a conta.
+  anon_ats_started: { cv_source: "file" | "paste" };
+  anon_ats_completed: {
+    score: number;
+    fixes_count: number;
+    /** "cerebras" | "gemini" — qual modelo produziu a nota. */
+    model_used?: string;
+  };
+  anon_ats_claimed: { method: "email" | "google" };
   subscription_started: {
     plan: "pro_promo_30" | "pro_full_50" | "other";
     amount_cents: number;

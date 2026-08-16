@@ -6,6 +6,7 @@ import { resolveOrigin } from "@/lib/http/host";
 import { attachReferral } from "@/lib/affiliate/attribution";
 import { claimAnonAnalysis } from "@/lib/anon-ats/claim";
 import { ANON_COOKIE } from "@/lib/anon-ats/repo";
+import { trackServer } from "@/lib/analytics/server";
 
 export async function GET(request: NextRequest) {
   const base = resolveOrigin(request);
@@ -70,7 +71,10 @@ export async function GET(request: NextRequest) {
         // transitória mantém o cookie e o usuário pode tentar de novo pelo
         // resultado; sucesso apaga pra que /analise-ats-gratis/resultado
         // não volte a mostrar o teaser com cadeado por mais 7 dias.
-        if (prepId) cookieStore.delete(ANON_COOKIE);
+        if (prepId) {
+          cookieStore.delete(ANON_COOKIE);
+          await trackServer(userId, "anon_ats_claimed", { method: "google" });
+        }
       } catch (err) {
         console.warn("[auth/callback] claim anon ats falhou:", err);
       }
