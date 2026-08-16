@@ -21,8 +21,17 @@ export function AnonAtsForm() {
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       const mb = (file.size / 1024 / 1024).toFixed(1);
+      // O arquivo grande demais é DESCARTADO do formulário (única forma de
+      // limpar um <input type="file"> é zerar o value). Antes ele ficava
+      // selecionado e o botão de enviar era desabilitado — mas colar o texto
+      // não reabilitava nada e o usuário não tem como desselecionar um
+      // arquivo, então a segunda metade da instrução ("ou cole o texto") não
+      // funcionava e o botão ficava morto sem saída. Descartando, o envio
+      // segue possível pelo texto colado e o formulário nunca manda um body
+      // que estouraria o limite da server action.
+      e.target.value = "";
       setFileError(
-        `Este arquivo tem ${mb} MB e o limite é ${MAX_UPLOAD_LABEL}. Envie um arquivo menor ou cole o texto do currículo abaixo.`,
+        `Este arquivo tem ${mb} MB e o limite é ${MAX_UPLOAD_LABEL}. Ele não foi anexado — escolha um arquivo menor ou cole o texto do currículo abaixo.`,
       );
       return;
     }
@@ -86,6 +95,13 @@ export function AnonAtsForm() {
             name="cvText"
             rows={8}
             placeholder="Cole aqui o conteúdo do seu currículo."
+            // Colar o texto é a alternativa que a mensagem de arquivo grande
+            // demais oferece: assim que ela é usada, o aviso sobre o arquivo
+            // descartado deixa de fazer sentido e sai da frente de um
+            // eventual erro do servidor.
+            onChange={(e) => {
+              if (e.target.value.trim()) setFileError(null);
+            }}
             className="mt-2 w-full rounded-lg border border-line p-3 text-[15px] text-ink"
           />
         </details>
@@ -101,7 +117,6 @@ export function AnonAtsForm() {
         idleLabel="Analisar meu currículo grátis →"
         pendingLabel="Analisando…"
         variant="primary"
-        disabled={Boolean(fileError)}
       />
       <p className="text-xs text-ink-3">
         Sem cadastro e sem cartão. Você vê seu score na hora.

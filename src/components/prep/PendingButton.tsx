@@ -9,18 +9,15 @@ export function PendingButton({
   idleLabel,
   pendingLabel,
   variant = "primary",
-  disabled = false,
 }: {
   idleLabel: string;
   pendingLabel: string;
   variant?: Variant;
-  /** Trava adicional do chamador (ex.: validação de arquivo no cliente). */
-  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" disabled={pending || disabled} variant={variant}>
+    <Button type="submit" disabled={pending} variant={variant}>
       {pending ? (
         <>
           <Spinner />
