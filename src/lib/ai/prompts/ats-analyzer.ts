@@ -44,9 +44,12 @@ STEP 4 — title_match.match_score:
    - jaccard = |cv_tokens ∩ jd_tokens| / |cv_tokens ∪ jd_tokens|
    - match_score = round(jaccard * 100)
 
-STEP 5 — top_fixes (1-7 items):
+STEP 5 — top_fixes (0-7 items):
    - Priority 1..N where 1 = most critical missing keyword.
    - Order: missing critical (alphabetical) first, then missing high.
+   - If NO critical or high keyword is missing, return an empty array []. Never
+     invent a gap to fill the list — an empty top_fixes is a valid, expected
+     result for a CV that already covers the JD.
    - Stop at 5 fixes by default; only add 6-7 if there are >5 missing critical+high keywords.
    - For each: gap=keyword, jd_language=exact phrase from JD, original_cv_language=closest phrase in CV (or empty string if absent), suggested_rewrite=a single CV bullet (≥20 chars) that incorporates the JD phrase using specifics from the CV (company name, year, metric).
 

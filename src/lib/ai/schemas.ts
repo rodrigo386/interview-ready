@@ -63,7 +63,9 @@ export const atsAnalysisSchema = z.object({
     high: z.array(atsKeywordSchema).min(0).max(40),
     medium: z.array(atsKeywordSchema).min(0).max(40),
   }),
-  top_fixes: z.array(atsFixSchema).min(1).max(7),
+  // A CV that already covers every JD keyword legitimately has zero fixes.
+  // Requiring min(1) discarded otherwise-valid analyses of strong CVs.
+  top_fixes: z.array(atsFixSchema).max(7),
   overall_assessment: z.string().min(30),
 });
 

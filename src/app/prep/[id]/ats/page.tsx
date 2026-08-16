@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { atsAnalysisSchema, prepGuideSchema, cvRewriteSchema } from "@/lib/ai/schemas";
 import { loadPrepSession } from "@/lib/prep/load-session";
 import { AtsHero } from "@/components/prep/AtsHero";
-import { IssueRow } from "@/components/prep/IssueRow";
+import { AtsFixesSection } from "@/components/prep/AtsFixesSection";
 import { AtsCtaCard } from "@/components/prep/AtsCtaCard";
 import { AtsSkeleton } from "@/components/prep/AtsSkeleton";
 import { AtsFailed } from "@/components/prep/AtsFailed";
@@ -82,25 +82,7 @@ export default async function AtsPage({
         </div>
       )}
 
-      <section className="rounded-lg border border-line bg-white p-5 shadow-prep">
-        <header className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-ink">
-            {top3.length} ajustes em ordem de impacto
-          </h3>
-        </header>
-        <ul className="space-y-2">
-          {top3.map((fix, i) => (
-            <IssueRow
-              key={fix.priority}
-              severity={i === 0 ? "critical" : "warning"}
-              number={fix.priority}
-              title={fix.gap}
-              description={fix.jd_language}
-              impact={`+${10 + (top3.length - i) * 4} pts`}
-            />
-          ))}
-        </ul>
-      </section>
+      <AtsFixesSection fixes={analysis.top_fixes} />
 
       <section>
         {session.cv_rewrite_status === "generating" ? (
@@ -109,9 +91,9 @@ export default async function AtsPage({
           <CvRewriteFailed sessionId={session.id} errorMessage={session.cv_rewrite_error ?? null} />
         ) : session.cv_rewrite_status === "complete" && validRewrite ? (
           <CvRewriteView rewrite={validRewrite} sessionId={session.id} />
-        ) : (
+        ) : analysis.top_fixes.length > 0 ? (
           <CvRewriteCta sessionId={session.id} />
-        )}
+        ) : null}
       </section>
     </div>
   );

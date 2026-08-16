@@ -115,8 +115,14 @@ describe("atsAnalysisSchema", () => {
   it("rejects score > 100", () => {
     expect(() => atsAnalysisSchema.parse({ ...validAts, score: 150 })).toThrow();
   });
-  it("rejects top_fixes empty", () => {
-    expect(() => atsAnalysisSchema.parse({ ...validAts, top_fixes: [] })).toThrow();
+  it("accepts top_fixes empty when the CV already covers every keyword", () => {
+    expect(() => atsAnalysisSchema.parse({ ...validAts, top_fixes: [] })).not.toThrow();
+  });
+  it("rejects top_fixes longer than 7", () => {
+    const fix = validAts.top_fixes[0];
+    expect(() =>
+      atsAnalysisSchema.parse({ ...validAts, top_fixes: Array(8).fill(fix) }),
+    ).toThrow();
   });
   it("rejects suggested_rewrite shorter than 20 chars", () => {
     const g = JSON.parse(JSON.stringify(validAts));
