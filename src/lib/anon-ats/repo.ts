@@ -105,11 +105,25 @@ export async function getAnonAnalysisByToken(
   return row;
 }
 
-export async function markClaimed(token: string, userId: string): Promise<void> {
+/**
+ * Devolve `true` só quando o update de fato afetou uma linha. Antes o erro
+ * (e o caso "0 linhas afetadas") era ignorado silenciosamente: se o insert da
+ * prep desse certo mas esse update falhasse, `claimed_by` continuava null e
+ * um reenvio do mesmo token passava pelo guard de idempotência de novo,
+ * criando uma segunda prep. Ler o retorno permite ao chamador logar esse
+ * caso de forma diagnosticável em vez de mascará-lo.
+ */
+export async function markClaimed(token: string, userId: string): Promise<boolean> {
   const sb = createAdminClient();
-  await sb
+  const { data, error } = await sb
     .from(TABLE)
     .update({ claimed_by: userId, claimed_at: new Date().toISOString() })
     .eq("token", token)
-    .is("claimed_by", null);
+    .is("claimed_by", null)
+    .select("id");
+  if (error) {
+    console.warn(`[anon-ats] markClaimed falhou: ${error.code} ${error.message}`);
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
 }

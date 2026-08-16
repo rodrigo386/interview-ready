@@ -10,7 +10,8 @@ import {
 export type ClaimDeps = {
   getRow: (token: string) => Promise<AnonAnalysisRow | null>;
   insertPrep: (insert: PrepSessionInsert) => Promise<string | null>;
-  markClaimed: (token: string, userId: string) => Promise<void>;
+  /** Devolve se de fato marcou a linha (ver comentário em repo.ts). */
+  markClaimed: (token: string, userId: string) => Promise<boolean>;
 };
 
 const DEFAULT_DEPS: ClaimDeps = {
@@ -47,6 +48,16 @@ export async function claimAnonAnalysis(
   const prepId = await deps.insertPrep(anonAnalysisToPrepSession(row, userId));
   if (!prepId) return null;
 
-  await deps.markClaimed(token, userId);
+  // Ordem proposital: inserir antes de marcar. Se marcar falhar, a prep já
+  // criada não pode sumir pro usuário — o custo de uma eventual segunda prep
+  // num reenvio é bem menor que perder a análise que ele acabou de ganhar.
+  // O risco fica registrado no log, de forma diagnosticável, em vez de
+  // mascarado.
+  const marked = await deps.markClaimed(token, userId);
+  if (!marked) {
+    console.warn(
+      `[anon-ats] prep ${prepId} criada para o token ${token}, mas markClaimed falhou — a linha pode continuar reivindicável e gerar prep duplicada num reenvio`,
+    );
+  }
   return prepId;
 }

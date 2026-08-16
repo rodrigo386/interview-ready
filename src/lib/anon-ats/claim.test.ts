@@ -20,7 +20,7 @@ describe("claimAnonAnalysis", () => {
     // infere `[]` como tupla de parâmetros e quebra o acesso a
     // `mock.calls[0][0]` abaixo sob TS strict (noUncheckedIndexedAccess).
     const insertPrep = vi.fn(async (_insert: PrepSessionInsert) => "prep-1");
-    const mark = vi.fn(async () => undefined);
+    const mark = vi.fn(async () => true);
 
     const id = await claimAnonAnalysis("tok", "user-1", {
       getRow: async () => row,
@@ -33,13 +33,36 @@ describe("claimAnonAnalysis", () => {
     expect(insertPrep.mock.calls[0][0].ats_status).toBe("complete");
   });
 
+  it("prep criada mas markClaimed falhou: devolve a prep e loga aviso distinguível", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const insertPrep = vi.fn(async (_insert: PrepSessionInsert) => "prep-1");
+    const mark = vi.fn(async () => false);
+
+    const id = await claimAnonAnalysis("tok", "user-1", {
+      getRow: async () => row,
+      insertPrep,
+      markClaimed: mark,
+    });
+
+    // Prep já foi criada com sucesso — inserir → marcar, nunca a ordem
+    // inversa, então perder o "marcar" não pode apagar o resultado do
+    // "inserir" pro usuário. O risco (token reutilizável) fica só logado.
+    expect(id).toBe("prep-1");
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    const [message] = warnSpy.mock.calls[0] as [string];
+    expect(message).toContain("prep-1");
+    expect(message).toContain("tok");
+
+    warnSpy.mockRestore();
+  });
+
   it("não cria segunda prep para token já reivindicado", async () => {
     const insertPrep = vi.fn(async () => "prep-2");
 
     const id = await claimAnonAnalysis("tok", "user-1", {
       getRow: async () => ({ ...row, claimed_by: "outro-user" }),
       insertPrep,
-      markClaimed: async () => undefined,
+      markClaimed: async () => true,
     });
 
     expect(id).toBeNull();

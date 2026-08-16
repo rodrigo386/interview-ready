@@ -108,8 +108,25 @@ export async function signup(
       // mais abaixo antes de chegar no redirect — por isso a reivindicação
       // precisa ficar aqui dentro, não logo antes do redirect final.
       // Idempotente e nunca pode quebrar o cadastro: bônus, não requisito.
+      //
+      // GUARD DE SEGURANÇA — não remover: com "Confirm email" ligado, o
+      // Supabase devolve `data.user` PREENCHIDO também quando o e-mail já
+      // pertence a outra conta (é a proteção anti-enumeração dele — sem
+      // isso, tentar cadastrar um e-mail existente revelaria a existência da
+      // conta pela resposta). O sinal documentado desse caso é
+      // `data.user.identities` vir como array VAZIO (cadastro genuinamente
+      // novo tem 1+ identity). Sem este guard, um visitante anônimo poderia:
+      // rodar a análise ATS anônima (ganhando o cookie do token), depois
+      // submeter o cadastro com o e-mail de OUTRA pessoa já registrada, e a
+      // reivindicação gravaria uma prep_session com o currículo dele DENTRO
+      // DA CONTA DA VÍTIMA. Se `identities` vier `undefined` (SDK/versão
+      // diferente do documentado), tratamos como "não sei" e NÃO
+      // reivindicamos — falhar fechado aqui é o certo: o custo de não
+      // migrar uma análise é pequeno perto do de escrever na conta alheia.
+      const isNewSignup =
+        Array.isArray(data.user.identities) && data.user.identities.length > 0;
       const anonToken = cookieStore.get(ANON_COOKIE)?.value;
-      if (anonToken) {
+      if (anonToken && isNewSignup) {
         try {
           await claimAnonAnalysis(anonToken, data.user.id);
         } catch (err) {
