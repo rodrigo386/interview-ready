@@ -21,13 +21,17 @@ const instrumentSerif = Instrument_Serif({
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
 
+// Search Console (14/05–13/08): a home recebe 1.014 impressões na posição
+// 5,5 com CTR de 0,39%, e a maior consulta isolada é "prepara cv" (840
+// impressões) — intenção de currículo, não de entrevista. O título liderava
+// com "preparação para entrevista" e não casava com essa busca.
 const DESCRIPTION =
-  "Cole a vaga e envie seu CV: análise ATS, currículo otimizado, pesquisa da empresa e perguntas prováveis da entrevista em minutos. Primeira preparação grátis.";
+  "Cole a vaga e envie seu CV: análise ATS, currículo otimizado e as perguntas prováveis da entrevista em minutos. Primeira preparação grátis, sem cartão.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Preparação para entrevista e currículo ATS — PrepaVaga",
+    default: "Análise ATS do currículo + preparação para entrevista — PrepaVaga",
     template: "%s · PrepaVaga",
   },
   description: DESCRIPTION,
@@ -47,7 +51,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Preparação para entrevista e currículo ATS — PrepaVaga",
+    title: "Análise ATS do currículo + preparação para entrevista — PrepaVaga",
     description: DESCRIPTION,
     type: "website",
     locale: "pt_BR",
@@ -56,7 +60,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Preparação para entrevista e currículo ATS — PrepaVaga",
+    title: "Análise ATS do currículo + preparação para entrevista — PrepaVaga",
     description: DESCRIPTION,
   },
   robots: {

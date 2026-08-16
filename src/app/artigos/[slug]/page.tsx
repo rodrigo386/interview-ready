@@ -15,7 +15,11 @@ import {
   listSlugs,
   formatPublishedDate,
 } from "@/lib/blog/posts";
-import { extractH2Headings, pickRelatedPosts } from "@/lib/blog/related";
+import {
+  extractH2Headings,
+  pickRelatedPosts,
+  isResumeTopicPost,
+} from "@/lib/blog/related";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
@@ -139,11 +143,9 @@ export default async function ArticlePage({
   // ATS/currículo cluster gets a CV-analysis CTA instead of the generic
   // interview one — the reader is thinking about their resume, not the
   // interview yet. Message match converts better than a stronger verb.
-  const ctaVariant: ArticleCtaVariant =
-    /ats|curriculo/.test(post.slug) ||
-    (post.tags ?? []).some((t) => /ats|curr[íi]culo/i.test(t))
-      ? "ats"
-      : "default";
+  const ctaVariant: ArticleCtaVariant = isResumeTopicPost(post)
+    ? "ats"
+    : "default";
 
   const allPosts = await getAllPosts();
   const related = pickRelatedPosts(post, allPosts, 3);
@@ -278,6 +280,12 @@ export default async function ArticlePage({
                 className="text-sm font-semibold text-orange-700 underline-offset-4 hover:underline"
               >
                 Ver um exemplo pronto
+              </Link>
+              <Link
+                href="/pricing"
+                className="text-sm text-ink-2 underline-offset-4 hover:text-ink hover:underline"
+              >
+                Planos e preços
               </Link>
             </div>
           </footer>
