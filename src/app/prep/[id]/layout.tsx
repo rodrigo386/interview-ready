@@ -138,7 +138,12 @@ export default async function PrepLayout({
   }
 
   const parsed = prepGuideSchema.safeParse(session.prep_guide);
-  if (!parsed.success) {
+  const guideReady = parsed.success;
+
+  // prep_guide nulo é estado válido: prep reivindicada da ferramenta anônima
+  // só tem ATS até a pessoa gerar a preparação completa. Guide presente mas
+  // corrompido continua sendo erro de verdade.
+  if (!guideReady && session.prep_guide !== null) {
     return (
       <>
         {headerEl}
@@ -147,7 +152,6 @@ export default async function PrepLayout({
     );
   }
 
-  const guideReady = true;
   const atsComplete = session.ats_status === "complete";
   const serverCompleted = computeServerCompleted({ guideReady, atsComplete });
 
@@ -156,9 +160,9 @@ export default async function PrepLayout({
       {headerEl}
       <PrepShellProvider
         sessionId={session.id}
-        company={parsed.data.meta.company}
-        role={parsed.data.meta.role}
-        estimatedMinutes={parsed.data.meta.estimated_prep_time_minutes}
+        company={guideReady ? parsed.data.meta.company : (session.company_name ?? "")}
+        role={guideReady ? parsed.data.meta.role : (session.job_title ?? "")}
+        estimatedMinutes={guideReady ? parsed.data.meta.estimated_prep_time_minutes : 0}
         serverCompleted={serverCompleted}
       >
         <div className="mx-auto max-w-[1280px] px-4 py-6 md:px-6 md:py-10">

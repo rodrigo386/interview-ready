@@ -17,6 +17,10 @@ export type PrepSessionRow = {
   created_at: string;
   generation_status: "pending" | "generating" | "complete" | "failed" | null;
   prep_guide: unknown;
+  // Fallback pra header/company/role quando prep_guide é nulo (prep
+  // reivindicada da ferramenta anônima, só com ATS pronto).
+  company_name: string | null;
+  job_title: string | null;
   error_message: string | null;
   ats_status: string | null;
   ats_analysis: unknown;
@@ -56,6 +60,8 @@ export const loadPrepSession = cache(async (id: string): Promise<PrepSessionRow 
         "created_at",
         "generation_status",
         "prep_guide",
+        "company_name",
+        "job_title",
         "error_message",
         "ats_status",
         "ats_analysis",

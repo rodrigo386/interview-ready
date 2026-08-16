@@ -17,6 +17,21 @@ describe("computeServerCompleted", () => {
   });
 });
 
+describe("prep reivindicada da ferramenta anônima", () => {
+  it("marca a etapa 2 concluída mesmo sem prep_guide", () => {
+    const completed = computeServerCompleted({
+      guideReady: false,
+      atsComplete: true,
+    });
+    expect(completed).toContain(2);
+    expect(completed).not.toContain(1);
+  });
+
+  it("mantém as duas quando o guide existe", () => {
+    expect(computeServerCompleted({ guideReady: true, atsComplete: true })).toEqual([1, 2]);
+  });
+});
+
 describe("mergeCompleted", () => {
   it("une server e local sem duplicar e ordena", () => {
     expect(mergeCompleted([1, 2], [3, 1, 5])).toEqual([1, 2, 3, 5]);

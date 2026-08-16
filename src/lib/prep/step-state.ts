@@ -6,7 +6,9 @@ export function computeServerCompleted(input: {
 }): StepNumber[] {
   const out: StepNumber[] = [];
   if (input.guideReady) out.push(1);
-  if (input.guideReady && input.atsComplete) out.push(2);
+  // Independente da etapa 1: prep vinda da ferramenta anônima chega com ATS
+  // pronto e sem prep_guide.
+  if (input.atsComplete) out.push(2);
   return out;
 }
 
