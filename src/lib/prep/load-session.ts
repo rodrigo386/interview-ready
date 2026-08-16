@@ -15,6 +15,12 @@ export type PrepProgressStep =
 export type PrepSessionRow = {
   id: string;
   created_at: string;
+  /**
+   * Tocado por trigger (`touch_updated_at`, migration 0002) a cada UPDATE.
+   * É o relógio certo pra detectar geração zumbi — ver o call site em
+   * `/prep/[id]/layout.tsx`.
+   */
+  updated_at: string | null;
   generation_status: "pending" | "generating" | "complete" | "failed" | null;
   prep_guide: unknown;
   // Fallback pra header/company/role quando prep_guide é nulo (prep
@@ -58,6 +64,7 @@ export const loadPrepSession = cache(async (id: string): Promise<PrepSessionRow 
       [
         "id",
         "created_at",
+        "updated_at",
         "generation_status",
         "prep_guide",
         "company_name",

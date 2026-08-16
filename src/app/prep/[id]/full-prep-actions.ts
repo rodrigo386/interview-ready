@@ -41,7 +41,7 @@ export async function generateFullPrep(
 
   const { data: session, error } = await supabase
     .from("prep_sessions")
-    .select("id, generation_status, prep_guide, ats_status")
+    .select("id, generation_status, prep_guide, ats_status, job_title, company_name")
     .eq("id", sessionId)
     .eq("user_id", user.id)
     .single();
@@ -99,6 +99,42 @@ export async function generateFullPrep(
     return { error: quota.mode === "pro_soft_cap" ? "pro_soft_cap" : "quota_exceeded" };
   }
 
+  // Transição atômica ANTES de cobrar a cota. Sem isto, dois cliques (ou duas
+  // abas) passariam os dois pelo gate: o pipeline roda em background, então a
+  // prep continua com `prep_guide` nulo por algumas centenas de ms depois do
+  // redirect — tempo de sobra pro segundo clique ser aceito e cobrar uma
+  // segunda preparação da conta.
+  //
+  // O `.is("prep_guide", null)` é o cadeado: no Postgres o segundo UPDATE
+  // reavalia a condição depois de esperar o lock do primeiro, encontra o
+  // guia já preenchido e afeta 0 linhas. Quem perde a corrida sai por aqui
+  // sem ter consumido nada.
+  //
+  // O placeholder gravado é exatamente o mesmo que o `runPipeline` escreve
+  // no seu primeiro update (`{ meta, sections: [] }`), e é sobrescrito por
+  // ele segundos depois. Efeito colateral desejado: com `prep_guide` não
+  // nulo, o layout para de mostrar o CTA e passa a mostrar o skeleton.
+  const { data: claimed } = await supabase
+    .from("prep_sessions")
+    .update({
+      generation_status: "pending",
+      error_message: null,
+      prep_guide: {
+        meta: {
+          role: session.job_title ?? "esta vaga",
+          company: session.company_name ?? "a empresa",
+          estimated_prep_time_minutes: 30,
+        },
+        sections: [],
+      },
+    })
+    .eq("id", sessionId)
+    .eq("user_id", user.id)
+    .is("prep_guide", null)
+    .select("id");
+
+  if (!claimed || claimed.length === 0) redirect(`/prep/${sessionId}`);
+
   // Consumo da cota — colunas server-managed, escritas pelo admin client
   // (o papel `authenticated` não tem GRANT de UPDATE nelas). A posse da
   // sessão e o estado da cota já foram verificados acima.
@@ -124,17 +160,8 @@ export async function generateFullPrep(
       .eq("id", user.id);
   }
 
-  // A prep já está em `pending`, que é exatamente o estado que o
-  // `runPipeline` aceita — só limpamos um eventual erro anterior. O primeiro
-  // update do pipeline (generation_status: "generating") tira a prep do
-  // estado "reivindicada sem pipeline" e o layout passa a mostrar o
-  // skeleton em vez do CTA.
-  await supabase
-    .from("prep_sessions")
-    .update({ generation_status: "pending", error_message: null })
-    .eq("id", sessionId)
-    .eq("user_id", user.id);
-
+  // A prep continua em `pending`, que é exatamente o estado que o
+  // `runPipeline` aceita.
   runGenerationInBackground(sessionId);
 
   redirect(`/prep/${sessionId}`);

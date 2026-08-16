@@ -112,7 +112,21 @@ export default async function PrepLayout({
     // A prep stuck "generating" past the threshold is a zombie (background job
     // died on a redeploy/crash). Show the retry UI instead of an eternal
     // skeleton so the user can recover with one click.
-    if (isGenerationStale(session.generation_status, session.created_at, Date.now())) {
+    // `updated_at` (trigger da migration 0002), não `created_at`: a geração
+    // pode ser disparada MUITO depois da criação da prep — uma prep
+    // reivindicada da ferramenta ATS anônima só gera quando a pessoa clica
+    // no CTA, e o `retryPrep` tem o mesmo padrão. Medindo desde a criação,
+    // qualquer prep com mais de 15 minutos de vida cairia direto na tela
+    // "a geração travou" no instante em que a geração de verdade começasse.
+    // Medindo desde a última escrita, o zumbi continua sendo detectado (o
+    // pipeline morto para de escrever) sem acusar falso positivo.
+    if (
+      isGenerationStale(
+        session.generation_status,
+        session.updated_at ?? session.created_at,
+        Date.now(),
+      )
+    ) {
       return (
         <>
           {headerEl}

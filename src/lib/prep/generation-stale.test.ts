@@ -27,6 +27,17 @@ describe("isGenerationStale", () => {
     expect(isGenerationStale("generating", ago(STALE_GENERATION_MS), NOW)).toBe(false);
   });
 
+  it("is false for a prep antiga cuja geração acabou de começar", () => {
+    // O layout passa `updated_at` (não `created_at`): uma prep reivindicada
+    // da ferramenta ATS anônima só gera quando a pessoa clica no CTA, dias
+    // depois de ter sido criada. Medindo desde a criação, ela cairia na tela
+    // "a geração travou" no primeiro segundo da geração de verdade.
+    const criadaHaTresDias = ago(3 * 24 * 60 * 60 * 1000);
+    const escritaAgoraMesmo = ago(2_000);
+    expect(isGenerationStale("generating", criadaHaTresDias, NOW)).toBe(true);
+    expect(isGenerationStale("generating", escritaAgoraMesmo, NOW)).toBe(false);
+  });
+
   it("is false when createdAt is missing or invalid", () => {
     expect(isGenerationStale("generating", null, NOW)).toBe(false);
     expect(isGenerationStale("generating", undefined, NOW)).toBe(false);
