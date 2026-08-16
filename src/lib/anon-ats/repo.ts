@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { env } from "@/lib/env";
 import type { AtsAnalysis } from "@/lib/ai/schemas";
 import { expiresAtFrom, isExpired } from "./core";
 
@@ -11,9 +12,20 @@ export function isOverDailyCap(count: number, cap: number): boolean {
   return count >= cap;
 }
 
-/** SHA-256 com salt: permite auditar abuso sem guardar o IP em si. */
-export function hashIp(ip: string): string {
-  return createHash("sha256").update(`prepavaga:${ip}`).digest("hex").slice(0, 32);
+/**
+ * SHA-256 com salt secreto (env `IP_HASH_SALT`): permite auditar abuso sem
+ * guardar o IP em si. Sem o salt em variável de ambiente, o hash de um IPv4
+ * seria reversível por força bruta (só ~4,3 bilhões de valores possíveis)
+ * mesmo usando SHA-256 — o salt fixo no código não protege nada, porque
+ * quem lê o repositório lê o salt também.
+ *
+ * Devolve `null` quando `IP_HASH_SALT` não está configurado: é melhor não
+ * gravar `ip_hash` nenhum do que gravar um hash fraco que finge ser
+ * anonimização.
+ */
+export function hashIp(ip: string): string | null {
+  if (!env.IP_HASH_SALT) return null;
+  return createHash("sha256").update(`${env.IP_HASH_SALT}:${ip}`).digest("hex").slice(0, 32);
 }
 
 export function newToken(): string {
@@ -40,7 +52,7 @@ export async function insertAnonAnalysis(row: {
   companyName: string;
   analysis: AtsAnalysis;
   modelUsed: "cerebras" | "gemini";
-  ipHash: string;
+  ipHash: string | null;
 }): Promise<boolean> {
   const sb = createAdminClient();
   const { error } = await sb.from(TABLE).insert({

@@ -49,6 +49,16 @@ const schema = z.object({
   // Disjuntor de custo da ferramenta ATS anônima: máximo de análises por
   // dia no total. Estourou, a página convida a criar conta em vez de rodar.
   ANON_ATS_DAILY_CAP: z.coerce.number().int().positive().default(200),
+  // Salt secreto para hashear IPs antes de persistir (ex.: ip_hash da ATS
+  // anônima). Sem isso, um hash de IPv4 é reversível por força bruta (só
+  // ~4,3 bilhões de valores) mesmo em SHA-256 — o salt precisa viver fora
+  // do código-fonte para o hash valer como anonimização. Se ausente, o
+  // código que depende dele deve preferir não gravar nada a gravar um hash
+  // fraco que finge ser seguro.
+  IP_HASH_SALT: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
 });
 
 type Env = z.infer<typeof schema>;
@@ -70,6 +80,7 @@ function parseOrThrow(): Env {
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     ANON_ATS_DAILY_CAP: process.env.ANON_ATS_DAILY_CAP,
+    IP_HASH_SALT: process.env.IP_HASH_SALT,
   });
   if (!result.success) {
     console.error("Invalid environment variables:", result.error.flatten().fieldErrors);

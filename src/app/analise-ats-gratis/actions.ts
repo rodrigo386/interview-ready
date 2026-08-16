@@ -4,7 +4,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "@/lib/env";
 import { rateLimit, LIMITS } from "@/lib/ratelimit";
-import { parseCvFile } from "@/lib/files/parse";
+import { parseCvFile, ParseError } from "@/lib/files/parse";
 import { normalizeAnonInput } from "@/lib/anon-ats/core";
 import { analyzeAnonAts } from "@/lib/anon-ats/analyze";
 import {
@@ -24,11 +24,22 @@ export async function runAnonAtsAnalysis(
   formData: FormData,
 ): Promise<{ error: string }> {
   const h = await headers();
+  // Dívida conhecida: x-forwarded-for é forjável pelo cliente (o primeiro
+  // valor da lista não é verificado). Aceito de propósito — o teto diário
+  // (Guarda 2) já limita o custo agregado, e tratar IP de forma diferente
+  // só neste endpoint criaria inconsistência com login/signup, que usam o
+  // mesmo padrão. Decisão revisada e mantida na rodada de correção 1.
   const ip =
     h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "desconhecido";
 
-  // Guarda 1: limite por IP, falhando FECHADO.
-  const rl = await rateLimit(`anonAts:${hashIp(ip)}`, LIMITS.anonAts);
+  // Guarda 1: limite por IP, falhando FECHADO. A chave do rate limit usa o
+  // hash quando há salt configurado, mas cai pro IP cru se não houver —
+  // o Redis do Upstash só guarda isso em memória com TTL (não persiste no
+  // nosso banco), então não tem o mesmo problema de reversibilidade que
+  // motivou hashIp() a virar opcional. Nunca deixar de aplicar o limite por
+  // falta de env seria um furo pior do que o hash fraco que estamos
+  // corrigindo.
+  const rl = await rateLimit(`anonAts:${hashIp(ip) ?? ip}`, LIMITS.anonAts);
   if (!rl.success) return { error: CONVITE_CADASTRO };
 
   // Guarda 2: disjuntor global de custo.
@@ -45,8 +56,11 @@ export async function runAnonAtsAnalysis(
       const parsed = await parseCvFile(buffer, file.type);
       cvText = parsed.text;
     } catch (err) {
+      // Só reaproveita a mensagem quando é o nosso ParseError (já em
+      // PT-BR). Qualquer outro erro (ex.: exceção crua de mammoth/pdf-parse)
+      // pode vir em inglês — texto pro usuário é sempre PT-BR neste app.
       return {
-        error: err instanceof Error ? err.message : "Não conseguimos ler esse arquivo.",
+        error: err instanceof ParseError ? err.message : "Não conseguimos ler esse arquivo.",
       };
     }
   }
