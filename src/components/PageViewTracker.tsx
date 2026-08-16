@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { normalizeTrackedPath } from "@/lib/analytics/path";
 
 const COOKIE_NAME = "pv_vid";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -19,18 +20,10 @@ export function PageViewTracker() {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Skip admin/dashboard paths — internal traffic, not interesting for
-    // public analytics. Server-side filter happens too, but client filter
-    // saves the round-trip.
-    if (
-      pathname.startsWith("/admin") ||
-      pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/profile") ||
-      pathname.startsWith("/prep/") ||
-      pathname.startsWith("/partner")
-    ) {
-      return;
-    }
+    // Only /admin is dropped now. The in-app paths used to be filtered here
+    // too, which hid the entire post-signup funnel — see normalizeTrackedPath.
+    const path = normalizeTrackedPath(pathname);
+    if (!path) return;
 
     let visitorId = getCookie(COOKIE_NAME);
     if (!visitorId) {
@@ -43,7 +36,7 @@ export function PageViewTracker() {
     fetch("/api/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitorId, path: pathname }),
+      body: JSON.stringify({ visitorId, path }),
       keepalive: true,
     }).catch(() => undefined);
   }, [pathname]);

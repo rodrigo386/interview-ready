@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { trackPageView } from "@/lib/analytics/page-views";
+import { normalizeTrackedPath } from "@/lib/analytics/path";
 
 /**
  * Page-view tracking endpoint. Called by the PageViewTracker client component
@@ -30,11 +31,19 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 204 });
   }
 
+  // Normalise here too, not just in the tracker: the endpoint is public, and
+  // browsers holding a cached bundle keep posting raw paths (with prep ids)
+  // for a while after a deploy.
+  const path = normalizeTrackedPath(body.path);
+  if (!path) {
+    return new NextResponse(null, { status: 204 });
+  }
+
   // Fire-and-forget — we don't want the client to wait, and a failed insert
   // shouldn't break navigation. Errors are logged inside trackPageView.
   trackPageView({
     visitorId: body.visitorId,
-    path: body.path,
+    path,
     userAgent: req.headers.get("user-agent"),
   }).catch(() => undefined);
 

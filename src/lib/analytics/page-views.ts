@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { APP_PATH_PREFIXES } from "./path";
 
 /**
  * Page-view tracking helpers. Inserts happen via /api/track (Node runtime),
@@ -7,7 +8,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Reads (getPageViewMetrics, getPageViewDiagnostic) serve /admin.
  */
 
+/**
+ * Appended to the Playwright user agent in playwright.config.ts. The e2e
+ * suite runs devices["Desktop Chrome"], whose UA is byte-identical to a real
+ * visitor's, so it was landing in page_views as genuine traffic: 480 rows
+ * across the 6 smoke-test paths, each with a fresh visitor_id because the
+ * browser context starts with no pv_vid cookie. That was 48% of all views
+ * and 60% of "unique visitors" on the /admin dashboard.
+ *
+ * Keep this string in sync with playwright.config.ts.
+ */
+export const E2E_UA_MARKER = "PrepaVagaE2E";
+
 const BOT_PATTERNS = [
+  new RegExp(E2E_UA_MARKER, "i"),
   /bot/i,
   /crawl/i,
   /spider/i,
@@ -142,6 +156,11 @@ async function countWindow(
 ): Promise<{ total: number; unique: number; error: { code?: string; message?: string } | null }> {
   let query = sb.from("page_views").select("visitor_id").eq("is_bot", false);
   if (cutoffIso) query = query.gte("created_at", cutoffIso);
+  // Public-site traffic only. In-app navigation is recorded (it is how we see
+  // where signups drop off) but belongs to a usage metric, not this one.
+  for (const prefix of APP_PATH_PREFIXES) {
+    query = query.not("path", "like", `${prefix}%`);
+  }
 
   const { data, error } = await query;
   if (error) return { total: 0, unique: 0, error };

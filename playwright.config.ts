@@ -2,6 +2,11 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = Number(process.env.PORT ?? 3000);
 
+// Must match E2E_UA_MARKER in src/lib/analytics/page-views.ts. Without it the
+// suite's Desktop Chrome UA is indistinguishable from a real visitor and the
+// smoke tests get counted as traffic in /admin.
+const E2E_UA_MARKER = "PrepaVagaE2E";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 30_000,
@@ -12,6 +17,7 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
+    userAgent: `${devices["Desktop Chrome"].userAgent} ${E2E_UA_MARKER}`,
   },
   projects: [
     {
