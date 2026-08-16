@@ -13,6 +13,7 @@ import { PrepSkeleton } from "@/components/prep/PrepSkeleton";
 import { PrepFailed } from "@/components/prep/PrepFailed";
 import { loadPrepSession } from "@/lib/prep/load-session";
 import { isGenerationStale } from "@/lib/prep/generation-stale";
+import { isPrepGenerating } from "@/lib/prep/generation-gate";
 import { resolveAvatarUrl } from "@/lib/profile/avatar-url";
 import { logout } from "@/app/(app)/dashboard/actions";
 
@@ -101,7 +102,13 @@ export default async function PrepLayout({
     />
   );
 
-  if (session.generation_status === "generating" || session.generation_status === "pending") {
+  if (
+    isPrepGenerating({
+      generationStatus: session.generation_status,
+      prepGuide: session.prep_guide,
+      atsStatus: session.ats_status,
+    })
+  ) {
     // A prep stuck "generating" past the threshold is a zombie (background job
     // died on a redeploy/crash). Show the retry UI instead of an eternal
     // skeleton so the user can recover with one click.

@@ -65,7 +65,7 @@ test.describe("Public pages render without auth", () => {
     await expect(page.getByText(/Revogação do consentimento/)).toBeVisible();
   });
 
-  test("a ferramenta ATS anônima carrega e não vaza análise", async ({ page }) => {
+  test("a ferramenta ATS anônima carrega e o resultado sem cookie redireciona de volta", async ({ page }) => {
     const res = await page.goto("/analise-ats-gratis");
     expect(res?.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
