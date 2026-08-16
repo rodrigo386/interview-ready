@@ -10,6 +10,12 @@ export type RateLimitConfig = {
   limit: number;
   /** Window in seconds. */
   windowSeconds: number;
+  /**
+   * Quando true, indisponibilidade do Upstash BLOQUEIA em vez de liberar.
+   * Usar em endpoint anônimo com chamada de IA, onde falhar aberto vira
+   * barra livre. O padrão (false) mantém o comportamento das ações logadas.
+   */
+  failClosed?: boolean;
 };
 
 export type RateLimitResult =
@@ -59,7 +65,9 @@ export async function rateLimit(
 ): Promise<RateLimitResult> {
   const limiter = getLimiter(config);
   if (!limiter) {
-    return { success: true, remaining: config.limit, reset: 0 };
+    return config.failClosed
+      ? { success: false, remaining: 0, reset: 0 }
+      : { success: true, remaining: config.limit, reset: 0 };
   }
   try {
     const res = await limiter.limit(identifier);
@@ -68,8 +76,13 @@ export async function rateLimit(
     }
     return { success: false, remaining: 0, reset: res.reset };
   } catch (err) {
-    console.warn("[ratelimit] Upstash error, failing open:", err);
-    return { success: true, remaining: config.limit, reset: 0 };
+    console.warn(
+      `[ratelimit] Upstash error, failing ${config.failClosed ? "closed" : "open"}:`,
+      err,
+    );
+    return config.failClosed
+      ? { success: false, remaining: 0, reset: 0 }
+      : { success: true, remaining: config.limit, reset: 0 };
   }
 }
 
@@ -90,6 +103,8 @@ export const LIMITS = {
   companyIntel: { key: "companyIntel", limit: 10, windowSeconds: 3600 },
   salaryBenchmark: { key: "salaryBenchmark", limit: 10, windowSeconds: 3600 },
   fetchJd: { key: "fetchJd", limit: 30, windowSeconds: 3600 },
+  // Ferramenta ATS anônima: 3/hora por IP e falha fechada.
+  anonAts: { key: "anonAts", limit: 3, windowSeconds: 3600, failClosed: true },
   // Auth limits — generous enough for legitimate "I mistyped" but kills
   // credential stuffing / password spraying. Bucket per ip+email so an
   // attacker rotating IPs still hits per-account limits, and an attacker

@@ -1,6 +1,14 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { LIMITS, formatResetPhrase } from "./ratelimit";
 
+// Sem UPSTASH_* no ambiente de teste, getLimiter() devolve null — é
+// exatamente o cenário "Upstash indisponível".
+vi.mock("@/lib/env", () => ({
+  env: { UPSTASH_REDIS_REST_URL: undefined, UPSTASH_REDIS_REST_TOKEN: undefined },
+}));
+
+const { rateLimit } = await import("./ratelimit");
+
 describe("LIMITS auth shapes", () => {
   it("login: 10 / 600s, signup: 5 / 3600s, reset: 3 / 600s", () => {
     expect(LIMITS.authLogin).toMatchObject({ limit: 10, windowSeconds: 600 });
@@ -54,5 +62,21 @@ describe("formatResetPhrase", () => {
     withFrozenNow();
     expect(formatResetPhrase(0)).toBe("alguns segundos");
     expect(formatResetPhrase(NOW - 999_999)).toBe("alguns segundos");
+  });
+});
+
+describe("rateLimit sem Upstash", () => {
+  it("libera por padrão (falha aberta)", async () => {
+    const r = await rateLimit("ip:1.2.3.4", {
+      key: "teste", limit: 3, windowSeconds: 3600,
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("bloqueia quando failClosed está ligado", async () => {
+    const r = await rateLimit("ip:1.2.3.4", {
+      key: "testeEstrito", limit: 3, windowSeconds: 3600, failClosed: true,
+    });
+    expect(r.success).toBe(false);
   });
 });
