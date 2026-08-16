@@ -58,6 +58,7 @@ export default async function PrepHomePage({
     generationStatus: data?.generation_status ?? null,
     prepGuide: data?.prep_guide ?? null,
     atsStatus: data?.ats_status ?? null,
+    companyIntelStatus: data?.company_intel_status ?? null,
   });
 
   return (

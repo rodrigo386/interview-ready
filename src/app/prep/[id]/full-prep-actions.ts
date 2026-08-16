@@ -41,7 +41,9 @@ export async function generateFullPrep(
 
   const { data: session, error } = await supabase
     .from("prep_sessions")
-    .select("id, generation_status, prep_guide, ats_status, job_title, company_name")
+    .select(
+      "id, generation_status, prep_guide, ats_status, company_intel_status, job_title, company_name",
+    )
     .eq("id", sessionId)
     .eq("user_id", user.id)
     .single();
@@ -52,6 +54,7 @@ export async function generateFullPrep(
     generationStatus: session.generation_status,
     prepGuide: session.prep_guide,
     atsStatus: session.ats_status,
+    companyIntelStatus: session.company_intel_status,
   });
   // Todos os desfechos que não geram levam de volta pra prep: o layout já
   // sabe renderizar o estado certo (guia pronto, skeleton ou PrepFailed).

@@ -55,6 +55,7 @@ export default async function AtsPage({
     generationStatus: session.generation_status,
     prepGuide: session.prep_guide,
     atsStatus: session.ats_status,
+    companyIntelStatus: session.company_intel_status,
   });
 
   const rewriteParsed =

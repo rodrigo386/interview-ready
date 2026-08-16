@@ -107,6 +107,7 @@ export default async function PrepLayout({
       generationStatus: session.generation_status,
       prepGuide: session.prep_guide,
       atsStatus: session.ats_status,
+      companyIntelStatus: session.company_intel_status,
     })
   ) {
     // A prep stuck "generating" past the threshold is a zombie (background job

@@ -1,38 +1,93 @@
 import { describe, expect, it } from "vitest";
 import { decideFullPrepGeneration, shouldOfferFullPrep } from "./full-prep";
-import { isPrepGenerating } from "./generation-gate";
+import { isPrepGenerating, type GenerationGateInput } from "./generation-gate";
 
-const claimed = {
-  generationStatus: "pending" as const,
+/**
+ * Os quatro estados que precisam ser distinguidos. Os dois primeiros são os
+ * que colidiam: `retryPrep` grava `pending` + `prep_guide: null`, e numa prep
+ * cujo ATS já rodou o `ats_status` também é "complete" — as três primeiras
+ * colunas ficam idênticas às de uma prep reivindicada. O que separa é
+ * `company_intel_status`: NULL só em quem nunca teve pipeline.
+ */
+const REIVINDICADA: GenerationGateInput = {
+  generationStatus: "pending",
   prepGuide: null,
   atsStatus: "complete",
+  companyIntelStatus: null,
 };
 
-describe("decideFullPrepGeneration", () => {
-  it("libera a geração pra prep reivindicada (pending + guide nulo + ATS pronto)", () => {
-    expect(decideFullPrepGeneration(claimed)).toEqual({ kind: "generate" });
+const NORMAL_EM_RETRY: GenerationGateInput = {
+  generationStatus: "pending",
+  prepGuide: null,
+  atsStatus: "complete",
+  // Ficou da geração anterior. `retryPrep` não zera essa coluna, e nada mais
+  // no código a devolve pra NULL.
+  companyIntelStatus: "complete",
+};
+
+const NORMAL_GERANDO_PRIMEIRA_VEZ: GenerationGateInput = {
+  generationStatus: "generating",
+  prepGuide: { meta: {}, sections: [] },
+  atsStatus: null,
+  companyIntelStatus: "researching",
+};
+
+const NORMAL_COMPLETA: GenerationGateInput = {
+  generationStatus: "complete",
+  prepGuide: { meta: {}, sections: [{}] },
+  atsStatus: "complete",
+  companyIntelStatus: "complete",
+};
+
+describe("os quatro estados", () => {
+  it("prep reivindicada: oferece gerar, não gateia com skeleton", () => {
+    expect(decideFullPrepGeneration(REIVINDICADA)).toEqual({ kind: "generate" });
+    expect(shouldOfferFullPrep(REIVINDICADA)).toBe(true);
+    expect(isPrepGenerating(REIVINDICADA)).toBe(false);
   });
 
-  it("não libera prep normal recém-criada, cujo pipeline já está a caminho", () => {
+  it("prep normal em retry: NUNCA oferece o CTA pago, e gateia com skeleton", () => {
+    // O defeito: a regeração é gratuita e já está rodando. Oferecer "Gerar
+    // preparação completa" aqui convida a pagar de novo quem já pagou — e se
+    // o job de retry morre antes da primeira escrita do pipeline, o convite
+    // fica permanente.
+    expect(decideFullPrepGeneration(NORMAL_EM_RETRY)).toEqual({
+      kind: "already_running",
+    });
+    expect(shouldOfferFullPrep(NORMAL_EM_RETRY)).toBe(false);
+    expect(isPrepGenerating(NORMAL_EM_RETRY)).toBe(true);
+  });
+
+  it("prep normal gerando pela primeira vez: sem CTA, com skeleton", () => {
+    expect(decideFullPrepGeneration(NORMAL_GERANDO_PRIMEIRA_VEZ)).toEqual({
+      kind: "already_generated",
+    });
+    expect(shouldOfferFullPrep(NORMAL_GERANDO_PRIMEIRA_VEZ)).toBe(false);
+    expect(isPrepGenerating(NORMAL_GERANDO_PRIMEIRA_VEZ)).toBe(true);
+  });
+
+  it("prep normal completa: sem CTA, sem skeleton", () => {
+    expect(decideFullPrepGeneration(NORMAL_COMPLETA)).toEqual({
+      kind: "already_generated",
+    });
+    expect(shouldOfferFullPrep(NORMAL_COMPLETA)).toBe(false);
+    expect(isPrepGenerating(NORMAL_COMPLETA)).toBe(false);
+  });
+
+  it("o retry só é distinguível pelo company_intel_status", () => {
+    // Prova de que as outras três colunas são idênticas nos dois casos: a
+    // única diferença entre os objetos é a marca de "já teve pipeline".
+    const { companyIntelStatus: _a, ...reivindicadaSemMarca } = REIVINDICADA;
+    const { companyIntelStatus: _b, ...retrySemMarca } = NORMAL_EM_RETRY;
+    expect(reivindicadaSemMarca).toEqual(retrySemMarca);
+  });
+});
+
+describe("decideFullPrepGeneration — outros estados", () => {
+  it("manda prep falhada pro caminho do retryPrep, não pra esta action", () => {
     expect(
-      decideFullPrepGeneration({ ...claimed, atsStatus: null }),
+      decideFullPrepGeneration({ ...REIVINDICADA, generationStatus: "failed" }),
     ).toEqual({ kind: "not_eligible" });
-  });
-
-  it("não libera enquanto o pipeline está rodando", () => {
-    expect(
-      decideFullPrepGeneration({ ...claimed, generationStatus: "generating" }),
-    ).toEqual({ kind: "already_running" });
-  });
-
-  it("não libera prep já gerada", () => {
-    expect(
-      decideFullPrepGeneration({
-        generationStatus: "complete",
-        prepGuide: { meta: {}, sections: [] },
-        atsStatus: "complete",
-      }),
-    ).toEqual({ kind: "already_generated" });
   });
 
   it("trata guide presente como já gerado mesmo com status incoerente", () => {
@@ -41,37 +96,31 @@ describe("decideFullPrepGeneration", () => {
     // trabalho jogado fora e cota queimada. O caminho aqui é o retryPrep.
     expect(
       decideFullPrepGeneration({
-        generationStatus: "pending",
+        ...REIVINDICADA,
         prepGuide: { meta: {}, sections: [] },
-        atsStatus: "complete",
       }),
     ).toEqual({ kind: "already_generated" });
   });
 
-  it("manda prep falhada pro caminho do retryPrep, não pra esta action", () => {
-    expect(
-      decideFullPrepGeneration({ ...claimed, generationStatus: "failed" }),
-    ).toEqual({ kind: "not_eligible" });
+  it("não libera enquanto o ATS ainda não está pronto", () => {
+    expect(shouldOfferFullPrep({ ...REIVINDICADA, atsStatus: "generating" })).toBe(
+      false,
+    );
+    expect(shouldOfferFullPrep({ ...REIVINDICADA, atsStatus: "failed" })).toBe(false);
   });
 });
 
 describe("shouldOfferFullPrep", () => {
-  it("só oferece o CTA no mesmo estado em que a action aceita gerar", () => {
-    expect(shouldOfferFullPrep(claimed)).toBe(true);
-    expect(shouldOfferFullPrep({ ...claimed, atsStatus: "failed" })).toBe(false);
-    expect(
-      shouldOfferFullPrep({ ...claimed, generationStatus: "complete" }),
-    ).toBe(false);
-  });
-
   it("é o complemento exato do gate do layout: ou mostra skeleton, ou oferece gerar", () => {
-    // Invariante que impede regressão: se o layout considera a prep
-    // "gerando", ela não pode simultaneamente exibir o CTA de gerar.
-    expect(isPrepGenerating(claimed)).toBe(false);
-    expect(shouldOfferFullPrep(claimed)).toBe(true);
-
-    const gerando = { ...claimed, generationStatus: "generating" as const };
-    expect(isPrepGenerating(gerando)).toBe(true);
-    expect(shouldOfferFullPrep(gerando)).toBe(false);
+    // Invariante que impede regressão: uma prep nunca pode simultaneamente
+    // estar "gerando" (skeleton) e exibir o CTA que dispara a geração.
+    for (const estado of [
+      REIVINDICADA,
+      NORMAL_EM_RETRY,
+      NORMAL_GERANDO_PRIMEIRA_VEZ,
+      NORMAL_COMPLETA,
+    ]) {
+      expect(isPrepGenerating(estado) && shouldOfferFullPrep(estado)).toBe(false);
+    }
   });
 });

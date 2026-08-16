@@ -15,12 +15,15 @@ export type FullPrepDecision =
   | { kind: "generate" }
   /** Já tem guia — não há o que gerar. */
   | { kind: "already_generated" }
-  /** O pipeline já está rodando pra essa prep. */
+  /**
+   * Há um pipeline dono desta linha: prep normal recém-criada, ou uma prep
+   * em retry (que grava `pending` + `prep_guide: null` e fica alguns instantes
+   * indistinguível de "parada" até o pipeline escrever).
+   */
   | { kind: "already_running" }
   /**
-   * Qualquer outro estado (notavelmente `failed`, cujo caminho de recuperação
-   * é o `retryPrep` do `PrepFailed`, e o `pending` sem ATS pronto, que é uma
-   * prep normal recém-criada com o pipeline a caminho).
+   * `failed` — cujo caminho de recuperação é o `retryPrep` do `PrepFailed`,
+   * de propósito gratuito — e estados sem status.
    */
   | { kind: "not_eligible" };
 
@@ -32,7 +35,9 @@ export function decideFullPrepGeneration(
   if (input.prepGuide !== null && input.prepGuide !== undefined) {
     return { kind: "already_generated" };
   }
-  if (input.generationStatus === "generating") return { kind: "already_running" };
+  if (input.generationStatus === "generating" || input.generationStatus === "pending") {
+    return { kind: "already_running" };
+  }
   return { kind: "not_eligible" };
 }
 
