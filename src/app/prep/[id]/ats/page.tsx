@@ -12,6 +12,8 @@ import { CvRewriteView } from "@/components/prep/CvRewriteView";
 import { CvRewriteCta } from "@/components/prep/CvRewriteCta";
 import { runAtsAnalysis } from "@/app/prep/[id]/ats-actions";
 import { PendingButton } from "@/components/prep/PendingButton";
+import { GenerateFullPrepCta } from "@/components/prep/GenerateFullPrepCta";
+import { shouldOfferFullPrep } from "@/lib/prep/full-prep";
 
 export default async function AtsPage({
   params,
@@ -44,6 +46,17 @@ export default async function AtsPage({
   const totalImpact = top3.length * 12;
   const projected = Math.min(100, analysis.score + totalImpact);
 
+  // Prep vinda da ferramenta ATS anônima: esta tela é onde a pessoa cai
+  // depois de criar conta e é o único lugar com conteúdo. Sem este CTA ela
+  // não tem NENHUM caminho pra gerar as outras 4 etapas (retryPrep só aparece
+  // no PrepFailed, e /prep/new com a mesma vaga bate na detecção de
+  // duplicata).
+  const offerFullPrep = shouldOfferFullPrep({
+    generationStatus: session.generation_status,
+    prepGuide: session.prep_guide,
+    atsStatus: session.ats_status,
+  });
+
   const rewriteParsed =
     session.cv_rewrite_status === "complete"
       ? cvRewriteSchema.safeParse(session.cv_rewrite)
@@ -67,6 +80,8 @@ export default async function AtsPage({
       </header>
 
       <AtsHero analysis={analysis} role={role} />
+
+      {offerFullPrep && <GenerateFullPrepCta sessionId={session.id} />}
 
       {analysis.score < 71 && top3.length > 0 && (
         <div

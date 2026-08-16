@@ -26,10 +26,26 @@ export type GenerationGateInput = {
  * tinha ficava sem conseguir vê-la.
  */
 export function isPrepGenerating(input: GenerationGateInput): boolean {
-  const { generationStatus, prepGuide, atsStatus } = input;
+  const { generationStatus } = input;
   if (generationStatus !== "pending" && generationStatus !== "generating") return false;
+  return !isClaimedAtsOnlyPrep(input);
+}
 
-  const isClaimedWithoutPipeline =
-    generationStatus === "pending" && prepGuide === null && atsStatus === "complete";
-  return !isClaimedWithoutPipeline;
+/**
+ * Assinatura exata de uma prep vinda da ferramenta ATS anônima que ainda só
+ * tem a etapa 2: `generation_status: "pending"` (nada roda em background pra
+ * ela), `prep_guide: null` e `ats_status: "complete"`.
+ *
+ * Usado em dois lugares que precisam concordar: o gate do layout (não é
+ * "gerando", é "esperando a pessoa decidir") e a oferta de gerar a preparação
+ * completa (`decideFullPrepGeneration` em `./full-prep`, mais o CTA na tela
+ * de ATS e no `StepNotGenerated`). Duplicar a condição faria os dois
+ * divergirem no primeiro ajuste.
+ */
+export function isClaimedAtsOnlyPrep(input: GenerationGateInput): boolean {
+  return (
+    input.generationStatus === "pending" &&
+    input.prepGuide === null &&
+    input.atsStatus === "complete"
+  );
 }

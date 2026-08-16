@@ -8,6 +8,8 @@ import { Tela1Visual } from "@/components/prep/Tela1Visual";
 import { PartialPrepBanner } from "@/components/prep/PartialPrepBanner";
 import { PrepCompletedTracker } from "@/components/prep/PrepCompletedTracker";
 import { loadPrepSession } from "@/lib/prep/load-session";
+import { shouldOfferFullPrep } from "@/lib/prep/full-prep";
+import { GenerateFullPrepCta } from "@/components/prep/GenerateFullPrepCta";
 
 export const metadata: Metadata = {
   title: "Prep · PrepaVaga",
@@ -49,9 +51,23 @@ export default async function PrepHomePage({
     ? guideParsed.data.sections?.length
     : undefined;
 
+  // Prep reivindicada da ferramenta ATS anônima: esta é a primeira tela que
+  // ela abre pelo dashboard, e sem o guia a Tela 1 fica quase vazia. O CTA
+  // usa a mesma decisão da action, então nunca aparece numa prep normal.
+  const offerFullPrep = shouldOfferFullPrep({
+    generationStatus: data?.generation_status ?? null,
+    prepGuide: data?.prep_guide ?? null,
+    atsStatus: data?.ats_status ?? null,
+  });
+
   return (
     <>
       {isPartial && <PartialPrepBanner failedSections={failedSections} />}
+      {offerFullPrep && (
+        <div className="mb-6">
+          <GenerateFullPrepCta sessionId={id} />
+        </div>
+      )}
       {data?.generation_status === "complete" && (
         <PrepCompletedTracker sessionId={id} sectionCount={sectionCount} />
       )}
