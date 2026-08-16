@@ -8,6 +8,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { attachReferral } from "@/lib/affiliate/attribution";
 import { deriveNameFromEmail } from "@/lib/auth/derive-name";
+import { claimAnonAnalysis } from "@/lib/anon-ats/claim";
+import { ANON_COOKIE } from "@/lib/anon-ats/repo";
 
 // Experiment PRE-14 (signup friction reduction, second pass): only email +
 // password. Full name is derived from the email local-part with light cleanup
@@ -96,6 +98,23 @@ export async function signup(
           console.warn("[signup] attribution failed:", err);
         }
         cookieStore.delete("pv_ref");
+      }
+
+      // Reivindicação da análise ATS anônima: acontece aqui, no envio do
+      // cadastro, e não em /auth/confirm. O confirm roda de propósito em
+      // outro navegador (fricção anti-bot dos links de e-mail), então o
+      // cookie do token anônimo não existiria lá. Como "Confirm email" está
+      // ON em produção, `data.session` normalmente é null e a função retorna
+      // mais abaixo antes de chegar no redirect — por isso a reivindicação
+      // precisa ficar aqui dentro, não logo antes do redirect final.
+      // Idempotente e nunca pode quebrar o cadastro: bônus, não requisito.
+      const anonToken = cookieStore.get(ANON_COOKIE)?.value;
+      if (anonToken) {
+        try {
+          await claimAnonAnalysis(anonToken, data.user.id);
+        } catch (err) {
+          console.warn("[signup] claim anon ats falhou:", err);
+        }
       }
     }
 
