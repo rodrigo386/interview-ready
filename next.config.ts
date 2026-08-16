@@ -20,6 +20,15 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_POSTHOG_HOST:
       process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
   },
+  // Server actions aceitam 1 MB por padrão no Next 15. Currículo em PDF com
+  // foto passa disso com facilidade, e o estouro acontece ANTES da action
+  // rodar: o formulário anônimo (/analise-ats-gratis) não tinha como devolver
+  // `state.error`, então o usuário via literalmente nada acontecer. 5mb alinha
+  // com o limite que o produto já valida e anuncia no upload logado
+  // (`prep/new/cv-actions.ts`) e no `MAX_UPLOAD_BYTES` de `lib/anon-ats/core`.
+  experimental: {
+    serverActions: { bodySizeLimit: "5mb" },
+  },
   // pdf-parse v2 bundles its PDF.js worker as a sibling pdf.worker.mjs file.
   // Next's tracer doesn't copy it into .next/server, so we mark it external
   // and let runtime Node resolve it from node_modules.

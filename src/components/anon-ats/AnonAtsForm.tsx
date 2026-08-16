@@ -1,11 +1,34 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { runAnonAtsAnalysis } from "@/app/analise-ats-gratis/actions";
 import { PendingButton } from "@/components/prep/PendingButton";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/anon-ats/core";
 
 export function AnonAtsForm() {
   const [state, action] = useActionState(runAnonAtsAnalysis, null);
+  // Validação de tamanho no cliente. Sem ela, um arquivo acima do
+  // `bodySizeLimit` faz a server action estourar antes de rodar — sem
+  // `state.error`, sem redirect, sem nada na tela.
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setFileError(null);
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      const mb = (file.size / 1024 / 1024).toFixed(1);
+      setFileError(
+        `Este arquivo tem ${mb} MB e o limite é ${MAX_UPLOAD_LABEL}. Envie um arquivo menor ou cole o texto do currículo abaixo.`,
+      );
+      return;
+    }
+    setFileError(null);
+  }
+
+  const erro = fileError ?? state?.error ?? null;
 
   return (
     <form action={action} className="space-y-6">
@@ -32,10 +55,13 @@ export function AnonAtsForm() {
           name="cvFile"
           type="file"
           accept=".pdf,.docx,.txt"
+          onChange={onFileChange}
           className="mt-2 block w-full text-sm text-ink-2"
         />
         <p className="mt-2 text-xs text-ink-3">
-          PDF, DOCX ou TXT. Não guardamos o arquivo — só o texto extraído, que é apagado automaticamente em 7 dias.
+          PDF, DOCX ou TXT, até {MAX_UPLOAD_LABEL}. Não guardamos o arquivo — só
+          o texto extraído, que fica guardado por 7 dias e depois deixa de ser
+          acessível.
         </p>
         <details className="mt-3">
           <summary className="cursor-pointer text-sm text-orange-700">
@@ -54,9 +80,9 @@ export function AnonAtsForm() {
         </details>
       </div>
 
-      {state?.error ? (
+      {erro ? (
         <p role="alert" className="rounded-lg bg-red-soft px-4 py-3 text-sm text-red-500">
-          {state.error}
+          {erro}
         </p>
       ) : null}
 
@@ -64,6 +90,7 @@ export function AnonAtsForm() {
         idleLabel="Analisar meu currículo grátis →"
         pendingLabel="Analisando…"
         variant="primary"
+        disabled={Boolean(fileError)}
       />
       <p className="text-xs text-ink-3">
         Sem cadastro e sem cartão. Você vê seu score na hora.

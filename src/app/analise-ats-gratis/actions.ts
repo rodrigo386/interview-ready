@@ -5,7 +5,11 @@ import { redirect } from "next/navigation";
 import { env } from "@/lib/env";
 import { rateLimit, LIMITS } from "@/lib/ratelimit";
 import { parseCvFile, ParseError } from "@/lib/files/parse";
-import { normalizeAnonInput } from "@/lib/anon-ats/core";
+import {
+  normalizeAnonInput,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
+} from "@/lib/anon-ats/core";
 import { analyzeAnonAts } from "@/lib/anon-ats/analyze";
 import {
   ANON_COOKIE,
@@ -51,6 +55,14 @@ export async function runAnonAtsAnalysis(
   let cvText = String(formData.get("cvText") ?? "");
   const file = formData.get("cvFile");
   if (file instanceof File && file.size > 0) {
+    // Espelha a validação do cliente (AnonAtsForm) — ela é conveniência de
+    // UX, não garantia: qualquer POST direto passa por cima dela.
+    if (file.size > MAX_UPLOAD_BYTES) {
+      const mb = (file.size / 1024 / 1024).toFixed(1);
+      return {
+        error: `Este arquivo tem ${mb} MB e o limite é ${MAX_UPLOAD_LABEL}. Envie um arquivo menor ou cole o texto do currículo.`,
+      };
+    }
     try {
       const buffer = Buffer.from(await file.arrayBuffer());
       const parsed = await parseCvFile(buffer, file.type);

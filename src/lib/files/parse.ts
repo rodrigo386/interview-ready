@@ -53,8 +53,11 @@ export async function parseCvFile(
       }
     } catch (err) {
       if (err instanceof ParseError) throw err;
+      // PT-BR: esta mensagem chega ao usuário final, inclusive ao visitante
+      // anônimo de /analise-ats-gratis, que é uma página inteiramente em
+      // português. É também o erro de upload mais comum (PDF escaneado).
       throw new ParseError(
-        `Couldn't read this PDF: ${err instanceof Error ? err.message : String(err)}. It may be a scanned image or corrupt. Try pasting the text instead.`,
+        `Não conseguimos ler este PDF: ${err instanceof Error ? err.message : String(err)}. Ele pode ser uma imagem escaneada ou estar corrompido. Tente colar o texto em vez de enviar o arquivo.`,
       );
     } finally {
       await parser.destroy();

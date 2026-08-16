@@ -1,5 +1,16 @@
 import type { AtsAnalysis } from "@/lib/ai/schemas";
 
+/**
+ * Teto do arquivo enviado, em bytes. Igual ao do upload logado
+ * (`prep/new/cv-actions.ts`) e ao `experimental.serverActions.bodySizeLimit`
+ * do `next.config.ts` — os três têm que casar: um limite de body menor que o
+ * validado faz a server action estourar ANTES de rodar, e aí não existe
+ * `state.error` pra mostrar; o usuário só vê o botão voltar ao normal como se
+ * nada tivesse acontecido.
+ */
+export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+export const MAX_UPLOAD_LABEL = "5 MB";
+
 export const MAX_CV_CHARS = 20_000;
 export const MAX_JD_CHARS = 20_000;
 const MIN_CV_CHARS = 40;
