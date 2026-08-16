@@ -6,7 +6,12 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Gauge } from "@/components/prep/Gauge";
 import { IssueRow } from "@/components/prep/IssueRow";
 import { LockedFix } from "@/components/anon-ats/LockedFix";
-import { ANON_COOKIE, getAnonAnalysisByToken } from "@/lib/anon-ats/repo";
+import {
+  ANON_COOKIE,
+  getAnonAnalysisByToken,
+  type AnonAnalysisRow,
+} from "@/lib/anon-ats/repo";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Seu score ATS",
@@ -19,6 +24,14 @@ export default async function ResultadoPage() {
 
   const row = await getAnonAnalysisByToken(token);
   if (!row) redirect("/analise-ats-gratis");
+
+  // Análise já reivindicada: o conteúdo vive dentro da conta agora. O cookie
+  // sobrevive até 7 dias (e um cadastro num navegador diferente sequer passa
+  // por aqui pra apagá-lo), então sem este desvio quem já criou conta voltaria
+  // a ver o teaser com cadeado pedindo... que criasse conta.
+  if (row.claimed_by) {
+    redirect(await destinoDaAnaliseReivindicada(row));
+  }
 
   const { analysis } = row;
   const [primeiro, ...escondidos] = analysis.top_fixes;
@@ -85,4 +98,41 @@ export default async function ResultadoPage() {
       <LandingFooter />
     </>
   );
+}
+
+/**
+ * Para onde mandar quem chega com um token já reivindicado.
+ *
+ * A linha anônima não guarda o id da prep criada (não há coluna para isso, e
+ * inventar uma exigiria migration nova). O casamento é feito pelo
+ * `job_description`, que `anonAnalysisToPrepSession` copia literalmente — o
+ * mesmo tipo de comparação em memória que o `createPrep` usa pra detectar
+ * duplicata. Filtrar por igualdade no PostgREST não serve: a JD pode ter 20 mil
+ * caracteres e iria inteira na query string.
+ *
+ * Sem sessão (ou com outro usuário logado), `/dashboard` é o destino certo:
+ * ele mesmo redireciona pro login quando não há sessão.
+ */
+async function destinoDaAnaliseReivindicada(row: AnonAnalysisRow): Promise<string> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user || user.id !== row.claimed_by) return "/dashboard";
+
+    const { data: preps } = await supabase
+      .from("prep_sessions")
+      .select("id, job_description, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    const match = (preps as { id: string; job_description: string | null }[] | null)?.find(
+      (p) => p.job_description === row.job_description,
+    );
+    return match ? `/prep/${match.id}` : "/dashboard";
+  } catch (err) {
+    console.warn("[resultado] falha ao localizar a prep reivindicada:", err);
+    return "/dashboard";
+  }
 }

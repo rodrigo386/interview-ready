@@ -128,7 +128,14 @@ export async function signup(
       const anonToken = cookieStore.get(ANON_COOKIE)?.value;
       if (anonToken && isNewSignup) {
         try {
-          await claimAnonAnalysis(anonToken, data.user.id);
+          const prepId = await claimAnonAnalysis(anonToken, data.user.id);
+          // Cookie apagado só quando a prep de fato nasceu — mesmo critério
+          // do `pv_ref` logo acima. Sem isso o cookie sobrevivia os 7 dias
+          // inteiros e quem voltasse em /analise-ats-gratis/resultado já
+          // cadastrado veria de novo o teaser com cadeado mandando criar
+          // conta. Falha transitória mantém o cookie (a análise ainda pode
+          // ser reivindicada depois).
+          if (prepId) cookieStore.delete(ANON_COOKIE);
         } catch (err) {
           console.warn("[signup] claim anon ats falhou:", err);
         }

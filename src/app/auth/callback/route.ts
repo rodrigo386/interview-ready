@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveOrigin } from "@/lib/http/host";
 import { attachReferral } from "@/lib/affiliate/attribution";
+import { claimAnonAnalysis } from "@/lib/anon-ats/claim";
+import { ANON_COOKIE } from "@/lib/anon-ats/repo";
 
 export async function GET(request: NextRequest) {
   const base = resolveOrigin(request);
@@ -44,6 +46,34 @@ export async function GET(request: NextRequest) {
         console.warn("[auth/callback] attribution failed:", err);
       }
       cookieStore.delete("pv_ref");
+    }
+
+    // Reivindicação da análise ATS anônima — mesmo bônus que o cadastro por
+    // e-mail dá em `(auth)/signup/actions.ts`. Sem isto, quem escolhe
+    // "Entrar com o Google" (peso visual igual no /signup) perde a análise
+    // que acabou de fazer, contra a promessa explícita do `LockedFix`
+    // ("Sua análise já fica salva — você não precisa colar nada de novo").
+    //
+    // Diferente do signup por e-mail, aqui NÃO é preciso o guard de
+    // `identities` vazio: o OAuth só chega neste ponto com a sessão já
+    // trocada por um code válido, então `userId` é sempre o dono real da
+    // conta — não existe o caso anti-enumeração do `signUp`.
+    //
+    // Idempotente (claimAnonAnalysis devolve null se a linha já foi
+    // reivindicada) e envolvida em try/catch: falha de reivindicação nunca
+    // pode quebrar o login.
+    const anonToken = cookieStore.get(ANON_COOKIE)?.value;
+    if (anonToken) {
+      try {
+        const prepId = await claimAnonAnalysis(anonToken, userId);
+        // Só apaga o cookie quando a prep realmente nasceu. Falha
+        // transitória mantém o cookie e o usuário pode tentar de novo pelo
+        // resultado; sucesso apaga pra que /analise-ats-gratis/resultado
+        // não volte a mostrar o teaser com cadeado por mais 7 dias.
+        if (prepId) cookieStore.delete(ANON_COOKIE);
+      } catch (err) {
+        console.warn("[auth/callback] claim anon ats falhou:", err);
+      }
     }
   }
 
