@@ -263,7 +263,7 @@ export default async function ArticlePage({
             </h2>
             <p className="mt-2 text-sm text-ink-2">
               {ctaVariant === "ats"
-                ? "A PrepaVaga compara seu currículo com a vaga real que você quer, mostra o score ATS, os pontos que estão te barrando e entrega o CV reescrito pronto pra baixar. A primeira análise é grátis."
+                ? "A PrepaVaga compara seu currículo com a vaga real que você quer e mostra na hora o score ATS e o ajuste que mais está te barrando. Sem cadastro e sem cartão."
                 : "A PrepaVaga gera um pitch personalizado de 90 segundos para uma vaga específica, junto com análise ATS do seu currículo, pesquisa atualizada da empresa e perguntas prováveis. A primeira preparação é grátis."}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-4">

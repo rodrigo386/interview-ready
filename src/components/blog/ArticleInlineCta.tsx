@@ -26,7 +26,13 @@ const COPY = {
       </>
     ),
     cta: "Criar minha preparação grátis",
+    href: "/signup",
   },
+  // A variante `ats` leva pra ferramenta anônima (/analise-ats-gratis), que
+  // entrega score + o principal ajuste sem cadastro. Ela NÃO reescreve o CV —
+  // "CV reescrito para anônimos" é não-objetivo explícito da spec da
+  // ferramenta. Prometer isso aqui faria o destino do botão entregar menos do
+  // que o texto logo acima dele.
   ats: {
     kicker: "Teste com o seu currículo",
     heading: (
@@ -36,12 +42,13 @@ const COPY = {
     ),
     body: (
       <>
-        Cola o link da vaga + seu CV. A gente devolve o score ATS, os pontos
-        críticos que estão te barrando e o CV reescrito pronto pra baixar.{" "}
-        <strong>Primeira análise grátis e vitalícia. Sem cartão.</strong>
+        Cola a descrição da vaga + seu CV. A gente devolve o score ATS e o
+        ajuste que mais está te barrando.{" "}
+        <strong>Na hora, sem cadastro e sem cartão.</strong>
       </>
     ),
     cta: "Analisar meu currículo grátis",
+    href: "/analise-ats-gratis",
   },
 } as const;
 
@@ -69,7 +76,7 @@ export function ArticleInlineCta({
       </p>
       <div className="mt-4">
         <Link
-          href="/signup"
+          href={copy.href}
           className="inline-flex items-center gap-2 rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700"
         >
           {copy.cta}
