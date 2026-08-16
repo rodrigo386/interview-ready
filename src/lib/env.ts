@@ -46,6 +46,9 @@ const schema = z.object({
     .union([z.string().min(1), z.literal("")])
     .optional()
     .transform((val) => (val === "" ? undefined : val)),
+  // Disjuntor de custo da ferramenta ATS anônima: máximo de análises por
+  // dia no total. Estourou, a página convida a criar conta em vez de rodar.
+  ANON_ATS_DAILY_CAP: z.coerce.number().int().positive().default(200),
 });
 
 type Env = z.infer<typeof schema>;
@@ -66,6 +69,7 @@ function parseOrThrow(): Env {
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    ANON_ATS_DAILY_CAP: process.env.ANON_ATS_DAILY_CAP,
   });
   if (!result.success) {
     console.error("Invalid environment variables:", result.error.flatten().fieldErrors);
