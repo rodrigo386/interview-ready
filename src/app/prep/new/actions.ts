@@ -4,11 +4,8 @@ import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  checkQuota,
-  isNewBillingCycle,
-  type ProfileBilling,
-} from "@/lib/billing/quota";
+import { checkQuota } from "@/lib/billing/quota";
+import { consumePrepCredit, refundPrepCredit } from "@/lib/billing/consume";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { createPrepInputSchema } from "./schema";
 
@@ -56,39 +53,16 @@ export async function createPrep(
   // Quota gate.
   const { data: billingProfile } = await supabase
     .from("profiles")
-    .select(
-      "subscription_status, preps_used_this_month, preps_reset_at, prep_credits, preps_this_billing_cycle, billing_cycle_started_at",
-    )
+    .select("prep_credits, is_admin")
     .eq("id", user.id)
     .single();
 
-  const nowIso = new Date().toISOString();
-  const billing: ProfileBilling = {
-    subscription_status: (billingProfile as { subscription_status?: ProfileBilling["subscription_status"] } | null)?.subscription_status ?? "none",
-    preps_used_this_month: (billingProfile as { preps_used_this_month?: number } | null)?.preps_used_this_month ?? 0,
-    preps_reset_at: (billingProfile as { preps_reset_at?: string } | null)?.preps_reset_at ?? nowIso,
-    prep_credits: (billingProfile as { prep_credits?: number } | null)?.prep_credits ?? 0,
-    preps_this_billing_cycle:
-      (billingProfile as { preps_this_billing_cycle?: number } | null)?.preps_this_billing_cycle ?? 0,
-    billing_cycle_started_at:
-      (billingProfile as { billing_cycle_started_at?: string } | null)?.billing_cycle_started_at ?? nowIso,
-  };
+  const p = billingProfile as { prep_credits?: number; is_admin?: boolean } | null;
+  const isAdmin = p?.is_admin === true;
 
-  // Lazy soft-cap reset: if we crossed into a new calendar month since the
-  // last cycle start, zero the counter BEFORE checking the cap. Persisted
-  // via admin client (column is server-managed, no auth UPDATE grant).
-  const now = new Date();
-  const cycleStarted = new Date(billing.billing_cycle_started_at);
-  let cycleResetThisRequest = false;
-  if (isNewBillingCycle(cycleStarted, now)) {
-    billing.preps_this_billing_cycle = 0;
-    billing.billing_cycle_started_at = nowIso;
-    cycleResetThisRequest = true;
-  }
-
-  const quota = checkQuota(billing, now);
+  const quota = checkQuota({ prep_credits: p?.prep_credits ?? 0 }, isAdmin);
   if (!quota.allowed) {
-    return { error: quota.mode === "pro_soft_cap" ? "pro_soft_cap" : "quota_exceeded" };
+    return { error: "quota_exceeded" };
   }
 
   // Duplicate-JD check: same user + same JD fingerprint = same prep.
@@ -155,33 +129,14 @@ export async function createPrep(
     return { error: "Não foi possível salvar seu prep agora. Tente novamente em alguns instantes." };
   }
 
-  // Quota consumption. These columns are server-managed — `authenticated`
-  // has no UPDATE grant on them, so we write via the admin client. We've
-  // already verified ownership via getUser above and quota state via
-  // checkQuota, so privilege escalation isn't a concern here.
+  // Consumo atômico da cota. O RPC só tem GRANT pro service_role (migration
+  // 0024), por isso vai pelo admin client. A ordem é insert → consumir →
+  // gerar: se o RPC falhar (sem saldo ou erro), barra aqui e NÃO dispara a
+  // geração — liberar entregaria a preparação completa de graça.
   const admin = createAdminClient();
-  if (quota.mode === "credit") {
-    await admin
-      .from("profiles")
-      .update({ prep_credits: billing.prep_credits - 1 })
-      .eq("id", user.id);
-  } else if (quota.mode === "pro") {
-    // Increment per-cycle counter (soft cap enforcement) AND lifetime counter
-    // (analytics). Persist a fresh cycle start when we just rolled the month.
-    const update: Record<string, unknown> = {
-      preps_used_this_month: billing.preps_used_this_month + 1,
-      preps_this_billing_cycle: billing.preps_this_billing_cycle + 1,
-    };
-    if (cycleResetThisRequest) {
-      update.billing_cycle_started_at = billing.billing_cycle_started_at;
-    }
-    await admin.from("profiles").update(update).eq("id", user.id);
-  } else {
-    // free: increment lifetime counter (enforces 0→1 cap).
-    await admin
-      .from("profiles")
-      .update({ preps_used_this_month: billing.preps_used_this_month + 1 })
-      .eq("id", user.id);
+  const consumed = await consumePrepCredit(admin, user.id, isAdmin);
+  if (!consumed) {
+    return { error: "quota_exceeded" };
   }
 
   // Fire-and-forget the generation pipeline. Server actions on Railway run
@@ -190,14 +145,22 @@ export async function createPrep(
   // renders <PrepSkeleton /> until 'complete', so the UX is "redirect now,
   // skeleton then result" instead of "spinner blocked for 60s".
   //
-  // Errors inside runGeneration mark the row as 'failed' in the DB; the
-  // outer .catch is a last-resort net for crashes that escape that try/catch.
-  void runGenerationInBackground(session.id);
+  // Passa userId/isAdmin pra runGenerationInBackground devolver o crédito
+  // se a geração falhar — ver comentário lá dentro sobre por que isso não
+  // dá pra fazer só no .catch.
+  void runGenerationInBackground(session.id, { userId: user.id, isAdmin });
 
   redirect(`/prep/${session.id}`);
 }
 
-function runGenerationInBackground(sessionId: string): void {
+function runGenerationInBackground(
+  sessionId: string,
+  /**
+   * Presente só quando esta chamada consumiu 1 crédito (createPrep). Ausente
+   * em retryPrep, que regenera algo já pago e não deve devolver nada.
+   */
+  refundOnFailure?: { userId: string; isAdmin: boolean },
+): void {
   const t0 = Date.now();
   console.log(`[runGeneration] background start sessionId=${sessionId}`);
   // Dynamic import keeps generation.ts (and its Gemini deps) out of the
@@ -205,16 +168,43 @@ function runGenerationInBackground(sessionId: string): void {
   // the user is already redirecting.
   import("./generation")
     .then(({ runGeneration }) => runGeneration(sessionId))
-    .then(() => {
+    .then(async () => {
       console.log(
         `[runGeneration] background done sessionId=${sessionId} ${Date.now() - t0}ms`,
       );
+      if (!refundOnFailure) return;
+      // runPipeline (src/lib/ai/pipeline.ts) NUNCA lança — todo desfecho,
+      // inclusive falha, é gravado como status terminal no banco e a promise
+      // resolve normalmente. Por isso o único jeito confiável de saber se
+      // esta geração falhou é reler o status gravado, não confiar só no
+      // .catch abaixo (que só pega crash que escapou do try/catch interno).
+      const admin = createAdminClient();
+      const { data } = await admin
+        .from("prep_sessions")
+        .select("generation_status")
+        .eq("id", sessionId)
+        .single();
+      if (
+        (data as { generation_status?: string } | null)?.generation_status ===
+        "failed"
+      ) {
+        await refundPrepCredit(admin, refundOnFailure.userId, refundOnFailure.isAdmin);
+      }
     })
-    .catch((err) => {
+    .catch(async (err) => {
       console.error(
         `[runGeneration] background CRASHED sessionId=${sessionId}`,
         err instanceof Error ? err.message : String(err),
       );
+      // Crash que escapou do try/catch interno do pipeline — ainda é falha
+      // de geração, e quem pagou não recebeu.
+      if (refundOnFailure) {
+        await refundPrepCredit(
+          createAdminClient(),
+          refundOnFailure.userId,
+          refundOnFailure.isAdmin,
+        );
+      }
     });
 }
 

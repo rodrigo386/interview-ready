@@ -120,3 +120,18 @@ REVOKE ALL ON FUNCTION public.handle_payment_refunded(uuid, text, text, integer)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.handle_payment_refunded(uuid, text, text, integer)
   TO service_role;
+
+-- 4) Devolver 1 crédito quando a geração falha depois de já ter sido
+--    consumida. Sem isto, uma falha de pipeline (Gemini fora do ar, schema
+--    inválido, etc.) cobra a pessoa e não entrega nada.
+create or replace function public.refund_prep_credit(p_user_id uuid)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.profiles set prep_credits = prep_credits + 1 where id = p_user_id;
+$$;
+
+REVOKE ALL ON FUNCTION public.refund_prep_credit(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.refund_prep_credit(uuid) TO service_role;

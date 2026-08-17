@@ -12,11 +12,11 @@ import { PendingButton } from "./PendingButton";
 /**
  * Única saída de uma prep que veio da ferramenta ATS anônima: ela chega com a
  * etapa 2 pronta e as etapas 1, 3, 4 e 5 vazias, e nada dispara o pipeline
- * automaticamente (gerar consome a preparação grátis vitalícia, então tem que
- * ser escolha da pessoa).
+ * automaticamente (gerar consome 1 crédito, então tem que ser escolha da
+ * pessoa).
  *
- * Trata `quota_exceeded` e `pro_soft_cap` do mesmo jeito que o `NewPrepForm`
- * do /prep/new, porque é a mesma cota sendo cobrada.
+ * Trata `quota_exceeded` do mesmo jeito que o `NewPrepForm` do /prep/new,
+ * porque é a mesma cota sendo cobrada.
  */
 export function GenerateFullPrepCta({
   sessionId,
@@ -64,32 +64,7 @@ export function GenerateFullPrepCta({
         />
       </form>
 
-      {state.error === "pro_soft_cap" && !pending ? (
-        <div
-          role="alert"
-          className="mt-4 rounded-xl border border-yellow-500/40 bg-yellow-soft p-4 text-sm"
-        >
-          <p className="font-semibold text-yellow-700">
-            Uso atípico detectado neste ciclo
-          </p>
-          <p className="mt-1 text-ink-2">
-            Sua conta Pro atingiu o teto mensal de preps. Esse limite é alto pra
-            cobrir uso real — se você está rodando legitimamente, fala comigo que
-            libero na hora.
-          </p>
-          <a
-            href="mailto:prepavaga@prepavaga.com.br?subject=PrepaVaga%20%E2%80%94%20liberar%20cap%20mensal"
-            className="mt-3 inline-block rounded-pill bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-700"
-          >
-            Falar com prepavaga@prepavaga.com.br →
-          </a>
-        </div>
-      ) : null}
-
-      {state.error &&
-      !pending &&
-      state.error !== "quota_exceeded" &&
-      state.error !== "pro_soft_cap" ? (
+      {state.error && !pending && state.error !== "quota_exceeded" ? (
         <p
           role="alert"
           className="mt-4 rounded-xl border border-red-500/40 bg-red-soft px-4 py-3 text-sm text-red-700"
