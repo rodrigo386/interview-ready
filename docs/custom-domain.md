@@ -136,7 +136,6 @@ Painel Supabase → projeto → **Authentication** → **URL Configuration**:
 - **Redirect URLs** (allowlist): adicione
   - `https://prepavaga.com.br/auth/callback`
   - `https://prepavaga.com.br/dashboard`
-  - `https://prepavaga.com.br/welcome/pro`
   - `http://localhost:3000/**` (mantém pra dev local)
 
 Salve.
@@ -153,10 +152,10 @@ Sem isso, novas subscriptions falham com 400 "domínio não cadastrado".
 ## 8. Testar end-to-end (5 min)
 
 1. Janela anônima → `https://prepavaga.com.br` → landing carrega ✓.
-2. Login com conta de teste → `/dashboard` → banner Free ✓.
-3. `/prep/new` → criar prep → fluxo completo ✓.
-4. `/pricing` → Pro → Asaas → após pagar, redireciona pra
-   `https://prepavaga.com.br/welcome/pro` ✓.
+2. Login com conta de teste → `/dashboard` → badge de créditos ✓.
+3. `/prep/new` → criar prep → análise ATS gratuita ✓.
+4. `/pricing` → comprar crédito → Asaas → após pagar, redireciona pra
+   `https://prepavaga.com.br/dashboard?billing=ok` ✓.
 5. Recebe email de confirmação? Conferir remetente
    `nao-responda@prepavaga.com.br` (Resend, ver `email-setup.md`).
 

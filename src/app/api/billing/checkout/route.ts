@@ -4,8 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { asaas } from "@/lib/billing/asaas";
 import { buildExternalReference } from "@/lib/billing/ids";
-import { PRO_AMOUNT_CENTS, findSku } from "@/lib/billing/prices";
-import { env } from "@/lib/env";
+import { findSku } from "@/lib/billing/prices";
 import { resolveOrigin } from "@/lib/http/host";
 
 const bodySchema = z.object({
@@ -52,10 +51,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  // Quantidade válida só se aplica a prep_purchase — o pacote decide o
-  // valor cobrado (`sku.cents`), nunca o inverso.
-  const sku = parsed.kind === "prep_purchase" ? findSku(parsed.qty ?? 1) : null;
-  if (parsed.kind === "prep_purchase" && !sku) {
+  // Assinatura não se vende mais. O `kind` continua no schema (em vez de
+  // sumir do enum e virar um 400 genérico do Zod) para que quem ainda chame
+  // este endpoint receba uma resposta que explica o que houve — e para que a
+  // recusa fique explícita no código, não implícita numa omissão.
+  //
+  // Nenhuma UI dispara `pro_subscription` desde a Task 7, mas o endpoint
+  // aceitava um POST de qualquer usuário autenticado e criava cobrança
+  // RECORRENTE DE VERDADE de R$30/mês no Asaas — dinheiro real saindo do
+  // cartão de alguém por um plano que o produto não tem mais e cuja UI de
+  // gestão (`/welcome/pro`) prometia "preps ilimitados".
+  //
+  // O que NÃO é bloqueado, de propósito: os handlers `SUBSCRIPTION_*` do
+  // webhook, `handle_payment_received` com kind `pro_subscription` e
+  // `/api/billing/cancel`. Existe uma assinatura legada ativa em produção, e
+  // ela ainda precisa poder renovar, ser estornada e ser cancelada.
+  if (parsed.kind === "pro_subscription") {
+    return NextResponse.json(
+      {
+        error:
+          "A assinatura Pro foi descontinuada. A análise ATS é gratuita e a preparação completa é vendida por crédito avulso.",
+      },
+      { status: 410 },
+    );
+  }
+
+  // A quantidade decide o pacote, e o pacote decide o valor cobrado
+  // (`sku.cents`) — nunca o inverso.
+  const sku = findSku(parsed.qty ?? 1);
+  if (!sku) {
     return NextResponse.json(
       { error: "Quantidade inválida. Escolha um dos pacotes disponíveis." },
       { status: 400 },
@@ -101,13 +125,6 @@ export async function POST(req: Request) {
     | null;
   if (!p) {
     return NextResponse.json({ error: "Profile missing" }, { status: 500 });
-  }
-
-  if (
-    parsed.kind === "pro_subscription" &&
-    (p.subscription_status === "active" || p.subscription_status === "overdue")
-  ) {
-    return NextResponse.json({ error: "Já assinante" }, { status: 409 });
   }
 
   // Resolve CPF/CNPJ: profile takes precedence, body provides on first run.
@@ -212,38 +229,9 @@ export async function POST(req: Request) {
     }
   }
 
-  const proSuccessUrl = `${resolveOrigin(req)}/welcome/pro`;
   const oneOffSuccessUrl = `${resolveOrigin(req)}/dashboard?billing=ok`;
 
-  if (parsed.kind === "pro_subscription") {
-    const sub = await asaas.createSubscription({
-      customer: customerId,
-      billingType: "UNDEFINED",
-      value: PRO_AMOUNT_CENTS / 100,
-      cycle: "MONTHLY",
-      nextDueDate: tomorrowIso(),
-      description: "PrepaVaga Pro · assinatura mensal",
-      externalReference: buildExternalReference({
-        kind: "pro_subscription",
-        userId: p.id,
-      }),
-      callback: { successUrl: proSuccessUrl, autoRedirect: true },
-    });
-    await admin
-      .from("profiles")
-      .update({ asaas_subscription_id: sub.id })
-      .eq("id", p.id);
-
-    const { data: firstPayment } = await fetchFirstPayment(sub.id);
-    const checkoutUrl = firstPayment?.invoiceUrl ?? firstPayment?.bankSlipUrl;
-    if (!checkoutUrl) {
-      return NextResponse.json({ error: "Asaas não retornou link de cobrança" }, { status: 502 });
-    }
-    return NextResponse.json({ checkoutUrl });
-  }
-
-  // prep_purchase — `sku` já validado acima (400 se quantidade inválida).
-  const chosenSku = sku!;
+  const chosenSku = sku;
   const pay = await asaas.createPayment({
     customer: customerId,
     billingType: "UNDEFINED",
@@ -266,22 +254,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Asaas não retornou link de cobrança" }, { status: 502 });
   }
   return NextResponse.json({ checkoutUrl });
-}
-
-async function fetchFirstPayment(subscriptionId: string) {
-  if (!env.ASAAS_API_KEY) throw new Error("ASAAS_API_KEY is not set");
-  const res = await fetch(
-    `${env.ASAAS_BASE_URL}/subscriptions/${subscriptionId}/payments?limit=1&offset=0`,
-    {
-      headers: {
-        access_token: env.ASAAS_API_KEY,
-        "Content-Type": "application/json",
-      },
-    },
-  );
-  if (!res.ok) {
-    return { data: null };
-  }
-  const json = (await res.json()) as { data: Array<{ invoiceUrl?: string; bankSlipUrl?: string }> };
-  return { data: json.data?.[0] ?? null };
 }
