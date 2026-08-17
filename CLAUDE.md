@@ -80,7 +80,7 @@ Tarefas que são **só dashboard + env vars** (sem código) têm runbook própri
 
 ### Rate limiting
 
-Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyIntel, fetchJdFromUrl) passam por `rateLimit()` em `src/lib/ratelimit.ts` (Upstash Ratelimit + Redis, sliding window). Limites por usuário: createPrep 3/h, ATS/CV/intel 10/h, fetchJd 30/h. Sem `UPSTASH_REDIS_REST_URL`+`UPSTASH_REDIS_REST_TOKEN`, o helper falha aberto (não bloqueia) — evita travar a app se Upstash cair.
+Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyIntel, fetchJdFromUrl) passam por `rateLimit()` em `src/lib/ratelimit.ts` (Upstash Ratelimit + Redis, sliding window). Limites por usuário: createPrep 3/h, ATS/CV/intel 10/h, fetchJd 30/h. Sem `UPSTASH_REDIS_REST_URL`+`UPSTASH_REDIS_REST_TOKEN`, o helper falha aberto (não bloqueia) — evita travar a app se Upstash cair. **Cuidado com a leitura disso:** falhar aberto significa que, sem as env vars, nenhum desses limites existe de fato. `LIMITS.anonAts` é a única com `failClosed: true`, porque é endpoint anônimo que gasta IA e liberar geral ali seria pior do que ficar fora do ar.
 
 ### Soft cap mensal Pro
 
@@ -92,7 +92,9 @@ Defesa em camadas contra abuser persistente que fica abaixo do rate limit horár
 - `ASAAS_API_KEY` — sandbox/prod API key do Asaas (formato `$aact_...`). Sem ele, todo checkout/cancel falha com `"ASAAS_API_KEY is not set"`.
 - `ASAAS_WEBHOOK_TOKEN` — token arbitrário (recomendo 32 chars). Tem que bater com o header `asaas-access-token` configurado no painel Asaas.
 - `ASAAS_BASE_URL` — `https://sandbox.asaas.com/api/v3` (sandbox) ou `https://api.asaas.com/v3` (prod). Tem default de sandbox no schema. **Não setar como string vazia** (Zod rejeita). **Em produção: usar `api.asaas.com/v3`.**
-- `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` — opcionais. Habilitam rate limit em produção. Sem eles, o helper `rateLimit()` falha aberto (sem bloqueio).
+- `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` — **na prática, obrigatórias.** Estavam descritas como "opcionais" e isso era enganoso: sem elas TODOS os limites do app ficam inertes, silenciosamente — incluindo `authLogin` (proteção contra credential stuffing), `authSignup` e `passwordReset`, além dos limites de IA. A única exceção é `LIMITS.anonAts`, que tem `failClosed: true` e por isso RECUSA tudo quando o Redis falta, em vez de liberar. Descoberto em 2026-08-17, quando a ferramenta ATS anônima subiu e foi a primeira coisa a falhar ruidosamente.
+- `IP_HASH_SALT` — opcional, usada para o `ip_hash` de auditoria da ferramenta ATS anônima. Sem ela, `hashIp()` devolve `null` e a coluna grava `null` (melhor do que gravar um hash com salt público, que seria reversível por força bruta no espaço de IPv4). O limite por IP continua funcionando com o IP cru como chave.
+- `ANON_ATS_DAILY_CAP` — opcional, padrão 200. Disjuntor de custo da ferramenta ATS anônima: teto global de análises por dia. Independe do Upstash.
 - `RESEND_API_KEY` — opcional, **scope "Sending Access" apenas** (NÃO confundir com SMTP key do Supabase Auth). Habilita emails transacionais de parceiro (aprovação/rejeição/payout). Sem ele, `sendEmail()` loga warn e segue.
 - `CEREBRAS_API_KEY` — opcional, free tier OpenAI-compatible. Último elo do fallback chain de IA quando todos os Geminis dão 503. Get em https://cloud.cerebras.ai
 - `MOCK_ANTHROPIC=1` — kill switch global de AI nos tests (nome legado, vale para Gemini agora)
