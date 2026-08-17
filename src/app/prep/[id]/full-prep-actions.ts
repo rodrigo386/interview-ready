@@ -119,7 +119,7 @@ export async function generateFullPrep(
   // 0024), por isso vai pelo admin client. Se falhar (sem saldo ou erro),
   // barra aqui e NÃO dispara a geração.
   const admin = createAdminClient();
-  const consumed = await consumePrepCredit(admin, user.id, isAdmin);
+  const consumed = await consumePrepCredit(admin, user.id, sessionId, isAdmin);
   if (!consumed) {
     // A claim acima já marcou a sessão como "pending" com o placeholder —
     // sem desfazer isso, ela fica indistinguível de "gerando de verdade"
@@ -209,6 +209,7 @@ function runGenerationInBackground(
         await refundPrepCredit(
           createAdminClient(),
           refundOnFailure.userId,
+          sessionId,
           refundOnFailure.isAdmin,
         );
       } catch (refundErr) {
@@ -247,7 +248,7 @@ function runGenerationInBackground(
         (data as { generation_status?: string } | null)?.generation_status ===
         "failed"
       ) {
-        await refundPrepCredit(admin, refundOnFailure.userId, refundOnFailure.isAdmin);
+        await refundPrepCredit(admin, refundOnFailure.userId, sessionId, refundOnFailure.isAdmin);
       }
     } catch (err) {
       // Erro aqui é só na LEITURA pós-geração, não na geração em si (que já

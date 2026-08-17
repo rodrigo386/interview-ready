@@ -5,7 +5,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkQuota } from "@/lib/billing/quota";
-import { consumePrepCredit, refundPrepCredit } from "@/lib/billing/consume";
+import {
+  consumePrepCredit,
+  refundPrepCredit,
+  creditPrepRefundUnconditional,
+} from "@/lib/billing/consume";
 import { classifyRetryRecovery } from "@/lib/prep/retry-gate";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { createPrepInputSchema } from "./schema";
@@ -111,23 +115,6 @@ export async function createPrep(
     cv_text = parsed.data.cvText!;
   }
 
-  // Consumo atômico da cota ANTES do insert. O RPC só tem GRANT pro
-  // service_role (migration 0024), por isso vai pelo admin client.
-  //
-  // A ordem inverte o padrão do full-prep-actions.ts (lá é claim → consumir,
-  // porque a claim É o lock contra duplo clique) — aqui não existe lock
-  // prévio nenhum, então consumir antes de inserir é estritamente mais
-  // simples: se o RPC falhar (sem saldo ou erro), a pessoa nunca vê nada
-  // criado, sem linha `prep_sessions` órfã presa em "pending" pra sempre
-  // bloqueando a detecção de duplicata da mesma vaga (achado da rodada de
-  // revisão anterior — inserir antes de consumir criava exatamente essa
-  // linha travada).
-  const admin = createAdminClient();
-  const consumed = await consumePrepCredit(admin, user.id, isAdmin);
-  if (!consumed) {
-    return { error: "quota_exceeded" };
-  }
-
   const { data: session, error: insertError } = await supabase
     .from("prep_sessions")
     .insert({
@@ -144,10 +131,34 @@ export async function createPrep(
 
   if (insertError || !session) {
     console.error("[createPrep] insert failed:", insertError?.message, insertError?.code);
-    // Já consumimos o crédito acima — sem devolver aqui, um erro de insert
-    // (raro, mas possível) cobraria por uma prep que nunca chegou a existir.
-    await refundPrepCredit(admin, user.id, isAdmin);
     return { error: "Não foi possível salvar seu prep agora. Tente novamente em alguns instantes." };
+  }
+
+  // Consumo atômico da cota — o RPC só tem GRANT pro service_role (migration
+  // 0024), por isso vai pelo admin client. Precisa do id da sessão porque o
+  // consumo agora MARCA `credit_consumed_at` NELA (raiz da idempotência da
+  // devolução — ver comentário em `consumePrepCredit`), então o insert tem
+  // que vir primeiro: não dá mais pra consumir antes de a sessão existir.
+  //
+  // Isso reabre o risco de linha órfã que a rodada anterior tinha fechado
+  // consumindo antes de inserir — resolvido aqui apagando a linha se o
+  // consumo falhar, em vez de mudar a ordem.
+  const admin = createAdminClient();
+  const consumed = await consumePrepCredit(admin, user.id, session.id, isAdmin);
+  if (!consumed) {
+    const { error: deleteError } = await supabase
+      .from("prep_sessions")
+      .delete()
+      .eq("id", session.id)
+      .eq("user_id", user.id);
+    if (deleteError) {
+      console.error(
+        "[createPrep] delete da linha órfã falhou:",
+        deleteError.message,
+        deleteError.code,
+      );
+    }
+    return { error: "quota_exceeded" };
   }
 
   // Fire-and-forget the generation pipeline. Server actions on Railway run
@@ -215,6 +226,7 @@ function runGenerationInBackground(
           await refundPrepCredit(
             createAdminClient(),
             refundOnFailure.userId,
+            sessionId,
             refundOnFailure.isAdmin,
           );
         } catch (refundErr) {
@@ -255,7 +267,7 @@ function runGenerationInBackground(
         (data as { generation_status?: string } | null)?.generation_status ===
         "failed"
       ) {
-        await refundPrepCredit(admin, refundOnFailure.userId, refundOnFailure.isAdmin);
+        await refundPrepCredit(admin, refundOnFailure.userId, sessionId, refundOnFailure.isAdmin);
       }
     } catch (err) {
       // Erro aqui é só na LEITURA pós-geração, não na geração em si (que já
@@ -291,6 +303,15 @@ export type RetryPrepState = {
  * O modelo correto é "a pessoa paga uma vez por cada preparação que
  * efetivamente recebe": falhou (com devolução), tenta de novo, paga de
  * novo; travou (sem devolução), tenta de novo, não paga de novo — já pagou.
+ *
+ * `classifyRetryRecovery` reavalia staleness AQUI, no servidor, em vez de
+ * confiar que "pending"/"generating" só chega até aqui já travado. Essa
+ * premissa (do layout, que só mostra `PrepFailed` quando `isGenerationStale`
+ * já deu true) quebra depois de um retry bem sucedido: a linha volta a
+ * "pending" FRESCO, e uma segunda aba com o `PrepFailed` antigo ainda
+ * montado chama `retryPrep` de novo — sem reavaliar, seria classificada
+ * como zumbi e dispararia um SEGUNDO runner correndo em paralelo com o
+ * primeiro, com `prep_guide` sendo apagado no meio da execução dele.
  */
 export async function retryPrep(
   id: string,
@@ -305,7 +326,7 @@ export async function retryPrep(
 
   const { data: session, error } = await supabase
     .from("prep_sessions")
-    .select("id, user_id, generation_status, error_message, prep_guide")
+    .select("id, user_id, generation_status, error_message, prep_guide, updated_at, created_at")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -313,8 +334,19 @@ export async function retryPrep(
   if (error || !session) redirect("/dashboard");
   if (session.generation_status === "complete") redirect(`/prep/${id}`);
 
-  const recovery = classifyRetryRecovery(session.generation_status);
+  const recovery = classifyRetryRecovery({
+    generationStatus: session.generation_status,
+    updatedAt: session.updated_at ?? session.created_at,
+    now: Date.now(),
+  });
   if (recovery.kind === "not_retryable") redirect(`/prep/${id}`);
+  if (recovery.kind === "still_running") {
+    // Geração genuinamente em andamento (recém-escrita, não passou do
+    // threshold de stale) — resetar por baixo dela corromperia a escrita do
+    // runner que já está rodando. Recusa e volta pra tela, que já sabe
+    // renderizar o skeleton certo pra esse estado.
+    redirect(`/prep/${id}`);
+  }
 
   // Mesmo limite dos outros dois caminhos de geração — retry também chama o
   // mesmo pipeline caro.
@@ -378,7 +410,7 @@ export async function retryPrep(
 
   if (shouldCharge) {
     const admin = createAdminClient();
-    const consumed = await consumePrepCredit(admin, user.id, isAdmin);
+    const consumed = await consumePrepCredit(admin, user.id, id, isAdmin);
     if (!consumed) {
       // Desfaz o cadeado: sem isso a sessão fica travada em "pending" com
       // `prep_guide` null — indistinguível de "gerando de verdade" até o
@@ -422,32 +454,68 @@ export async function deleteFailedPrep(id: string) {
 
   const { data: session } = await supabase
     .from("prep_sessions")
-    .select("id, generation_status")
+    .select("id, generation_status, updated_at, created_at")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
 
-  // Prep zumbi (pending/generating travada): o crédito foi consumido e
-  // NUNCA devolvido, porque o runner que faria isso morreu junto com o
-  // processo (mesma classificação de `retryPrep`, ver retry-gate.ts).
-  // "Excluir e começar de novo" abandona essa tentativa pra sempre — sem
-  // devolver aqui, o crédito some junto com a linha excluída. Uma prep
-  // "failed" já foi devolvida por `runGenerationInBackground`, então não
-  // devolve de novo.
-  if (session && classifyRetryRecovery(session.generation_status).kind === "zombie_unrefunded") {
+  if (!session) redirect("/prep/new");
+
+  const recovery = classifyRetryRecovery({
+    generationStatus: session.generation_status,
+    updatedAt: session.updated_at ?? session.created_at,
+    now: Date.now(),
+  });
+  if (recovery.kind === "still_running") {
+    // Geração genuinamente em andamento — apagar por baixo do pipeline que
+    // já está escrevendo nela corromperia a execução dele. Recusa, igual
+    // retryPrep.
+    redirect(`/prep/${id}`);
+  }
+
+  // O DELETE é o cadeado: condicionado ao `generation_status` que acabamos
+  // de ler, e devolve as colunas de crédito da PRÓPRIA LINHA que apagou —
+  // em vez de ler, decidir se devolve, e só então apagar (que deixava uma
+  // janela entre a leitura e o apagamento pra outra ação mudar o estado por
+  // baixo). Se outra aba/ação já mudou `generation_status` nesse meio-tempo
+  // (outro clique em excluir, um retry concorrente), 0 linhas são afetadas
+  // e não fazemos nada — não sabemos mais qual é o estado real, então não
+  // arriscamos devolver.
+  //
+  // A decisão de devolver vem das colunas `credit_consumed_at`/
+  // `credit_refunded_at` da linha exata que este DELETE apagou (RETURNING é
+  // atômico — ninguém mais pode ter lido ou escrito essas colunas entre o
+  // apagamento e a leitura do retorno). Como a sessão já não existe mais
+  // depois do DELETE, a devolução aqui não pode passar por
+  // `refund_prep_credit` (que precisa da linha pra checar idempotência) —
+  // usa `creditPrepRefundUnconditional`, que credita direto, com o DELETE
+  // condicional servindo de prova de que isso só acontece uma vez.
+  const { data: deletedRows, error: deleteError } = await supabase
+    .from("prep_sessions")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .eq("generation_status", session.generation_status)
+    .select("id, credit_consumed_at, credit_refunded_at");
+
+  if (deleteError) {
+    console.error("[deleteFailedPrep] delete failed:", deleteError.message, deleteError.code);
+    redirect(`/prep/${id}`);
+  }
+
+  const deletedRow = deletedRows?.[0] as
+    | { credit_consumed_at: string | null; credit_refunded_at: string | null }
+    | undefined;
+
+  if (deletedRow?.credit_consumed_at && !deletedRow.credit_refunded_at) {
     const { data: billingProfile } = await supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
       .single();
     const isAdmin = (billingProfile as { is_admin?: boolean } | null)?.is_admin === true;
-    await refundPrepCredit(createAdminClient(), user.id, isAdmin);
+    await creditPrepRefundUnconditional(createAdminClient(), user.id, isAdmin);
   }
 
-  await supabase
-    .from("prep_sessions")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
   redirect("/prep/new");
 }
