@@ -80,11 +80,49 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section number="4." title="Reembolso (garantia de 7 dias)">
+      <Section number="4." title="Como o crédito funciona">
+        <p>
+          Cada crédito vale por uma preparação completa. Ele é debitado no momento em que você
+          pede a geração — no botão &ldquo;Gerar preparação completa&rdquo; — e não antes: criar a
+          preparação, enviar o currículo e rodar a análise ATS não custam crédito.
+        </p>
+        <p>
+          <strong className="text-text-primary">O crédito volta pro seu saldo</strong> em duas
+          situações, automaticamente e sem você precisar pedir:
+        </p>
+        <ul className="ml-5 list-disc space-y-2">
+          <li>
+            <strong className="text-text-primary">Falha na geração.</strong> Se a preparação não
+            for entregue, o crédito é devolvido e você pode tentar de novo ou usá-lo em outra vaga.
+          </li>
+          <li>
+            <strong className="text-text-primary">Entrega parcial.</strong> Se parte das seções não
+            for gerada, o crédito também é devolvido — você fica com o que foi gerado e com o
+            crédito de volta.
+          </li>
+        </ul>
+        <p>
+          O crédito comprado <strong>não expira</strong> e não tem prazo de uso. Ele fica na sua
+          conta até você gastar.
+        </p>
+      </Section>
+
+      <Section number="5." title="Reembolso (garantia de 7 dias)">
         <p>
           Se você comprou crédito de preparação e não ficou satisfeito, pode pedir reembolso
           integral em até <strong>7 dias corridos</strong> a partir do pagamento, mediante
-          feedback por voz de 10 minutos com a equipe.
+          feedback por voz de 10 minutos com a equipe. Basta escrever para{" "}
+          <a className="text-brand-600 underline-offset-4 hover:underline" href="mailto:contato@prepavaga.com.br">
+            contato@prepavaga.com.br
+          </a>{" "}
+          dentro do prazo.
+        </p>
+        <p>
+          O reembolso é feito como estorno da cobrança original pelo Asaas, pelo mesmo meio de
+          pagamento que você usou. O prazo até o dinheiro aparecer depende do meio (cartão pode
+          levar até duas faturas; Pix e boleto são mais rápidos) e é do Asaas e do seu banco, não
+          nosso. Os créditos ainda não usados daquela compra saem do seu saldo no momento do
+          estorno.
         </p>
         <p>
           Após esse prazo, reembolsos são analisados caso a caso e não são garantidos. A análise
@@ -92,7 +130,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section number="5." title="Como você deve usar">
+      <Section number="6." title="Como você deve usar">
         <p>Você concorda em <strong className="text-text-primary">não</strong>:</p>
         <ul className="ml-5 list-disc space-y-2">
           <li>Usar a PrepaVaga para fins ilegais, fraudulentos ou para gerar conteúdo ofensivo.</li>
@@ -113,7 +151,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section number="6." title="Conteúdo gerado e propriedade intelectual">
+      <Section number="7." title="Conteúdo gerado e propriedade intelectual">
         <p>
           O currículo e as informações que você submete continuam sendo seus. Ao usar a PrepaVaga,
           você nos concede licença limitada e revogável para processar esses dados exclusivamente
@@ -129,7 +167,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section number="7." title="Limitações do serviço e da IA">
+      <Section number="8." title="Limitações do serviço e da IA">
         <p>
           A PrepaVaga usa modelos de IA generativa (Google Gemini) e pesquisa pública na internet.
           A qualidade do dossiê depende da qualidade do currículo e da descrição da vaga que você
@@ -147,7 +185,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section number="8." title="Suspensão e encerramento da conta">
+      <Section number="9." title="Suspensão e encerramento da conta">
         <p>
           Você pode encerrar sua conta a qualquer momento em{" "}
           <Link className="text-brand-600 underline-offset-4 hover:underline" href="/profile/account">
@@ -161,11 +199,12 @@ export default function TermsPage() {
         </p>
         <p>
           Podemos encerrar contas que violem estes Termos ou que apresentem atividade fraudulenta
-          de pagamento, com reembolso proporcional dos dias não usados quando aplicável.
+          de pagamento. Nesses casos, créditos comprados e ainda não usados são reembolsados por
+          estorno, salvo quando o próprio pagamento for fraudulento.
         </p>
       </Section>
 
-      <Section number="9." title="Limitação de responsabilidade">
+      <Section number="10." title="Limitação de responsabilidade">
         <p>
           Na máxima extensão permitida pela lei, a PrepaVaga e a PROAICIRCLE Ltda não respondem
           por: (i) decisões de contratação tomadas por terceiros; (ii) eventuais imprecisões em
@@ -179,7 +218,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section number="10." title="Alterações nos Termos">
+      <Section number="11." title="Alterações nos Termos">
         <p>
           Podemos atualizar estes Termos quando a lei mudar, quando lançarmos novos recursos ou
           quando ajustarmos os planos. Mudanças relevantes são comunicadas por e-mail e/ou aviso na
@@ -191,7 +230,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section number="11." title="Lei aplicável e foro">
+      <Section number="12." title="Lei aplicável e foro">
         <p>
           Estes Termos são regidos pelas leis da República Federativa do Brasil, em especial o
           Código de Defesa do Consumidor, o Marco Civil da Internet e a Lei Geral de Proteção de
@@ -204,7 +243,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section number="12." title="Contato">
+      <Section number="13." title="Contato">
         <p>
           Dúvidas sobre estes Termos? Escreva pra{" "}
           <a className="text-brand-600 underline-offset-4 hover:underline" href="mailto:contato@prepavaga.com.br">

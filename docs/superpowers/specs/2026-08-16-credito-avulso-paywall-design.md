@@ -32,7 +32,9 @@ Um preço, um produto pago:
 
 Pacotes com desconto: **3 por R$25** (R$8,33 cada) e **5 por R$40** (R$8 cada).
 
-Crédito não expira e não é reembolsável em dinheiro. Se a geração falhar, o crédito volta.
+Crédito não expira. Se a geração falhar — ou entregar só parte das seções —, o crédito volta pro saldo automaticamente.
+
+**Reembolso em dinheiro: sim, em até 7 dias.** Esta linha dizia o contrário ("não é reembolsável em dinheiro"), e estava errada contra o que o produto já publica: `/termos`, a FAQ da landing e os dois `llms*.txt` garantem reembolso integral em 7 dias corridos desde antes desta branch. Corrigida a spec, não a garantia — mudar uma garantia legal já publicada para caber num design é a ordem errada. O reembolso é operado como estorno da cobrança original pelo Asaas; não existe rotina automatizada nem tela para isso, e não precisa existir no volume atual.
 
 **Identificação da compra no Asaas.** O parser atual (`src/lib/billing/ids.ts`) entende `pro:<uid>` e `prep:<uid>:<nano>`. O formato passa a carregar a quantidade: **`prep:<uid>:<qtd>:<nano>`**, com `<qtd>` ∈ {1, 3, 5}. A quantidade vem do `externalReference`, nunca do valor pago — casar por valor quebraria em qualquer promoção ou ajuste de preço. Um `externalReference` no formato antigo (sem quantidade) é tratado como 1 crédito, para não perder pagamento em trânsito no momento do deploy.
 
