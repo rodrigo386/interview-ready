@@ -3,6 +3,7 @@ import {
   isCreditOutstanding,
   shouldChargeRetry,
   shouldRefundOnDiscard,
+  shouldRefundOnDelete,
 } from "./credit-lifecycle";
 
 const T = "2026-08-17T12:00:00.000Z";
@@ -62,5 +63,64 @@ describe("shouldRefundOnDiscard", () => {
 
   it("não devolve o que nunca foi consumido (sessão de admin, ou consumo que falhou)", () => {
     expect(shouldRefundOnDiscard({ creditConsumedAt: null, creditRefundedAt: null })).toBe(false);
+  });
+});
+
+describe("shouldRefundOnDelete", () => {
+  it("excluir uma sessão travada em 'generating' devolve o crédito", () => {
+    // O cenário determinístico: um deploy mata o pipeline no meio, a pessoa
+    // vê "Gerando…" travado e clica na lixeira do dashboard.
+    expect(
+      shouldRefundOnDelete({
+        creditConsumedAt: T,
+        creditRefundedAt: null,
+        generationStatus: "generating",
+      }),
+    ).toBe(true);
+  });
+
+  it("excluir uma sessão 'failed' ainda não devolvida devolve o crédito", () => {
+    expect(
+      shouldRefundOnDelete({
+        creditConsumedAt: T,
+        creditRefundedAt: null,
+        generationStatus: "failed",
+      }),
+    ).toBe(true);
+  });
+
+  it("excluir uma preparação ENTREGUE não devolve nada", () => {
+    // Par de colunas idêntico ao do caso acima — só o status distingue. Sem
+    // esta guarda, excluir uma prep completa (algo que a UI oferece em todo
+    // card) pagaria de volta o que a pessoa já recebeu, e o PDF exportado
+    // continuaria na máquina dela. Repetível: 1 crédito viraria saldo
+    // infinito.
+    expect(
+      shouldRefundOnDelete({
+        creditConsumedAt: T,
+        creditRefundedAt: null,
+        generationStatus: "complete",
+      }),
+    ).toBe(false);
+  });
+
+  it("entrega parcial já devolvida pelo pipeline não devolve de novo", () => {
+    expect(
+      shouldRefundOnDelete({
+        creditConsumedAt: T,
+        creditRefundedAt: T,
+        generationStatus: "complete",
+      }),
+    ).toBe(false);
+  });
+
+  it("sessão que nunca consumiu (só ATS grátis, ou admin) não devolve nada", () => {
+    expect(
+      shouldRefundOnDelete({
+        creditConsumedAt: null,
+        creditRefundedAt: null,
+        generationStatus: "pending",
+      }),
+    ).toBe(false);
   });
 });

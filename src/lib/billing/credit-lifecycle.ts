@@ -57,7 +57,50 @@ export function shouldChargeRetry(c: CreditLifecycle): boolean {
  * Devolve o crédito ao descartar a sessão? Só quando ele está pendente de uso
  * — pagou e não recebeu. Se nunca consumiu, não há o que devolver; se já foi
  * devolvido, devolver de novo pagaria duas vezes o mesmo erro.
+ *
+ * Usado pelo `deleteFailedPrep`, que só alcança sessões NÃO entregues (ele
+ * barra `complete` antes de chegar aqui, via `classifyRetryRecovery`). Para o
+ * caminho de exclusão que aceita qualquer sessão, ver `shouldRefundOnDelete`.
  */
 export function shouldRefundOnDiscard(c: CreditLifecycle): boolean {
+  return isCreditOutstanding(c);
+}
+
+/**
+ * Devolve o crédito ao EXCLUIR uma sessão qualquer (`deletePrep`, o ícone de
+ * lixeira que aparece em todo card do dashboard e na zona de perigo da Tela
+ * 1)? Mesma pergunta do `shouldRefundOnDiscard` mais uma guarda, porque aqui
+ * a entrada não é só sessão fracassada:
+ *
+ * uma preparação ENTREGUE tem exatamente o mesmo par de colunas de um crédito
+ * pendente (`credit_consumed_at` preenchido, `credit_refunded_at` nulo) — a
+ * marca de devolução só existe quando o dinheiro volta, e numa entrega
+ * bem-sucedida ele não volta. Devolver aqui pagaria de volta algo que a pessoa
+ * recebeu, e o dossiê continuaria exportado em PDF na máquina dela. Por isso
+ * `complete` NÃO devolve.
+ *
+ * Quem distingue os dois casos é o `generation_status`, e ele só serve para
+ * isso desde a migration 0024 (bloco 6), que tirou o GRANT de UPDATE dessa
+ * coluna de `authenticated` — antes qualquer pessoa logada marcava a própria
+ * prep entregue como "failed" pela anon key e pedia a devolução. É também uma
+ * pergunta mais fraca do que a que o `retryPrep` faz: não "esta tentativa
+ * pagou?" (volátil, reescrita a cada retry), e sim "esta sessão chegou a
+ * entregar alguma coisa?" — e a resposta vem da linha que o próprio DELETE
+ * acabou de apagar, então não há janela para ela mudar por baixo.
+ *
+ * O caso que motivou a guarda existir aqui é o inverso, e é determinístico:
+ * um deploy mata o pipeline no meio, a sessão fica presa em `generating`, a
+ * pessoa vê "Gerando…" travado e clica na lixeira. Sem esta função, o crédito
+ * ia embora com a linha e não havia recurso.
+ *
+ * Entrega PARCIAL (`complete` com `meta.partial`) não precisa de tratamento
+ * especial: o próprio pipeline já devolveu o crédito na hora de gravar o
+ * parcial, então a linha chega aqui com `credit_refunded_at` preenchido e o
+ * `isCreditOutstanding` a barra sozinho.
+ */
+export function shouldRefundOnDelete(
+  c: CreditLifecycle & { generationStatus: string | null | undefined },
+): boolean {
+  if (c.generationStatus === "complete") return false;
   return isCreditOutstanding(c);
 }

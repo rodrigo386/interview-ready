@@ -3,6 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { creditPrepRefundUnconditional } from "@/lib/billing/consume";
+import { shouldRefundOnDelete } from "@/lib/billing/credit-lifecycle";
 import {
   generateCompanyIntel,
   generateSalaryBenchmark,
@@ -12,6 +15,22 @@ import { buildCompanyResearchPrompt } from "@/lib/ai/prompts/company-research";
 import { buildSalaryBenchmarkPrompt } from "@/lib/ai/prompts/salary-benchmark";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 
+/**
+ * Exclusão livre: o ícone de lixeira de todo card do dashboard e a zona de
+ * perigo da Tela 1. Diferente do `deleteFailedPrep`
+ * (`src/app/prep/new/actions.ts`), aceita sessão em QUALQUER estado, inclusive
+ * uma preparação já entregue.
+ *
+ * Por isso ela precisa da mesma disciplina de dinheiro: apagar
+ * condicionalmente e decidir a devolução a partir do que o próprio DELETE
+ * devolveu. Antes, este caminho apagava a linha sem olhar
+ * `credit_consumed_at`/`credit_refunded_at` — e a linha é o único lugar onde
+ * mora "esta sessão consumiu crédito e ele não voltou". Cenário sem nenhum
+ * hack: um deploy mata o pipeline no meio, a sessão fica presa em
+ * `generating`, a pessoa vê "Gerando…" travado e clica na lixeira. Crédito
+ * consumido, nada entregue, nada devolvido, e sem recurso — a linha que
+ * provava a dívida já não existe.
+ */
 export async function deletePrep(id: string) {
   const supabase = await createClient();
   const {
@@ -19,11 +38,52 @@ export async function deletePrep(id: string) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  await supabase
+  // O DELETE é o cadeado, igual ao do `deleteFailedPrep`: quem apaga a linha
+  // é o único que recebe as colunas de crédito dela de volta (RETURNING é
+  // atômico), então dois cliques concorrentes na lixeira não devolvem duas
+  // vezes — o segundo afeta 0 linhas. Sem cadeado por `generation_status`
+  // aqui: este caminho aceita qualquer estado de propósito, e condicionar a
+  // um status lido antes só criaria uma janela sem ganhar nada.
+  const { data: deletedRows, error: deleteError } = await supabase
     .from("prep_sessions")
     .delete()
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .select("id, generation_status, credit_consumed_at, credit_refunded_at");
+
+  if (deleteError) {
+    console.error("[deletePrep] delete failed:", deleteError.message, deleteError.code);
+    redirect(`/prep/${id}`);
+  }
+
+  const deletedRow = deletedRows?.[0] as
+    | {
+        generation_status: string | null;
+        credit_consumed_at: string | null;
+        credit_refunded_at: string | null;
+      }
+    | undefined;
+
+  if (
+    deletedRow &&
+    shouldRefundOnDelete({
+      creditConsumedAt: deletedRow.credit_consumed_at,
+      creditRefundedAt: deletedRow.credit_refunded_at,
+      generationStatus: deletedRow.generation_status,
+    })
+  ) {
+    // Mesma escolha do `deleteFailedPrep`: a sessão já não existe, então
+    // `refund_prep_credit` (que precisa da linha para checar idempotência)
+    // não tem como rodar. O DELETE condicional acima é a prova de que isto
+    // acontece no máximo uma vez.
+    const { data: billingProfile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+    const isAdmin = (billingProfile as { is_admin?: boolean } | null)?.is_admin === true;
+    await creditPrepRefundUnconditional(createAdminClient(), user.id, isAdmin);
+  }
 
   revalidatePath("/dashboard");
   redirect("/dashboard");

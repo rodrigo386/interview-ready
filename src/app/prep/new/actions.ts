@@ -488,7 +488,9 @@ export async function deleteFailedPrep(id: string) {
     // o botão de excluir. O `retryPrep` já tinha a guarda equivalente.
     //
     // Excluir uma prep entregue continua possível pelo caminho normal
-    // (`deletePrep`, na zona de perigo da Tela 1), que não mexe em crédito.
+    // (`deletePrep`, em `src/app/prep/[id]/actions.ts`), que aceita qualquer
+    // estado mas recusa devolver crédito de sessão `complete` — pela mesma
+    // razão descrita aqui.
     redirect(`/prep/${id}`);
   }
 
