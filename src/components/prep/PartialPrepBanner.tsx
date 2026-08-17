@@ -6,11 +6,23 @@
  *
  * A última linha diz o que de fato acontece: entrega parcial devolve o
  * crédito (`runStageB` em `src/lib/ai/pipeline.ts` chama `refundPrepCredit`
- * ao gravar o parcial). O texto anterior prometia "você pode regerar o prep
- * inteiro", que nunca foi verdade — o parcial é gravado como `complete`,
- * `classifyRetryRecovery` trata `complete` como não retentável e o
- * `retryPrep` redireciona antes de fazer qualquer coisa. Não havia, e não há,
- * caminho de regeração pela UI.
+ * ao gravar o parcial). O texto anterior prometia "vale por uma preparação
+ * nova, pra esta vaga ou pra outra" — falso pra ESTA vaga: `createPrep`
+ * (`src/app/prep/new/actions.ts`) hasheia a JD e devolve `duplicate` sem
+ * nenhum override quando já existe uma sessão com a mesma JD pro usuário, e
+ * `NewPrepForm` só oferece "Abrir prep existente →" (volta pra este mesmo
+ * parcial, que não se regenera: é gravado `complete`, e `classifyRetryRecovery`
+ * trata `complete` como não retentável — `retryPrep` redireciona antes de
+ * fazer qualquer coisa).
+ *
+ * O caminho real pra ESTA vaga é manual, mas existe e foi verificado ponta a
+ * ponta: excluir este prep (`DeletePrepButton` → `deletePrep` em
+ * `src/app/prep/[id]/actions.ts`) e criar um novo com a mesma JD.
+ * `shouldRefundOnDelete` (`src/lib/billing/credit-lifecycle.ts`) não devolve
+ * crédito de novo aqui — ela nega devolução pra `generation_status ===
+ * "complete"` (que é o que todo parcial é), então o crédito já devolvido
+ * pelo pipeline não duplica. Com a sessão apagada, o fingerprint da JD não
+ * bate em mais nada e `createPrep` segue normal.
  */
 
 const SECTION_LABELS: Record<string, string> = {
@@ -50,8 +62,10 @@ export function PartialPrepBanner({
           <p className="mt-2 text-sm text-ink-2">
             Como a preparação não veio inteira,{" "}
             <strong className="text-ink">devolvemos o crédito usado</strong> — ele
-            já voltou pro seu saldo e vale por uma preparação nova, pra esta vaga
-            ou pra outra. O que foi gerado aqui continua seu.
+            já voltou pro seu saldo e vale por uma preparação nova pra outra vaga.
+            Pra refazer ESTA vaga, exclua este prep primeiro (opção abaixo): enquanto
+            ele existir, detectamos a mesma descrição como duplicada e não deixamos
+            gerar de novo. O que foi gerado aqui continua seu.
           </p>
         </div>
       </div>
