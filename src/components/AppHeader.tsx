@@ -18,7 +18,6 @@ export function AppHeader({
   isAdmin,
   tier,
   subscriptionStatus,
-  prepsUsedThisMonth,
   prepCredits,
   logoutAction,
 }: {
@@ -33,7 +32,6 @@ export function AppHeader({
     | "expired"
     | "none"
     | null;
-  prepsUsedThisMonth: number;
   prepCredits: number;
   logoutAction: () => Promise<void>;
 }) {
@@ -47,7 +45,6 @@ export function AppHeader({
           <PlanBadge
             tier={tier}
             subscriptionStatus={subscriptionStatus}
-            prepsUsedThisMonth={prepsUsedThisMonth}
             prepCredits={prepCredits}
           />
           <ThemeToggle />

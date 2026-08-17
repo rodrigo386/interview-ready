@@ -124,7 +124,6 @@ export default async function DashboardLayout({
         isAdmin={billing.is_admin}
         tier={billing.tier}
         subscriptionStatus={billing.subscription_status}
-        prepsUsedThisMonth={billing.preps_used_this_month}
         prepCredits={billing.prep_credits}
         logoutAction={logout}
       />

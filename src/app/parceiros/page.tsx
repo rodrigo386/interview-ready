@@ -91,7 +91,6 @@ export default async function ParceirosPage() {
           isAdmin={profile.is_admin ?? false}
           tier={profile.tier ?? "free"}
           subscriptionStatus={profile.subscription_status ?? null}
-          prepsUsedThisMonth={profile.preps_used_this_month ?? 0}
           prepCredits={profile.prep_credits ?? 0}
           logoutAction={logout}
         />
