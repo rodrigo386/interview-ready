@@ -37,12 +37,9 @@ export function UseCases() {
       className="border-t border-neutral-200 bg-bg py-20 scroll-mt-20 md:py-24 dark:border-zinc-800"
     >
       <div className="mx-auto max-w-6xl px-6">
-        <div className="max-w-2xl">
-          <p className="text-sm font-semibold text-brand-600">Para quem</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
-            Pra cada momento de carreira que precisa de uma resposta afiada.
-          </h2>
-        </div>
+        <h2 className="max-w-2xl text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
+          Para cada momento de carreira que precisa de uma resposta afiada.
+        </h2>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ITEMS.map((it) => (

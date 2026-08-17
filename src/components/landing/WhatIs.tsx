@@ -6,10 +6,9 @@ export function WhatIs() {
       className="border-t border-neutral-200 bg-bg py-16 scroll-mt-20 md:py-20 dark:border-zinc-800"
     >
       <div className="mx-auto max-w-3xl px-6">
-        <p className="text-sm font-semibold text-brand-600">O que é</p>
         <h2
           id="o-que-e-titulo"
-          className="mt-2 text-2xl font-semibold tracking-tight text-text-primary md:text-3xl"
+          className="text-2xl font-semibold tracking-tight text-text-primary md:text-3xl"
         >
           PrepaVaga é uma plataforma de preparação para entrevista de emprego com IA.
         </h2>
@@ -24,7 +23,7 @@ export function WhatIs() {
         <p className="mt-4 text-sm leading-[1.65] text-text-tertiary">
           Funciona em qualquer área (TI, marketing, finanças, saúde, jurídico, comercial) e em
           vagas em PT-BR ou inglês. Conteúdo gerado em português brasileiro. Em conformidade com a
-          LGPD. A análise ATS é grátis — sem cartão. A preparação completa custa R$10.
+          LGPD. A análise ATS é grátis, sem cartão. A preparação completa custa R$10.
         </p>
       </div>
     </section>

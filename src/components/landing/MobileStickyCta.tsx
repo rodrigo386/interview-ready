@@ -1,29 +1,40 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
-// Only appears after the visitor scrolls past the hero (~1 viewport). Before
-// that, the hero CTA is on screen and a second CTA would be noise.
-const SHOW_AFTER_PX = 560;
-
 /**
- * Mobile-only persistent CTA bar for anonymous landing visitors. On phones the
- * navbar CTA is hidden behind the hamburger, so once the visitor scrolls past
- * the hero there is no signup path until the very bottom of the page. This bar
- * closes that gap. Desktop already has the sticky navbar CTA + exit-intent
- * popup, so it renders md:hidden.
+ * Barra fixa mobile para visitante anônimo da landing.
+ *
+ * Duas correções em relação à versão anterior:
+ *
+ * 1. O texto prometia "Análise ATS grátis" e o botão dizia "Criar conta",
+ *    levando pro /signup. Promessa e destino agora batem: o botão leva de
+ *    volta ao formulário do hero, que é a análise grátis de verdade.
+ *
+ * 2. A visibilidade era decidida por um listener de scroll com limiar fixo em
+ *    560px, que roda a cada frame de rolagem e chuta a altura do hero. Agora é
+ *    um IntersectionObserver na seção logo abaixo do hero: a barra aparece
+ *    quando o visitante passa do formulário, seja qual for a altura da tela.
  */
+const SENTINEL_ID = "depois-do-score";
+
 export function MobileStickyCta() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    function onScroll() {
-      setVisible(window.scrollY > SHOW_AFTER_PX);
-    }
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const sentinel = document.getElementById(SENTINEL_ID);
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Visível assim que a seção entra na tela, e continua visível depois
+        // que ela sobe e sai por cima (boundingClientRect.top < 0).
+        setVisible(entry.isIntersecting || entry.boundingClientRect.top < 0);
+      },
+      { threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
   }, []);
 
   if (!visible) return null;
@@ -38,16 +49,16 @@ export function MobileStickyCta() {
           <span className="block font-semibold text-text-primary">
             Análise ATS grátis
           </span>
-          Sem cartão. Pronta em minutos.
+          Sem cadastro, sem cartão.
         </p>
-        <Link
-          href="/signup"
+        <a
+          href="#analisar"
           data-analytics-cta="mobile_sticky"
           data-analytics-location="landing"
           className="shrink-0 rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.1)] transition hover:bg-brand-700"
         >
-          Criar conta →
-        </Link>
+          Analisar grátis →
+        </a>
       </div>
     </div>
   );

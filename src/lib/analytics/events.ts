@@ -54,7 +54,14 @@ export type FunnelEventMap = {
   // `anon_ats_completed` saem do navegador com distinctId anônimo do
   // PostHog; `anon_ats_claimed` sai do servidor já com o user id, e é o
   // ponto onde o PostHog costura a pessoa anônima com a conta.
-  anon_ats_started: { cv_source: "file" | "paste" };
+  anon_ats_started: {
+    cv_source: "file" | "paste";
+    /** Onde o formulário foi enviado. "hero" é a landing, "page" é
+     * /analise-ats-gratis. Separa o topo de funil da home do tráfego que
+     * chega direto na ferramenta. Opcional: eventos anteriores a
+     * 2026-08-17 não têm a propriedade. */
+    placement?: "hero" | "page";
+  };
   anon_ats_completed: {
     score: number;
     fixes_count: number;

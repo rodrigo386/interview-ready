@@ -56,10 +56,12 @@ export function LandingNavbar() {
             Entrar
           </Link>
           <Link
-            href="/signup"
+            href="/analise-ats-gratis"
+            data-analytics-cta="nav_primary"
+            data-analytics-location="landing"
             className="rounded-full bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition hover:bg-brand-700"
           >
-            Começar grátis
+            Analisar meu CV grátis
           </Link>
         </div>
 
@@ -113,11 +115,13 @@ export function LandingNavbar() {
                 Entrar
               </Link>
               <Link
-                href="/signup"
+                href="/analise-ats-gratis"
                 onClick={() => setOpen(false)}
+                data-analytics-cta="nav_primary_mobile"
+                data-analytics-location="landing"
                 className="rounded-full bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
               >
-                Começar grátis
+                Analisar meu CV grátis
               </Link>
             </div>
           </nav>

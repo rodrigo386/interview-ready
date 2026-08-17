@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { Hero } from "@/components/landing/Hero";
+import { AfterScore } from "@/components/landing/AfterScore";
 import { WhatIs } from "@/components/landing/WhatIs";
 import { UseCases } from "@/components/landing/UseCases";
 import { HowItWorks } from "@/components/landing/HowItWorks";
@@ -32,17 +33,24 @@ export default async function LandingPage() {
   return (
     <>
       <LandingNavbar />
+      {/* Ordem = funil. O hero é a ferramenta grátis; AfterScore explica o que
+          os R$10 destravam enquanto o interesse está no pico; a prova e a
+          demonstração vêm em seguida; preço, objeções e CTA fecham.
+          FeaturedArticles desceu para depois do CTA final: entre o preço e a
+          decisão, um link para o blog manda embora exatamente quem estava
+          decidindo. Depois do CTA, ele vira retenção de quem não converteu. */}
       <main className="bg-bg">
         <Hero />
+        <AfterScore />
         <SocialProof />
-        <WhatIs />
-        <UseCases />
         <HowItWorks />
         <Features />
+        <UseCases />
+        <WhatIs />
         <PricingChips />
-        <FeaturedArticles />
         <Faq />
         <FinalCta />
+        <FeaturedArticles />
       </main>
       <LandingFooter />
       {/* Anon-only branch (line above redirects logged-in users to /dashboard) */}

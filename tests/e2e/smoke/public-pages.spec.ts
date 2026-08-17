@@ -5,10 +5,12 @@ test.describe("Public pages render without auth", () => {
     await page.goto("/");
     await expect(
       page.getByRole("heading", { level: 1 }),
-    ).toContainText(/Entre pronto/i, { timeout: 10_000 });
-    // Primary CTA in hero
+    ).toContainText(/não passa do filtro/i, { timeout: 10_000 });
+    // O CTA primário do hero é o próprio formulário da análise ATS grátis: a
+    // landing deixou de mandar pro /signup antes de entregar qualquer valor.
+    await expect(page.getByLabel(/cole a descrição da vaga/i)).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /entrar na entrevista preparado/i }),
+      page.getByRole("button", { name: /analisar meu currículo grátis/i }),
     ).toBeVisible();
     // Footer copyright shows the legal CNPJ (more stable than company name)
     await expect(page.getByText(/CNPJ 62\.805\.016\/0001-29/)).toBeVisible();

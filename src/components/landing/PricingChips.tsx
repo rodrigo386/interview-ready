@@ -51,7 +51,8 @@ export function PricingChips() {
         </div>
 
         <p className="mt-4 text-xs text-text-tertiary">
-          Créditos comprados não expiram. Sem renovação automática.
+          Créditos comprados não expiram. Sem renovação automática. Reembolso
+          total em até 7 dias.
         </p>
 
         <div className="mt-8">

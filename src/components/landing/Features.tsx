@@ -1,45 +1,40 @@
 import type { ReactNode } from "react";
 
 type FeatureBlock = {
-  eyebrow: string;
   title: string;
   body: string;
-  quote: string;
-  attribution: string;
+  /** Um fato verificável do produto, não um depoimento. Os depoimentos que
+   * viviam aqui eram assinados por "Beta tester" e "Rodrigo, fundador" —
+   * elogio anônimo e autoelogio derrubam a credibilidade do resto da página
+   * em vez de somar. Enquanto não houver cliente real disposto a assinar
+   * nome e cargo, fato de produto vende mais. */
+  proof: string;
   visual: ReactNode;
 };
 
 const BLOCKS: FeatureBlock[] = [
   {
-    eyebrow: "01 · Inteligência sobre a empresa",
-    title: "Pesquisa em tempo real, não no que o modelo lembra de 2023.",
-    body: "Notícias dos últimos 6 meses, contexto estratégico e perguntas inteligentes pra você levantar, geradas com Google Search grounding em cima da realidade atual da empresa.",
-    quote: "Me poupou 3 horas de Glassdoor + Google News.",
-    attribution: "Rodrigo, fundador",
+    title: "A empresa pesquisada agora, não no que o modelo lembra de 2023.",
+    body: "Notícias dos últimos 6 meses, contexto estratégico e o que mudou por lá recentemente. A busca roda no momento em que você gera o dossiê.",
+    proof: "Pesquisa ao vivo, com fonte na web, a cada geração.",
     visual: <CompanyIntelMock />,
   },
   {
-    eyebrow: "02 · ATS + CV reescrito",
-    title: "Score determinístico contra a vaga, e a versão otimizada pronta.",
-    body: "Análise rubric-based (mesmo CV + mesma vaga = mesmo score) com detecção de keywords críticas, headings ATS, e issues por severidade. Reescrita opcional gera a próxima versão pronta pra colar.",
-    quote: "Score 72 → 91 em uma rodada.",
-    attribution: "Caso real do beta",
+    title: "Score contra a vaga, e o currículo já reescrito para passar.",
+    body: "Análise por rubrica com keywords críticas, headings que o ATS lê e problemas ordenados por severidade. A reescrita entrega a próxima versão pronta para colar.",
+    proof: "Mesmo currículo e mesma vaga dão o mesmo score. A nota não muda a cada rodada.",
     visual: <AtsMock />,
   },
   {
-    eyebrow: "03 · Roteiros STAR personalizados",
-    title: "15 perguntas: prováveis, difíceis e o que o gestor vai cobrar.",
-    body: "Cada pergunta vem com estrutura STAR (Situação, Tarefa, Ação, Resultado) usando casos reais do seu CV. Não é resposta pronta. É o esqueleto pra você adaptar com naturalidade.",
-    quote: "Treinou minha postura sem a pressão de uma sessão real.",
-    attribution: "Beta tester",
+    title: "15 perguntas com o roteiro já montado.",
+    body: "Prováveis, de aprofundamento e as difíceis que o gestor costuma guardar para o fim. Cada uma vem estruturada em Situação, Tarefa, Ação e Resultado.",
+    proof: "Os roteiros saem de casos que já estão no seu currículo. Nenhuma experiência é inventada.",
     visual: <QuestionsMock />,
   },
   {
-    eyebrow: "04 · Você pergunta",
-    title: "As perguntas que mostram que você fez lição de casa.",
-    body: "Calibradas pelo seu nível, pelas notícias da empresa e pelo padrão da vaga. O tipo de pergunta que muda a entrevista de teste para conversa entre pares.",
-    quote: "Mostra que pesquisou sem soar decorado.",
-    attribution: "Beta tester",
+    title: "As perguntas que mostram que você fez a lição de casa.",
+    body: "Calibradas pelo seu nível, pelas notícias da empresa e pelo padrão da vaga. É o que vira a entrevista de arguição para conversa entre pares.",
+    proof: "Geradas depois da pesquisa da empresa, não de uma lista genérica.",
     visual: <AskMock />,
   },
 ];
@@ -51,42 +46,44 @@ export function Features() {
       className="border-t border-neutral-200 bg-bg py-20 scroll-mt-20 md:py-24 dark:border-zinc-800"
     >
       <div className="mx-auto max-w-6xl px-6">
-        <div className="max-w-2xl">
-          <p className="text-sm font-semibold text-brand-600">O que está no dossiê</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
-            Quatro entregas. Uma sessão. Pronto pra entrevista.
-          </h2>
+        <h2 className="max-w-2xl text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
+          O que vem no dossiê de R$10.
+        </h2>
+
+        {/* Os dois primeiros blocos alternam lado (o par de maior peso na
+            decisão). Do terceiro em diante o layout muda para grade: quatro
+            zigzags seguidos viram um padrão que o olho para de ler. */}
+        <div className="mt-14 flex flex-col gap-20 md:gap-24">
+          {BLOCKS.slice(0, 2).map((b, i) => (
+            <article
+              key={b.title}
+              className="grid items-center gap-10 md:grid-cols-2 md:gap-14"
+            >
+              <div className={i === 1 ? "md:order-2" : ""}>
+                <h3 className="text-2xl font-semibold tracking-tight text-text-primary md:text-3xl">
+                  {b.title}
+                </h3>
+                <p className="mt-4 text-base leading-[1.6] text-text-secondary">{b.body}</p>
+                <p className="mt-6 border-l-2 border-brand-600 pl-4 text-base font-medium text-text-primary">
+                  {b.proof}
+                </p>
+              </div>
+              <div className={i === 1 ? "md:order-1" : ""}>{b.visual}</div>
+            </article>
+          ))}
         </div>
 
-        <div className="mt-16 flex flex-col gap-20 md:gap-24">
-          {BLOCKS.map((b, i) => {
-            const reverse = i % 2 === 1;
-            return (
-              <article
-                key={b.title}
-                className="grid items-center gap-10 md:grid-cols-2 md:gap-14"
-              >
-                <div className={reverse ? "md:order-2" : ""}>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
-                    {b.eyebrow}
-                  </p>
-                  <h3 className="mt-3 text-2xl font-semibold tracking-tight text-text-primary md:text-3xl">
-                    {b.title}
-                  </h3>
-                  <p className="mt-4 text-base leading-[1.6] text-text-secondary">{b.body}</p>
-                  <figure className="mt-6 border-l-2 border-brand-600 pl-4">
-                    <blockquote className="text-base italic text-text-primary">
-                      &ldquo;{b.quote}&rdquo;
-                    </blockquote>
-                    <figcaption className="mt-2 text-xs text-text-tertiary">
-                      {b.attribution}
-                    </figcaption>
-                  </figure>
-                </div>
-                <div className={reverse ? "md:order-1" : ""}>{b.visual}</div>
-              </article>
-            );
-          })}
+        <div className="mt-20 grid gap-12 md:mt-24 md:grid-cols-2 md:gap-10">
+          {BLOCKS.slice(2).map((b) => (
+            <article key={b.title}>
+              {b.visual}
+              <h3 className="mt-6 text-xl font-semibold tracking-tight text-text-primary md:text-2xl">
+                {b.title}
+              </h3>
+              <p className="mt-3 text-base leading-[1.6] text-text-secondary">{b.body}</p>
+              <p className="mt-4 text-sm font-medium text-text-primary">{b.proof}</p>
+            </article>
+          ))}
         </div>
       </div>
     </section>

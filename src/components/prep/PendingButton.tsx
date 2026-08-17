@@ -4,20 +4,31 @@ import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/Button";
 
 type Variant = "primary" | "secondary" | "ghost";
+type Size = "sm" | "md" | "lg";
 
 export function PendingButton({
   idleLabel,
   pendingLabel,
   variant = "primary",
+  size,
+  className,
 }: {
   idleLabel: string;
   pendingLabel: string;
   variant?: Variant;
+  size?: Size;
+  className?: string;
 }) {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" disabled={pending} variant={variant}>
+    <Button
+      type="submit"
+      disabled={pending}
+      variant={variant}
+      size={size}
+      className={className}
+    >
       {pending ? (
         <>
           <Spinner />

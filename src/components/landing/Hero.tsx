@@ -1,121 +1,60 @@
 import Link from "next/link";
-import { HeroMockup } from "./HeroMockup";
+import { AnonAtsForm } from "@/components/anon-ats/AnonAtsForm";
 
-const HEADLINE = "Entre pronto. Saia contratado.";
-// "Análise ATS grátis" saiu dos chips — virou o selo destacado acima do headline.
-const CHIPS = ["Análise ATS grátis", "Preparação completa a partir de R$10"];
-
-const CHAR_STAGGER_MS = 32;
-const HEADLINE_TOTAL_MS = HEADLINE.length * CHAR_STAGGER_MS;
-const SUB_DELAY_MS = HEADLINE_TOTAL_MS + 100;
-const CHIPS_DELAY_MS = SUB_DELAY_MS + 200;
-const CTA_DELAY_MS = CHIPS_DELAY_MS + 200;
-const MOCKUP_DELAY_MS = CTA_DELAY_MS + 250;
-
+/**
+ * Hero "ferramenta na dobra".
+ *
+ * O hero anterior vendia a análise ATS grátis e mandava o visitante pro
+ * /signup — o produto gratuito ficava como terceiro link, em texto pequeno,
+ * atrás de um cadastro que ninguém pediu. Aqui o hero deixa de falar da
+ * ferramenta e passa a ser a ferramenta: o visitante começa a usar antes de
+ * decidir qualquer coisa, e o score é que abre a conversa sobre os R$10.
+ *
+ * Um CTA só (o submit do formulário). O "ver exemplo" fica como link
+ * secundário, e o /signup sai da primeira tela inteiramente — quem quer conta
+ * ainda tem o "Entrar" da navbar.
+ */
 export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-neutral-200 bg-bg dark:border-zinc-800">
+    <section
+      id="analisar"
+      className="relative overflow-hidden border-b border-neutral-200 bg-bg scroll-mt-16 dark:border-zinc-800"
+    >
       <BackdropPattern />
-      <FlyingCvs />
 
-      <div className="relative mx-auto max-w-6xl px-5 pt-16 pb-10 sm:px-6 md:pt-24 md:pb-16">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="mb-6 flex justify-center motion-safe:animate-[heroFadeUp_500ms_ease-out_both]">
-            <span className="inline-flex items-center gap-2 rounded-full border-2 border-orange-500 bg-orange-soft px-4 py-2 text-sm font-bold text-orange-700 shadow-[0_4px_16px_-6px_rgba(241,90,36,0.4)] sm:px-5 sm:text-base">
-              <span aria-hidden>🎁</span>
-              Análise ATS grátis — sem cartão
-            </span>
-          </p>
-          <h1 className="font-serif font-normal tracking-tight text-text-primary leading-[1.02] text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl">
-            {HEADLINE.split("").map((char, i) => (
-              <span
-                key={i}
-                className="motion-safe:opacity-0 motion-safe:animate-[heroCharIn_320ms_ease-out_forwards]"
-                style={{ animationDelay: `${i * CHAR_STAGGER_MS}ms` }}
-              >
-                {char}
-              </span>
-            ))}
-          </h1>
+      <div className="relative mx-auto max-w-6xl px-5 pt-10 pb-14 sm:px-6 md:pt-16 md:pb-20">
+        <div className="grid items-start gap-10 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-14">
+          <div>
+            {/* Duas linhas no desktop e no mobile. A versão anterior desta
+                headline tinha 9 palavras e quebrava em 4 linhas a 52px, o que
+                empurrava o primeiro campo do formulário pra fora da dobra no
+                celular. Headline longa demais é erro de escala, não de cópia. */}
+            <h1 className="text-[2.125rem] font-bold leading-[1.08] tracking-tight text-text-primary sm:text-5xl lg:text-[3.5rem]">
+              Seu CV passa no filtro dessa vaga?
+            </h1>
 
-          <div
-            className="mx-auto mt-7 max-w-xl text-base leading-[1.6] text-text-secondary md:text-lg motion-safe:opacity-0 motion-safe:animate-[heroFadeUp_700ms_ease-out_forwards]"
-            style={{ animationDelay: `${SUB_DELAY_MS}ms` }}
-          >
-            <p>
-              Cole o link da vaga e seu CV. Em minutos, você recebe um dossiê personalizado:
-              empresa pesquisada em tempo real, CV reescrito pra ATS e roteiros prontos pra cada
-              pergunta da entrevista.
+            <p className="mt-5 max-w-md text-base leading-[1.6] text-text-secondary md:text-lg">
+              A maioria dos currículos é cortada por software antes de qualquer
+              pessoa ler. Veja seu score em 1 minuto.
             </p>
           </div>
 
-          <div
-            className="mt-7 flex flex-wrap items-center justify-center gap-2 motion-safe:opacity-0 motion-safe:animate-[heroFadeUp_700ms_ease-out_forwards]"
-            style={{ animationDelay: `${CHIPS_DELAY_MS}ms` }}
-          >
-            {CHIPS.map((c) => (
-              <span
-                key={c}
-                className="rounded-full border border-neutral-200 bg-bg px-3 py-1 text-xs font-medium text-text-secondary dark:border-zinc-800"
-              >
-                {c}
-              </span>
-            ))}
-          </div>
-
-          <div
-            className="mt-9 flex flex-col items-center justify-center gap-3 motion-safe:opacity-0 motion-safe:animate-[heroFadeUp_700ms_ease-out_forwards]"
-            style={{ animationDelay: `${CTA_DELAY_MS}ms` }}
-          >
-            <Link
-              href="/signup"
-              data-analytics-cta="hero_primary"
-              data-analytics-location="landing"
-              className="inline-flex max-w-full items-center gap-2 rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 sm:px-7 sm:py-3.5 sm:text-base"
-            >
-              <span className="truncate">Quero entrar na entrevista preparado</span>
-              <span aria-hidden>→</span>
-            </Link>
-            <p className="text-xs text-text-tertiary">
-              Sem cartão. Análise ATS grátis, preparação completa por R$10.
-            </p>
-            <Link
-              href="/exemplo"
-              data-analytics-cta="hero_secondary_exemplo"
-              data-analytics-location="landing"
-              className="text-sm font-semibold text-brand-600 underline-offset-4 hover:underline"
-            >
-              Ver um exemplo pronto antes de criar conta →
-            </Link>
-            <Link
-              href="/analise-ats-gratis"
-              data-analytics-cta="hero_secondary_ats"
-              data-analytics-location="landing"
-              className="text-sm font-semibold text-brand-600 underline-offset-4 hover:underline"
-            >
-              Testar meu currículo sem criar conta →
-            </Link>
+          <div className="rounded-2xl border border-neutral-200 bg-bg p-5 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.22)] sm:p-6 dark:border-zinc-800">
+            <AnonAtsForm variant="hero" />
           </div>
         </div>
 
-        <div
-          className="motion-safe:opacity-0 motion-safe:animate-[heroFadeUp_900ms_ease-out_forwards]"
-          style={{ animationDelay: `${MOCKUP_DELAY_MS}ms` }}
-        >
-          <HeroMockup />
-        </div>
+        <p className="mt-8 text-sm">
+          <Link
+            href="/exemplo"
+            data-analytics-cta="hero_secondary_exemplo"
+            data-analytics-location="landing"
+            className="font-semibold text-brand-600 underline-offset-4 hover:underline"
+          >
+            Ou veja um dossiê pronto antes de testar →
+          </Link>
+        </p>
       </div>
-
-      <style>{`
-        @keyframes heroCharIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes heroFadeUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </section>
   );
 }
@@ -131,117 +70,5 @@ function BackdropPattern() {
         backgroundSize: "28px 28px",
       }}
     />
-  );
-}
-
-type CvSpec = {
-  pos: string;
-  rotate: string;
-  accent: "brand" | "neutral";
-  size: "sm" | "md" | "lg";
-  float: "A" | "B" | "C" | "D" | "E";
-  duration: string;
-  delay: string;
-  enter: string;
-};
-
-const CVS: CvSpec[] = [
-  { pos: "left-[3%] top-[18%]", rotate: "-rotate-[14deg]", accent: "brand", size: "sm", float: "A", duration: "8s", delay: "-2s", enter: "0.1s" },
-  { pos: "left-[8%] top-[44%]", rotate: "-rotate-[8deg]", accent: "brand", size: "md", float: "B", duration: "7s", delay: "-1s", enter: "0.25s" },
-  { pos: "left-[13%] top-[70%]", rotate: "rotate-[6deg]", accent: "neutral", size: "sm", float: "C", duration: "9s", delay: "-3s", enter: "0.4s" },
-  { pos: "right-[4%] top-[14%]", rotate: "rotate-[12deg]", accent: "neutral", size: "sm", float: "D", duration: "8.5s", delay: "-1.5s", enter: "0.55s" },
-  { pos: "right-[8%] top-[34%]", rotate: "rotate-[7deg]", accent: "brand", size: "md", float: "E", duration: "7.5s", delay: "0s", enter: "0.35s" },
-  { pos: "right-[3%] top-[58%]", rotate: "-rotate-[5deg]", accent: "brand", size: "lg", float: "A", duration: "10s", delay: "-4s", enter: "0.6s" },
-  { pos: "right-[16%] top-[78%]", rotate: "rotate-[3deg]", accent: "neutral", size: "sm", float: "C", duration: "9.5s", delay: "-2.5s", enter: "0.75s" },
-  { pos: "left-[18%] top-[10%]", rotate: "rotate-[18deg]", accent: "neutral", size: "sm", float: "D", duration: "11s", delay: "-3.5s", enter: "0.85s" },
-];
-
-function FlyingCvs() {
-  return (
-    <>
-      {CVS.map((cv, i) => (
-        <MiniCv key={i} spec={cv} />
-      ))}
-      <style>{`
-        @keyframes cvIn {
-          0% { transform: translateY(28px) scale(0.9); opacity: 0; }
-          100% { transform: translateY(0) scale(1); opacity: 1; }
-        }
-        @keyframes cvFloatA {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(6px, -16px); }
-        }
-        @keyframes cvFloatB {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(-8px, -14px); }
-        }
-        @keyframes cvFloatC {
-          0%, 100% { transform: translate(0, 0); }
-          33% { transform: translate(10px, -10px); }
-          66% { transform: translate(-4px, -18px); }
-        }
-        @keyframes cvFloatD {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(-12px, -22px); }
-        }
-        @keyframes cvFloatE {
-          0%, 100% { transform: translate(0, 0); }
-          25% { transform: translate(-6px, -8px); }
-          75% { transform: translate(8px, -16px); }
-        }
-      `}</style>
-    </>
-  );
-}
-
-function MiniCv({ spec }: { spec: CvSpec }) {
-  const dims =
-    spec.size === "sm"
-      ? "w-12 h-[3.75rem]"
-      : spec.size === "lg"
-        ? "w-[4.5rem] h-[6rem]"
-        : "w-16 h-[5.25rem]";
-  const avatarBg = spec.accent === "brand" ? "bg-brand-600" : "bg-neutral-300";
-  return (
-    <div
-      aria-hidden
-      className={
-        "pointer-events-none absolute hidden rounded-md border border-neutral-200 bg-white p-1.5 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.18)] motion-safe:opacity-0 motion-safe:animate-[cvIn_1s_ease-out_both] dark:border-zinc-700 dark:bg-zinc-900 md:block " +
-        dims +
-        " " +
-        spec.rotate +
-        " " +
-        spec.pos
-      }
-      style={{
-        animationDelay: spec.enter,
-      }}
-    >
-      <div
-        className="h-full motion-safe:animate-[cvFloat_7s_ease-in-out_infinite]"
-        style={{
-          animationName: `cvFloat${spec.float}`,
-          animationDuration: spec.duration,
-          animationDelay: spec.delay,
-          animationIterationCount: "infinite",
-          animationTimingFunction: "ease-in-out",
-        }}
-      >
-        <div className="flex items-center gap-1">
-          <span className={`h-2.5 w-2.5 rounded-full ${avatarBg}`} />
-          <div className="flex-1 space-y-0.5">
-            <span className="block h-[3px] w-full rounded-full bg-neutral-300 dark:bg-zinc-700" />
-            <span className="block h-[2px] w-3/4 rounded-full bg-neutral-200 dark:bg-zinc-800" />
-          </div>
-        </div>
-        <div className="mt-1.5 space-y-1">
-          <span className="block h-[2px] w-full rounded-full bg-neutral-200 dark:bg-zinc-800" />
-          <span className="block h-[2px] w-5/6 rounded-full bg-neutral-200 dark:bg-zinc-800" />
-          <span className="block h-[2px] w-4/6 rounded-full bg-neutral-200 dark:bg-zinc-800" />
-          <span className="block h-[2px] w-full rounded-full bg-neutral-200 dark:bg-zinc-800" />
-          <span className="block h-[2px] w-3/5 rounded-full bg-neutral-200 dark:bg-zinc-800" />
-        </div>
-      </div>
-    </div>
   );
 }

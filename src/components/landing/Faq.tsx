@@ -12,7 +12,7 @@ const ITEMS: FaqItem[] = [
         A <strong>análise ATS é sempre gratuita</strong>, com ou sem cadastro. A preparação
         completa (pesquisa da empresa, currículo reescrito e roteiros de pergunta) custa{" "}
         <strong>R$ 10</strong> por vaga, ou em pacote: 3 por R$ 25 ou 5 por R$ 40. Sem
-        mensalidade — o crédito comprado não expira.
+        mensalidade, e o crédito comprado não expira.
       </>
     ),
   },
@@ -33,11 +33,11 @@ const ITEMS: FaqItem[] = [
   {
     q: "A análise ATS funciona pra qualquer área?",
     aPlain:
-      "Sim. A análise compara seu CV contra a descrição específica da vaga (palavras-chave, requisitos, experiência), independente da área — TI, marketing, finanças, saúde, jurídico, comercial. Funciona pra vagas em PT-BR e em inglês.",
+      "Sim. A análise compara seu CV contra a descrição específica da vaga (palavras-chave, requisitos, experiência), independente da área: TI, marketing, finanças, saúde, jurídico, comercial. Funciona pra vagas em PT-BR e em inglês.",
     a: (
       <>
         Sim. A análise compara seu CV contra a descrição específica da vaga (palavras-chave,
-        requisitos, experiência), independente da área — TI, marketing, finanças, saúde, jurídico,
+        requisitos, experiência), independente da área: TI, marketing, finanças, saúde, jurídico,
         comercial. Funciona pra vagas em PT-BR e em inglês.
       </>
     ),
@@ -45,10 +45,10 @@ const ITEMS: FaqItem[] = [
   {
     q: "Funciona pra entrevista em inglês?",
     aPlain:
-      "Sim. Você pode colar a vaga e o CV em inglês — a análise ATS roda igualmente bem. O conteúdo final é gerado em português brasileiro por padrão; se você precisar de tudo em inglês, fala com a gente que ajustamos.",
+      "Sim. Você pode colar a vaga e o CV em inglês. A análise ATS roda igualmente bem. O conteúdo final é gerado em português brasileiro por padrão; se você precisar de tudo em inglês, fala com a gente que ajustamos.",
     a: (
       <>
-        Sim. Você pode colar a vaga e o CV em inglês — a análise ATS roda igualmente bem. O
+        Sim. Você pode colar a vaga e o CV em inglês. A análise ATS roda igualmente bem. O
         conteúdo final é gerado em <strong>português brasileiro</strong> por padrão; se você
         precisar de tudo em inglês, fala com a gente que ajustamos.
       </>
@@ -57,11 +57,11 @@ const ITEMS: FaqItem[] = [
   {
     q: "Quanto tempo leva pra gerar a preparação?",
     aPlain:
-      "Cerca de 1 a 3 minutos. A geração roda em segundo plano enquanto você espera — você pode até fechar a aba e voltar depois pelo dashboard.",
+      "Cerca de 1 a 3 minutos. A geração roda em segundo plano enquanto você espera. Você pode até fechar a aba e voltar depois pelo dashboard.",
     a: (
       <>
         Cerca de <strong>1 a 3 minutos</strong>. A geração roda em segundo plano enquanto você
-        espera — você pode até fechar a aba e voltar depois pelo dashboard.
+        espera. Você pode até fechar a aba e voltar depois pelo dashboard.
       </>
     ),
   },
@@ -84,10 +84,10 @@ const ITEMS: FaqItem[] = [
   {
     q: "O crédito de preparação expira?",
     aPlain:
-      "Não. O crédito que você compra fica na sua conta até você usar — sem mensalidade, sem renovação automática. A garantia de 7 dias permite reembolso total se você não ficar satisfeito.",
+      "Não. O crédito que você compra fica na sua conta até você usar, sem mensalidade, sem renovação automática. A garantia de 7 dias permite reembolso total se você não ficar satisfeito.",
     a: (
       <>
-        Não. O crédito que você compra fica na sua conta até você usar —{" "}
+        Não. O crédito que você compra fica na sua conta até você usar,{" "}
         <strong>sem mensalidade, sem renovação automática</strong>. A{" "}
         <strong>garantia de 7 dias</strong> permite reembolso total se você não ficar satisfeito.
       </>

@@ -58,6 +58,32 @@ describe("<AnonAtsForm />", () => {
     expect(queryByRole("alert")).toBeNull();
   });
 
+  it("mostra o nome do arquivo escolhido em português", () => {
+    // O controle nativo do <input type="file"> desenha "Choose File / No file
+    // chosen" com o texto do sistema operacional, em inglês, e não há CSS que
+    // troque isso. O input fica sr-only e o nome é renderizado por nós.
+    const { getByLabelText, getByText, queryByText } = render(<AnonAtsForm />);
+    expect(getByText("Nenhum arquivo escolhido")).toBeTruthy();
+
+    const input = getByLabelText(/envie seu currículo/i) as HTMLInputElement;
+    const ok = new File(["x"], "curriculo-joana.pdf", { type: "application/pdf" });
+    Object.defineProperty(ok, "size", { value: 2048 });
+    fireEvent.change(input, { target: { files: [ok] } });
+
+    expect(getByText("curriculo-joana.pdf")).toBeTruthy();
+    expect(queryByText("Nenhum arquivo escolhido")).toBeNull();
+  });
+
+  it("esquece o nome do arquivo que foi descartado por tamanho", () => {
+    const { getByLabelText, getByText } = render(<AnonAtsForm />);
+    const input = getByLabelText(/envie seu currículo/i) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { files: [bigFile()] } });
+
+    // O arquivo não foi anexado, então anunciar o nome dele seria mentira.
+    expect(getByText("Nenhum arquivo escolhido")).toBeTruthy();
+  });
+
   it("não reclama de arquivo dentro do limite", () => {
     const { getByLabelText, queryByRole } = render(<AnonAtsForm />);
     const input = getByLabelText(/envie seu currículo/i) as HTMLInputElement;
