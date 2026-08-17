@@ -1,6 +1,6 @@
 # CLAUDE.md — PrepaVAGA / InterviewReady
 
-Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-08-16.
+Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-08-17.
 
 ## 0. Estado atual — produção ao vivo
 
@@ -25,7 +25,8 @@ Próximas alavancas pós-launch: Sentry, Plausible, sitemap automático, welcome
 **PrepaVAGA** (codinome interno: InterviewReady) é uma plataforma SaaS PT-BR que transforma uma descrição de vaga + CV em um kit de preparação personalizado para entrevistas (5 etapas: Visão geral, ATS, Perguntas básicas, Aprofundamento, Você pergunta).
 
 - Tagline: "Walk into every interview like you already work there."
-- Modelo: freemium em BRL · **Free 1 prep grátis vitalícia (concedida no cadastro)** · **Pro R$30/mês ilimitado** (promo de lançamento, preço cheio R$50) · **Per-use R$10 = 1 prep avulso**. CPF é coletado e validado no signup (obrigatório).
+- Modelo (desde **2026-08-17**): crédito avulso pré-pago em BRL. **Não existe preparação grátis nem assinatura.** A **análise ATS é o produto gratuito** (inclusive sem cadastro, em `/analise-ats-gratis`); a **preparação completa custa 1 crédito**, vendido a **R$10 avulso**, **3 por R$25** ou **5 por R$40** (`PREP_SKUS` em `src/lib/billing/prices.ts`). O upload gera o paywall; o crédito destrava. CPF é coletado e validado no signup (obrigatório).
+  - O que morreu junto: `tier=pro`, `subscription_status`, o free vitalício e o soft cap mensal. As colunas continuam no banco de propósito (ver §11), mas **`checkQuota` só olha `prep_credits`** — marcar alguém como Pro não destrava nada. Para compensar um cliente, conceda crédito (`admin_grant_prep_credits` / botão **+ Crédito** no `/admin/users`).
 - Gateway de pagamento: **Asaas** (sandbox + production), checkout hosted (PCI scope = zero)
 - Idioma do conteúdo gerado: **PT-BR** (mesmo se CV/JD vierem em inglês)
 - Spec completa: `ARCHITECTURE.md`
@@ -67,7 +68,7 @@ Tarefas que são **só dashboard + env vars** (sem código) têm runbook própri
 `profiles.is_admin = true` marca operadores. Admins (a) bypassam quota e reconcile, (b) ganham `tier=pro` + `subscription_status=active` permanentes (sem `asaas_subscription_id`), (c) veem o link "Admin ⚡" no AvatarMenu, (d) acessam `/admin` com sidebar nav (lg+) ou pill nav horizontal (mobile). Migration 0011 introduziu o flag e promoveu `rgoalves@gmail.com`.
 
 **6 páginas:**
-- `/admin` — KPIs (12 cards: total users, MRR, receita 30d, ativação, etc.) + 4 tabelas de atividade recente.
+- `/admin` — KPIs (`buildKpis` em `src/lib/admin/metrics.ts`, contagem variável) + 4 tabelas de atividade recente. **Não há mais card de MRR**: ele calculava `proActive × R$30` num produto sem assinatura, e o único `tier=pro` restante é a conta admin — receita recorrente que não existe é pior que nenhuma. Receita real = "Receita últimos 30d". "Créditos não consumidos" é o passivo: preparação já paga e ainda não entregue.
 - `/admin/users` — tabela paginada (50/pág) com busca por e-mail + filtro Free/Pro + **botão Excluir** com confirmação. `deleteUserAction` em `src/app/admin/actions.ts` bloqueia self-delete e admin-on-admin (cascateia profile → preps → cvs → payments via FK).
 - `/admin/metrics` — gráficos SVG puros (sem chart lib) com séries diárias para 7/30/90d: cadastros, preps geradas, receita R$, preps falhadas. `getHistoricalSeries()` em `src/lib/admin/timeseries.ts` faz bucketing diário via Map.
 - `/admin/payments` — 100 transações mais recentes com filtro status + kind, total de receita confirmada.
@@ -82,9 +83,9 @@ Tarefas que são **só dashboard + env vars** (sem código) têm runbook própri
 
 Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyIntel, fetchJdFromUrl) passam por `rateLimit()` em `src/lib/ratelimit.ts` (Upstash Ratelimit + Redis, sliding window). Limites por usuário: createPrep 3/h, ATS/CV/intel 10/h, fetchJd 30/h. Sem `UPSTASH_REDIS_REST_URL`+`UPSTASH_REDIS_REST_TOKEN`, o helper falha aberto (não bloqueia) — evita travar a app se Upstash cair. **Cuidado com a leitura disso:** falhar aberto significa que, sem as env vars, nenhum desses limites existe de fato. `LIMITS.anonAts` é a única com `failClosed: true`, porque é endpoint anônimo que gasta IA e liberar geral ali seria pior do que ficar fora do ar.
 
-### Soft cap mensal Pro
+### ~~Soft cap mensal Pro~~ — removido em 2026-08-17
 
-Defesa em camadas contra abuser persistente que fica abaixo do rate limit horário. `PRO_MONTHLY_SOFT_CAP = 50` em `src/lib/billing/quota.ts`. Conta Pro/overdue que estoura recebe `error: "pro_soft_cap"` no `createPrep` e a UI mostra painel amarelo com mailto para `rodrigo@proaicircle.com`. Reset é lazy por calendário: `isNewBillingCycle()` compara mês de `billing_cycle_started_at` com `now()`; se diferente, zera contador antes do gate. Migration 0014 adicionou `preps_this_billing_cycle` + `billing_cycle_started_at` em `profiles` (server-managed, sem GRANT pra `authenticated`). `/admin/health` exibe KPI + section "Pro acima do soft cap" com lista de e-mails.
+`PRO_MONTHLY_SOFT_CAP` não existe mais. Ele defendia contra o abuser de um plano ilimitado; com crédito pré-pago, **o próprio crédito é o teto** — não há como gerar mais preparações do que se pagou, então um segundo contador só criava caminho para negar serviço a quem pagou. `isNewBillingCycle()` e o erro `pro_soft_cap` foram removidos junto. As colunas `preps_this_billing_cycle` / `billing_cycle_started_at` (migration 0014) continuam no banco, sem leitor.
 
 ### Env vars obrigatórias (Railway)
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
@@ -188,7 +189,7 @@ Defesa em camadas contra abuser persistente que fica abaixo do rate limit horár
 
 **Profile area** (`src/components/profile/`): `ProfileShellProvider`, `ProfileTabs` (Perfil / CVs / Conta), `AvatarEditor`, `ProfileForm`, `CvList`/`CvRow`, `AccountSection`, `ChangePasswordDialog`, `DeleteAccountDialog`. Routes em `src/app/(app)/profile/`.
 
-**Billing** (`src/components/billing/`): `UpgradeModal` (dual CTA, redireciona Pro pra `/pricing`), `CheckoutButton` (POST /api/billing/checkout, prompt CPF on 422), `PlanCard`, `BillingHistoryList`, `CancelSubscriptionDialog`, `FreeTierBanner` (link pra /pricing), `CreditsBadge`. Página `/pricing` mostra Pro com promo R$50 → R$30 + per-use R$10.
+**Billing** (`src/components/billing/`): `UpgradeModal` (paywall em `quota_exceeded`), `CheckoutButton` (POST /api/billing/checkout, prompt CPF on 422), `PlanCard`, `BillingHistoryList`, `CancelSubscriptionDialog` (só para o assinante legado), `FreeTierBanner`, `CreditsBadge`, `PlanBadge` (mostra **saldo de créditos real** — antes anunciava um prep grátis que o gate não honra mais). Página `/pricing` mostra os 3 pacotes de crédito; não há mais plano mensal à venda.
 
 Helpers em `src/lib/prep/`:
 - `section-classifier.ts` — mapeia `PrepSection[]` AI → `{likely, deepDive, ask}` por keyword regex (PT/EN, acentos, snake_case) + fallback posicional
@@ -197,9 +198,13 @@ Helpers em `src/lib/prep/`:
 
 Helpers em `src/lib/billing/`:
 - `asaas.ts` — REST client (`createCustomer`, `updateCustomer`, `createSubscription`, `createPayment`, `cancelSubscription`, `getPayment`). `import "server-only"`.
-- `quota.ts` — `checkQuota(profile, now)` retorna `{ allowed, mode: 'pro' | 'free' | 'credit' | 'reset' | 'block' }`
+- `quota.ts` — `checkQuota(profile, isAdmin)` retorna `{ allowed, mode: 'credit' | 'block' }`. Só dois desfechos: tem crédito (ou é admin) e passa, ou não tem e apanha o paywall.
 - `webhook.ts` — `verifyToken` (constant-time) + `dispatchEvent` (idempotente via UNIQUE asaas_event_id)
-- `prices.ts` / `ids.ts` — constants + externalReference parser (`pro:uid` / `prep:uid:nano`)
+- `prices.ts` — `PREP_SKUS`: 1×R$10, 3×R$25, 5×R$40
+- `ids.ts` — parser do `externalReference`, formato `prep:<uid>:<qty>:<nano>`. Formato legado de 3 partes (sem qty) resolve pra `qty: 1` — pagamentos antigos ainda chegam por webhook.
+- `consume.ts` — `consumePrepCredit` / `refundPrepCredit`, wrappers dos RPCs `SECURITY DEFINER` (migration 0024). Ambos só têm `GRANT` pro `service_role`: **vão pelo admin client, nunca pelo client do usuário.**
+- `credit-lifecycle.ts` — as regras de quando cobrar e quando devolver, derivadas de `credit_consumed_at`/`credit_refunded_at`: `isCreditOutstanding`, `shouldChargeRetry`, `shouldRefundOnDiscard`, `shouldRefundOnDelete`. **Toda decisão de dinheiro passa por aqui.** Quatro rodadas de correção na Task 4 vieram de tentar decidir isso sem um registro por sessão; a lição foi que o estado do crédito precisa ser um fato no banco, não uma inferência a partir do status da geração.
+- `reconcile.ts` — safety net do webhook. Credita pela `qty` do `externalReference`, não `+1` fixo.
 - `types.ts` — Asaas + internal types
 
 Helpers em `src/lib/profile/`: `gravatar.ts`, `avatar-url.ts`, `cv-merge.ts`, `types.ts`.
@@ -305,8 +310,9 @@ Tabelas em `public`:
 
 - **`profiles`** (extends `auth.users`): id (uuid), full_name, email, preferred_language (en|pt-br|es), tier (free|pro|team), preps_used_this_month, preps_reset_at, **avatar_url, avatar_updated_at** (#27), **asaas_customer_id, asaas_subscription_id, subscription_status (active|overdue|canceled|expired|none), subscription_renews_at, prep_credits** (migration 0009), **cpf_cnpj** (migration 0010), **preps_this_billing_cycle, billing_cycle_started_at** (migration 0014), **address fields** (migration 0015), **is_admin** (migration 0011), **pix_key** (migration 0016, usado pra payouts de afiliado)
 - **`cvs`**: id (uuid), user_id, file_name, file_path, file_size_bytes, mime_type, parsed_text, **display_name** (#27)
-- **`prep_sessions`**: id (uuid), user_id, job_title, company_name, cv_text, cv_id (FK→cvs), job_description, language, prep_guide (jsonb), generation_status (pending|generating|complete|failed), error_message, ats_analysis (jsonb), ats_status (NULL|generating|complete|failed), ats_error_message, company_intel (jsonb), company_intel_status (pending|researching|complete|failed|skipped), company_intel_error, cv_rewrite (jsonb), cv_rewrite_status (pending|generating|complete|failed), cv_rewrite_error, **progress_step** (migration 0017, indica seção atual durante geração pra skeleton dinâmico), **salary_benchmark + salary_benchmark_status + salary_benchmark_error** (migration 0020, faixa salarial estimada pra vaga, gerada como Stage Salary no pipeline)
-- **`payments`** (#37): id, user_id, asaas_payment_id (UNIQUE), kind (pro_subscription|prep_purchase), amount_cents, status (pending|confirmed|received|refunded|overdue|failed), billing_method, paid_at, raw_payload, created_at. RLS: user lê os próprios.
+- **`prep_sessions`**: id (uuid), user_id, job_title, company_name, cv_text, cv_id (FK→cvs), job_description, language, prep_guide (jsonb), generation_status (pending|generating|complete|failed), error_message, ats_analysis (jsonb), ats_status (NULL|generating|complete|failed), ats_error_message, company_intel (jsonb), company_intel_status (pending|researching|complete|failed|skipped), company_intel_error, cv_rewrite (jsonb), cv_rewrite_status (pending|generating|complete|failed), cv_rewrite_error, **progress_step** (migration 0017, indica seção atual durante geração pra skeleton dinâmico), **salary_benchmark + salary_benchmark_status + salary_benchmark_error** (migration 0020, faixa salarial estimada pra vaga, gerada como Stage Salary no pipeline), **credit_consumed_at + credit_refunded_at** (migration 0024 — o registro por sessão de que o crédito foi cobrado/devolvido; é o que torna consumo e devolução idempotentes)
+  - ⚠️ **`prep_sessions` tem GRANT por coluna desde a 0024.** `authenticated` perdeu `INSERT`/`UPDATE` na tabela inteira e só reganhou colunas nomeadas. `generation_status`, `error_message`, `prep_guide` e as duas de crédito ficaram **de fora**: com elas, qualquer pessoa logada marcava a própria prep entregue como `failed` pela anon key e pedia devolução. Quem precisa escrever nessas colunas usa o admin client com `.eq("user_id", …)` explícito. RLS não resolveria isso — RLS filtra linha, nunca coluna.
+- **`payments`** (#37): id, user_id, asaas_payment_id (UNIQUE), kind (pro_subscription|prep_purchase), amount_cents, status (pending|confirmed|received|refunded|overdue|failed), billing_method, paid_at, raw_payload, created_at, **credits_granted + credits_granted_at + credits_revoked_at** (migration 0024 — idempotência *por pagamento*: o cartão emite `PAYMENT_CONFIRMED` **e** `PAYMENT_RECEIVED` pro mesmo pagamento, e sem esse carimbo o pacote de 5 era creditado duas vezes). RLS: user lê os próprios.
 - **`subscription_events`** (#37): id, user_id (nullable — eventos TRANSFER_* não têm user), asaas_event_id (UNIQUE — chave de idempotência), event_type, asaas_subscription_id, asaas_payment_id, raw_payload, received_at. RLS: service-role only.
 - **`affiliate_partners`** (migration 0016): id, user_id (FK auth.users), code (UNIQUE, A-Z0-9- 2-40), display_name, bio, status (pending|active|suspended), commission_rate_pct (default 30), notes, approved_at, approved_by, created_at. RLS: parceiro lê própria row. Distinção rejected×suspended via `approved_at IS NULL`.
 - **`affiliate_referrals`** (migration 0016): profile_id (PK FK profiles, 1:1), partner_id, attributed_at, flagged_for_review, flag_reason. SEM SELECT policy (privacidade — usuário não sabe quem o indicou).
@@ -322,7 +328,7 @@ Storage buckets: `cvs` (privado, org-scoped por user_id), **`avatars`** (públic
 
 | Rota | Método | Função |
 |---|---|---|
-| `/prep/new` | server action `createPrep` | gerar novo prep + **quota gate** (consome credit/free/reset) + duplicate JD detection |
+| `/prep/new` | server action `createPrep` | gerar novo prep + **quota gate** (consome 1 crédito via `consumePrepCredit`, antes de inserir a linha) + duplicate JD detection |
 | `/prep/new` | server action `uploadCv` | upload + parse de PDF/DOCX/TXT |
 | `/prep/new` | server action `fetchJdFromUrl` | extrai texto via Jina Reader + cleanup Gemini (strip cookies/footer) |
 | `/prep/[id]/ats` | server action `runAtsAnalysis` | dispara ATS analysis (Gemini, determinístico temp=0) |
@@ -336,7 +342,9 @@ Storage buckets: `cvs` (privado, org-scoped por user_id), **`avatars`** (públic
 | `/api/billing/cancel` | POST | cancela subscription Asaas + marca `canceled` localmente |
 | `/api/asaas/webhook` | POST | receiver — valida `asaas-access-token` → `dispatchEvent` idempotente. Trata PAYMENT_*, SUBSCRIPTION_DELETED (+ auto-clawback de commissions ainda não pagas), TRANSFER_* (atualiza affiliate_payouts.status; se falha após mark-paid, reverte commissions). |
 | `/profile`, `/profile/cvs`, `/profile/account` | server | área de perfil (avatar + CVs + plano + senha + delete) |
-| `/pricing` | server | página de planos: Pro R$30 (promo) + per-use R$10 |
+| `/pricing` | server | pacotes de crédito: 1×R$10, 3×R$25, 5×R$40 |
+| `/analise-ats-gratis` | server + action | ferramenta ATS anônima (sem cadastro). Resultado em `/analise-ats-gratis/resultado`, acesso por cookie `HttpOnly` — o token **nunca** vai na URL, porque dá acesso ao texto do CV. |
+| `/prep/[id]` | server action `generateFullPrep` | destrava a preparação completa de uma prep reivindicada da ATS anônima. Consome crédito; é o irmão do `createPrep`, **não** do `retryPrep` (esse é caminho de recuperação e de propósito não cobra). |
 | `/parceiros` | server | landing pública do programa de parceiros + form de aplicação. Server-side redirect → `/partner` se user já tem `affiliate_partners` row. |
 | `/partner` | server | painel parceiro status-aware (pending/active/suspended/rejected). PayoutThresholdCard mostra barra R$X de R$100. |
 | `/partner` | server action `updatePixKey` | edita pix_key no profile |
@@ -378,7 +386,13 @@ Vitest config: `environment: "node"` por default, jsdom só em `src/components/*
 
 Trabalho organizado por bloco temático, mais recente em cima. Detalhes específicos em `git log` — aqui só o "porquê" pra navegação.
 
-**Agosto 2026 — remoção do Cerebras:**
+**Agosto 2026 — crédito avulso + ATS anônima:**
+
+| Bloco | O que entrou |
+|---|---|
+| **Modelo de cobrança trocado por inteiro (2026-08-17)** | Fim do free vitalício e da assinatura R$30; ATS vira o produto grátis, preparação completa passa a custar 1 crédito (R$10 / 3×R$25 / 5×R$40). 10 tasks + 2 correções, migration 0024. O caro não foi o preço, foi o **motor de crédito**: consumo e devolução precisam ser atômicos e idempotentes por sessão **e** por pagamento, com as colunas de dinheiro fora do alcance de escrita do cliente. A Task 4 levou 4 rodadas porque cada uma trocava "recebe de graça" por "paga duas vezes" — só fechou quando o estado do crédito virou fato no banco (`credit_consumed_at`/`credit_refunded_at`) em vez de inferência a partir do `generation_status`. |
+| Ferramenta ATS anônima (`/analise-ats-gratis`, migration 0023) | Topo de funil sem cadastro: cola a vaga, envia o CV, recebe score + os primeiros ajustes; o resto destrava ao criar conta, e a análise é reivindicada pra prep. O token que dá acesso ao texto do CV viaja **só em cookie `HttpOnly`, nunca na URL**. `LIMITS.anonAts` é `failClosed: true` — foi ela que expôs, ruidosamente, que o Upstash não estava configurado e portanto **nenhum** rate limit do app existia de fato. |
+| Revisão ampla pós-implementação | As revisões por task aprovaram quase tudo, corretamente — cada peça estava certa no próprio escopo. Os 5 defeitos que custariam dinheiro real (crédito `+1` ignorando a `qty`, grant não idempotente por pagamento, `deletePrep` destruindo crédito pendente, entrega parcial cobrando cheio, ordem de deploy) só apareceram na revisão que cruzou arquivos, e **todos viviam em arquivos que nenhuma task tinha razão pra abrir**. Padrão a repetir: depois de um plano multi-task, revisar as junções, não só as peças. |
 
 | Bloco | O que saiu |
 |---|---|
@@ -407,6 +421,16 @@ Trabalho organizado por bloco temático, mais recente em cima. Detalhes específ
 
 ## 11. Pendências / known gaps
 
+### Dívida registrada do modelo de crédito (Projeto 2)
+
+Nada aqui é bug ativo — é o que ficou conscientemente de fora quando o crédito avulso subiu em 2026-08-17.
+
+- **Não existe reaper de prep travada em `generating`.** `isGenerationStale` (15min) faz a UI mostrar "Tentar novamente", e `shouldChargeRetry` garante que essa retentativa **não cobra de novo** enquanto o crédito estiver pendente — então ninguém paga duas vezes. Mas quem simplesmente abandona a prep fica sem o crédito de volta até excluir a prep (`shouldRefundOnDelete`). Uma rotina que devolva sozinha depois de N horas fecharia o ciclo.
+- **Colunas de contagem legadas continuam no banco sem leitor:** `preps_used_this_month`, `preps_reset_at`, `preps_this_billing_cycle`, `billing_cycle_started_at`. Deixadas de propósito — dropar coluna e trocar comportamento no mesmo deploy é exatamente o que derrubou o produto na 0020. Remoção física é tarefa separada, depois de estabilizar.
+- **`tier` / `subscription_status` sobrevivem só pro assinante legado** (hoje: a conta admin). Nenhum gate os lê.
+
+### Outros
+
 - ~~**Webhook Asaas pode não estar entregando.**~~ Resolvido em prod 2026-04-27. Webhook autenticando, `subscription_events` recebendo eventos. Reconcile (`src/lib/billing/reconcile.ts`) ainda existe como safety net caso o webhook caia.
 - **Host canonical (prepavaga.com.br vs railway.app):** o app respeita `x-forwarded-host` em `auth/callback/route.ts` e `api/billing/checkout/route.ts` — qualquer redirect/successUrl usa o host real da request, não o env var. Isso significa que o app continua funcionando se acessado via outro domínio que aponte pro Railway (útil em testes).
 - **Cloudflare proxy laranja quebra SSL:** os 2 CNAMEs (apex `@` e `www`) PRECISAM ficar **DNS only** (cinza), porque Railway emite seu próprio cert via Let's Encrypt. Proxy ON na Cloudflare causa erro 526 / loop.
@@ -419,7 +443,8 @@ Trabalho organizado por bloco temático, mais recente em cima. Detalhes específ
 - **E2E em CI**: smoke tests (`tests/e2e/smoke/`) rodam sempre via GitHub Actions e cobrem páginas públicas (landing, signup, login, /termos, /privacidade, /lgpd, /icon.svg, /opengraph-image). Auth flow tests (`tests/e2e/auth-required/`) só rodam quando `STAGING_SUPABASE_URL` é setada como GitHub secret — projeto Supabase staging precisa ter email confirmation **OFF**. Especificações: `pnpm test:e2e:smoke` ou `pnpm test:e2e:auth`. Test fixtures usam CPF `12345678909` (formato válido, não precisa ser real).
 - **`server-only` package** não está no `node_modules` real (Next 15 não re-exporta). Vitest aliasa pra stub vazio (`vitest.server-only-stub.ts`). Production funciona porque Next bundler resolve antes.
 - **MCP Supabase frequentemente desconectado** nesta sessão (Anthropic-side). Quando precisar aplicar migration: cole o SQL no Supabase SQL Editor manualmente. CLI `supabase db push` não tá auth'd local (sem `SUPABASE_ACCESS_TOKEN`). DB password também não está no `.env.local`.
-- **Migrations não aplicadas automaticamente:** o CI Supabase Preview tenta rodar mas falha por colisão; aplicação real precisa ser manual. Aplicadas em prod até o momento: 0018 (page_views), 0019 (affiliate_payouts) e **0020 (`salary_benchmark` columns em prep_sessions) — aplicada 2026-06-01 via MCP**. ⚠️ Lição: a ausência da 0020 NÃO era só "Stage Salary falha silenciosamente" — `loadPrepSession` (`src/lib/prep/load-session.ts`) faz SELECT dessas colunas, então sem elas o SELECT inteiro dava erro → `loadPrepSession` retornava null → `/prep/[id]` chamava `notFound()` → **todo prep dava 404 após ser criado** (`createPrep` redirecionava ok porque só faz `.select("id")`). Regra geral: aplicar migration ANTES de deployar código que referencia colunas novas.
+- **Migrations não aplicadas automaticamente:** o CI Supabase Preview tenta rodar mas falha por colisão; aplicação real precisa ser manual. Aplicadas em prod até o momento: 0018 (page_views), 0019 (affiliate_payouts), **0020 (`salary_benchmark` columns em prep_sessions) — aplicada 2026-06-01 via MCP**, **0023 (`anon_ats_analyses`)** e **0024 (créditos por quantidade) — aplicadas 2026-08-17 manualmente no SQL Editor**.
+  - ⚠️ Armadilha da 0024, se precisar reaplicar: `CREATE OR REPLACE FUNCTION` com lista de argumentos diferente **cria uma sobrecarga, não substitui**. `handle_payment_received` ganhou um `p_credits integer DEFAULT 1`, e sem o `drop function if exists` da assinatura antiga o Postgres passa a ter as duas e o PostgREST responde `function is not unique`. A migration já traz os `drop` explícitos — não remova. ⚠️ Lição: a ausência da 0020 NÃO era só "Stage Salary falha silenciosamente" — `loadPrepSession` (`src/lib/prep/load-session.ts`) faz SELECT dessas colunas, então sem elas o SELECT inteiro dava erro → `loadPrepSession` retornava null → `/prep/[id]` chamava `notFound()` → **todo prep dava 404 após ser criado** (`createPrep` redirecionava ok porque só faz `.select("id")`). Regra geral: aplicar migration ANTES de deployar código que referencia colunas novas.
 - **Env var nova pra setar no Railway:** `RESEND_API_KEY` (emails parceiro — sem ele só log warn). `CEREBRAS_API_KEY` não existe mais no schema — removida em 2026-08-16 junto com a integração (ver §6 "Cerebras removido do fallback de IA"); se ainda estiver setada no Railway, pode ser removida também, é inerte.
 - **Eventos TRANSFER_* a habilitar no painel Asaas** pra webhook funcionar end-to-end: TRANSFER_DONE, TRANSFER_FAILED, TRANSFER_CANCELLED, TRANSFER_PENDING, TRANSFER_BANK_PROCESSING.
 - **Saldo da conta Asaas:** `payPartnerViaPix` exige saldo na conta Asaas (alimentado pelos pagamentos recebidos). Cada Transfer Pix tem taxa ~R$1,99 deduzida do saldo (parceiro recebe valor cheio). Não saque tudo da conta Asaas antes do dia de pagar parceiros.

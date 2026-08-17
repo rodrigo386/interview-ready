@@ -48,7 +48,7 @@ export type AdminOverview = {
 };
 
 // Shape returned by SQL function `get_admin_overview()` — see migration 0012.
-type OverviewRpc = {
+export type OverviewRpc = {
   totalUsers: number;
   signups24h: number;
   signups7d: number;
@@ -94,20 +94,54 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   const o = overviewRes.data as unknown as OverviewRpc;
   const a = activityRes.data as unknown as RecentActivityRpc;
 
-  // Estimated MRR: active Pro subs × R$ 30 (promo). Overdue counted at half weight.
-  const mrrCents = o.proActive * 3000 + o.overdue * 1500;
+  return {
+    kpis: buildKpis(o),
+    latestSignups: a.latestSignups ?? [],
+    latestPreps: a.latestPreps ?? [],
+    latestPayments: a.latestPayments ?? [],
+    failedPreps: a.failedPreps ?? [],
+  };
+}
+
+/**
+ * Monta os KPIs do topo do `/admin` a partir do retorno cru do RPC.
+ *
+ * Exportada (e pura) só pra ser testável — a função que a chama depende do
+ * service-role client e de dois RPCs.
+ *
+ * Não existe mais MRR aqui, e a ausência é deliberada. O card "MRR estimado"
+ * calculava `proActive × R$30 + overdue × R$15` num produto que deixou de ter
+ * assinatura: desde a migração pra crédito avulso, o único perfil com
+ * `tier=pro` é a conta admin (que ganha Pro permanente por ser admin, sem
+ * nunca ter pago mensalidade). O card mostrava receita recorrente que não
+ * existe — pior do que não mostrar nada, porque é o número que se olha pra
+ * decidir preço. Receita real agora é "Receita últimos 30d", que soma
+ * pagamentos de fato liquidados.
+ */
+export function buildKpis(o: OverviewRpc): Kpi[] {
   const activationRate =
     o.signups30d === 0 ? 0 : Math.round((o.activated30d / o.signups30d) * 100);
 
-  const kpis: Kpi[] = [
+  // Sobrevivente do modelo antigo: some quando zera, e enquanto existir diz o
+  // que de fato é. `checkQuota` só olha `prep_credits` — `tier=pro` não
+  // destrava preparação nenhuma (mesmo aviso que o GrantProButton dá).
+  const legadoPro: Kpi[] =
+    o.proActive + o.overdue > 0
+      ? [
+          {
+            label: "Pro legado (não destrava nada)",
+            value: o.proActive.toLocaleString("pt-BR"),
+            hint: o.overdue
+              ? `+${o.overdue} em atraso · sem efeito na cota`
+              : "Sem efeito na cota",
+          },
+        ]
+      : [];
+
+  return [
     { label: "Total de usuários", value: o.totalUsers.toLocaleString("pt-BR") },
-    {
-      label: "Assinantes Pro ativos",
-      value: o.proActive.toLocaleString("pt-BR"),
-      hint: o.overdue ? `+${o.overdue} em atraso` : undefined,
-    },
-    { label: "MRR estimado (R$)", value: brl(mrrCents), hint: "Pro × R$30 + 50% dos overdue" },
     { label: "Receita últimos 30d (R$)", value: brl(o.revenueCents30d) },
+    ...legadoPro,
     {
       label: "Cadastros 24h",
       value: o.signups24h.toLocaleString("pt-BR"),
@@ -139,16 +173,16 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       hint: o.failedPreps7d > 0 ? "Investigar abaixo" : undefined,
     },
     { label: "Pagamentos pendentes", value: o.pendingPayments.toLocaleString("pt-BR") },
-    { label: "Créditos avulsos no sistema", value: o.totalCredits.toLocaleString("pt-BR") },
+    {
+      // Não é "saldo de cortesia": é preparação já paga e ainda não entregue.
+      // O rótulo antigo ("Créditos avulsos no sistema") descrevia o mecanismo,
+      // não a obrigação, e no modelo de crédito pré-pago essa é a única
+      // métrica que diz quanto produto ainda se deve.
+      label: "Créditos não consumidos",
+      value: o.totalCredits.toLocaleString("pt-BR"),
+      hint: "Preparações pagas e ainda não entregues",
+    },
   ];
-
-  return {
-    kpis,
-    latestSignups: a.latestSignups ?? [],
-    latestPreps: a.latestPreps ?? [],
-    latestPayments: a.latestPayments ?? [],
-    failedPreps: a.failedPreps ?? [],
-  };
 }
 
 function brl(cents: number): string {
