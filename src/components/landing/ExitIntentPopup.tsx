@@ -13,6 +13,15 @@ const TOP_LEAVE_THRESHOLD_PX = 12;
  * moves the cursor toward the browser chrome (likely to close/switch tabs),
  * we surface a soft offer reminding them the ATS analysis is free.
  *
+ * O CTA aponta pra `/analise-ats-gratis`, não pra `/signup`. Este é o momento
+ * de MENOR intenção do funil — a pessoa está indo embora — e pedir cadastro
+ * aqui é a fricção que a ferramenta anônima existe justamente pra remover.
+ * O Hero oferece as duas portas porque lá a intenção ainda é alta; aqui só
+ * cabe a de atrito zero. O texto acompanha a troca: o formulário anônimo
+ * aceita o texto colado da vaga (não um link — `fetchJdFromUrl` é action
+ * autenticada), então prometer "cola o link" mandaria pra uma tela que não
+ * tem esse campo.
+ *
  * Constraints:
  *  - Desktop only (mouseleave is unreliable on touch — mobile gets the
  *    MobileStickyCta bottom bar instead).
@@ -113,17 +122,19 @@ export function ExitIntentPopup() {
           <span className="text-orange-500">grátis</span>
         </h2>
         <p className="mt-3 text-sm leading-snug text-text-secondary">
-          Sem cartão. Cola o link de uma vaga + seu CV e veja na hora o score
-          ATS do seu currículo. A preparação completa custa R$10.
+          Sem cadastro e sem cartão. Cola o texto da vaga + seu CV e veja na
+          hora o score ATS do seu currículo. A preparação completa custa R$10.
         </p>
 
         <div className="mt-5 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center">
           <Link
-            href="/signup"
+            href="/analise-ats-gratis"
             onClick={close}
+            data-analytics-cta="exit_popup_ats"
+            data-analytics-location="landing"
             className="inline-flex items-center justify-center gap-2 rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700"
           >
-            Criar conta grátis
+            Analisar meu currículo grátis
             <span aria-hidden>→</span>
           </Link>
           <button
