@@ -198,9 +198,9 @@ export default function ExemploPage() {
               Agora imagine isso pra vaga que você quer
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-[1.6] text-ink-2">
-              Cole o link da vaga + seu CV e receba a preparação completa: 5
-              etapas, ~15 perguntas com roteiro, ATS e CV reescrito.{" "}
-              <strong>A primeira é grátis. Sem cartão.</strong>
+              Cole o link da vaga + seu CV e comece pela análise ATS —{" "}
+              <strong>grátis, sem cartão</strong>. A preparação completa (5
+              etapas, ~15 perguntas com roteiro e CV reescrito) custa R$10.
             </p>
             <div className="mt-5 flex justify-center">
               <Link
@@ -209,7 +209,7 @@ export default function ExemploPage() {
                 data-analytics-location="exemplo"
                 className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-base font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:bg-brand-700"
               >
-                Gerar minha preparação grátis
+                Analisar meu currículo grátis
                 <span aria-hidden>→</span>
               </Link>
             </div>

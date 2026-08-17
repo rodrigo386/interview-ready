@@ -104,11 +104,11 @@ export default function SobrePage() {
 
             <h2>Modelo de preço</h2>
             <p>
-              Toda nova conta ganha 1 prep grátis vitalícia. Quem quer mais
-              escolhe entre <strong>Pro a R$ 30/mês</strong> com uso ilimitado
-              (promo de lançamento, valor cheio R$ 50) ou{" "}
-              <strong>R$ 10 por prep avulso</strong>. Sem fidelidade, cancele
-              quando quiser. Detalhes em{" "}
+              A <strong>análise ATS é sempre gratuita</strong>, com ou sem
+              cadastro. A preparação completa (pesquisa da empresa, currículo
+              reescrito e roteiros de pergunta) custa{" "}
+              <strong>R$ 10 por vaga</strong>, ou em pacote: 3 por R$ 25 ou 5
+              por R$ 40. Sem mensalidade, sem assinatura. Detalhes em{" "}
               <Link href="/pricing">/pricing</Link>.
             </p>
 
@@ -138,7 +138,7 @@ export default function SobrePage() {
               Pronto pra entrar mais preparado na próxima entrevista?
             </h2>
             <p className="mt-2 text-sm text-ink-2">
-              A primeira preparação é grátis. Sem cartão, sem fidelidade.
+              Comece pela análise ATS, sempre grátis. Sem cartão.
             </p>
             <Link
               href="/signup"

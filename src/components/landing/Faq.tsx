@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 
 type FaqItem = { q: string; a: React.ReactNode; aPlain: string };
 
@@ -7,13 +6,13 @@ const ITEMS: FaqItem[] = [
   {
     q: "O PrepaVaga é grátis?",
     aPlain:
-      "Sim. Toda nova conta ganha 1 prep grátis vitalícia. Depois disso você pode comprar prep avulso por R$10 ou assinar o Pro por R$30/mês (promo de lançamento, valor cheio R$50/mês).",
+      "A análise ATS é sempre gratuita, com ou sem cadastro. A preparação completa (pesquisa da empresa, currículo reescrito e roteiros de pergunta) custa R$10 por vaga, ou em pacote: 3 por R$25 ou 5 por R$40. Sem mensalidade.",
     a: (
       <>
-        Sim. Toda nova conta ganha <strong>1 prep grátis vitalícia</strong>. Depois disso você
-        pode comprar prep avulso por <strong>R$ 10</strong> ou assinar o Pro por{" "}
-        <strong>R$ 30/mês</strong> (promo de lançamento, valor cheio R$ 50/mês). Sem cartão pra
-        criar a conta.
+        A <strong>análise ATS é sempre gratuita</strong>, com ou sem cadastro. A preparação
+        completa (pesquisa da empresa, currículo reescrito e roteiros de pergunta) custa{" "}
+        <strong>R$ 10</strong> por vaga, ou em pacote: 3 por R$ 25 ou 5 por R$ 40. Sem
+        mensalidade — o crédito comprado não expira.
       </>
     ),
   },
@@ -83,29 +82,29 @@ const ITEMS: FaqItem[] = [
     ),
   },
   {
-    q: "Posso cancelar o Pro a qualquer momento?",
+    q: "O crédito de preparação expira?",
     aPlain:
-      "Sim, sem fidelidade. O cancelamento interrompe a renovação automática mas mantém seu acesso até o fim do ciclo já pago. A garantia de 7 dias permite reembolso total se você não ficar satisfeito.",
+      "Não. O crédito que você compra fica na sua conta até você usar — sem mensalidade, sem renovação automática. A garantia de 7 dias permite reembolso total se você não ficar satisfeito.",
     a: (
       <>
-        Sim, <strong>sem fidelidade</strong>. O cancelamento interrompe a renovação automática mas
-        mantém seu acesso até o fim do ciclo já pago. A <strong>garantia de 7 dias</strong>{" "}
-        permite reembolso total se você não ficar satisfeito.
+        Não. O crédito que você compra fica na sua conta até você usar —{" "}
+        <strong>sem mensalidade, sem renovação automática</strong>. A{" "}
+        <strong>garantia de 7 dias</strong> permite reembolso total se você não ficar satisfeito.
       </>
     ),
   },
   {
-    q: "Qual a diferença entre Free, Pro e Avulso?",
-    aPlain: `Free: 1 prep grátis vitalícia (uma vez por conta). Pro: R$30/mês com uso ilimitado para preparação real (fair use de ~${PRO_MONTHLY_SOFT_CAP} preps/mês cobre uso intensivo). Avulso: R$10 por prep, sem mensalidade, crédito não expira. Você pode trocar de plano quando quiser.`,
+    q: "Análise ATS e preparação completa são a mesma coisa?",
+    aPlain:
+      "Não. A análise ATS (grátis) mostra sua nota de compatibilidade com a vaga e os principais ajustes de vocabulário. A preparação completa (R$10, ou em pacote) acrescenta pesquisa da empresa, faixa salarial estimada, currículo reescrito e roteiros de pergunta.",
     a: (
       <>
-        <strong>Free</strong>: 1 prep grátis vitalícia (uma vez por conta).{" "}
-        <strong>Pro</strong>: R$ 30/mês com uso ilimitado para preparação real (fair use de ~
-        {PRO_MONTHLY_SOFT_CAP} preps/mês cobre uso intensivo).{" "}
-        <strong>Avulso</strong>: R$ 10 por prep, sem mensalidade, crédito não expira. Você pode
-        trocar de plano quando quiser na{" "}
+        Não. A <strong>análise ATS</strong> (grátis) mostra sua nota de compatibilidade com a
+        vaga e os principais ajustes de vocabulário. A <strong>preparação completa</strong> (R$
+        10, ou em pacote) acrescenta pesquisa da empresa, faixa salarial estimada, currículo
+        reescrito e roteiros de pergunta. Veja os pacotes na{" "}
         <Link href="/pricing" className="text-brand-600 underline-offset-4 hover:underline">
-          página de planos
+          página de preços
         </Link>
         .
       </>

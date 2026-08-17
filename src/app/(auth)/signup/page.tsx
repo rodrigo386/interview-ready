@@ -6,7 +6,7 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 export const metadata: Metadata = {
   title: "Criar conta grátis",
   description:
-    "Crie sua conta grátis na PrepaVaga e gere sua primeira preparação para entrevista (análise ATS + pesquisa da empresa + perguntas) sem cartão de crédito.",
+    "Crie sua conta grátis na PrepaVaga e analise seu currículo contra a vaga sem cartão de crédito. A análise ATS é grátis; a preparação completa (pesquisa da empresa + perguntas) custa R$10.",
   alternates: { canonical: "/signup" },
 };
 

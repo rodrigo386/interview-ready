@@ -11,7 +11,7 @@ const TOP_LEAVE_THRESHOLD_PX = 12;
 /**
  * Mouse-leave-the-top capture for anonymous landing visitors. When the user
  * moves the cursor toward the browser chrome (likely to close/switch tabs),
- * we surface a soft offer reminding them the first prep is free + permanent.
+ * we surface a soft offer reminding them the ATS analysis is free.
  *
  * Constraints:
  *  - Desktop only (mouseleave is unreliable on touch — mobile gets the
@@ -109,12 +109,12 @@ export function ExitIntentPopup() {
           id="exit-popup-title"
           className="mt-2 text-2xl font-semibold tracking-tight text-text-primary"
         >
-          Sua primeira preparação é{" "}
-          <span className="text-orange-500">grátis e vitalícia</span>
+          Sua análise ATS é{" "}
+          <span className="text-orange-500">grátis</span>
         </h2>
         <p className="mt-3 text-sm leading-snug text-text-secondary">
-          Sem cartão, sem fidelidade. Cola o link de uma vaga + seu CV e em ~60s
-          você recebe ATS, pesquisa da empresa e perguntas prováveis.
+          Sem cartão. Cola o link de uma vaga + seu CV e veja na hora o score
+          ATS do seu currículo. A preparação completa custa R$10.
         </p>
 
         <div className="mt-5 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center">

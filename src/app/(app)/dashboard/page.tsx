@@ -84,17 +84,12 @@ export default async function DashboardPage({
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select(
-      "full_name, is_admin, subscription_status, preps_used_this_month, preps_reset_at, prep_credits, welcome_email_sent_at",
-    )
+    .select("full_name, is_admin, prep_credits, welcome_email_sent_at")
     .eq("id", user.id)
     .single();
   const billing = (profileRow ?? {}) as {
     full_name?: string | null;
     is_admin?: boolean;
-    subscription_status?: "active" | "overdue" | "canceled" | "expired" | "none" | null;
-    preps_used_this_month?: number;
-    preps_reset_at?: string;
     prep_credits?: number;
     welcome_email_sent_at?: string | null;
   };
@@ -106,17 +101,13 @@ export default async function DashboardPage({
     await claimAndSendWelcomeEmail({ userId: user.id, email: user.email! });
   }
 
-  const showFreeTierBanner =
-    billing.subscription_status !== "active" && billing.subscription_status !== "overdue";
+  const showFreeTierBanner = !billing.is_admin;
 
   if (list.length === 0) {
     return (
       <div>
         {showFreeTierBanner && (
-          <FreeTierBanner
-            prepsUsedThisMonth={billing.preps_used_this_month ?? 0}
-            credits={billing.prep_credits ?? 0}
-          />
+          <FreeTierBanner credits={billing.prep_credits ?? 0} />
         )}
         <section className="mx-auto max-w-3xl py-10 md:py-16">
           <div className="text-center">
@@ -124,17 +115,18 @@ export default async function DashboardPage({
               Bem-vindo
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
-              Sua primeira preparação é grátis
-              <span className="text-orange-500"> e vitalícia</span>
+              Sua análise ATS é
+              <span className="text-orange-500"> grátis</span>
             </h1>
             <p className="mt-4 max-w-xl mx-auto text-base text-text-secondary md:text-lg">
-              Cola o link da vaga e seu CV. Em ~60 segundos volta com o dossiê
-              completo: ATS, empresa pesquisada, perguntas prováveis e roteiros.
+              Cola o link da vaga e seu CV. Em segundos você vê o score ATS do
+              seu currículo — e pode gerar a preparação completa (empresa
+              pesquisada, perguntas prováveis e roteiros) por R$10.
             </p>
 
             <div className="mt-7">
               <Link href="/prep/new">
-                <Button size="lg">Criar meu primeiro prep →</Button>
+                <Button size="lg">Analisar meu currículo →</Button>
               </Link>
               <p className="mt-3 text-xs text-text-tertiary">
                 Sem cartão. Pode usar agora.
@@ -203,10 +195,7 @@ export default async function DashboardPage({
   return (
     <div>
       {showFreeTierBanner && (
-        <FreeTierBanner
-          prepsUsedThisMonth={billing.preps_used_this_month ?? 0}
-          credits={billing.prep_credits ?? 0}
-        />
+        <FreeTierBanner credits={billing.prep_credits ?? 0} />
       )}
       <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>

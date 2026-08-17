@@ -49,13 +49,12 @@ ${articles}
 
 ## Sobre a PrepaVaga
 
-A PrepaVaga é uma plataforma operada pela PROAICIRCLE Consultoria Empresarial Ltda (CNPJ 62.805.016/0001-29), com sede em São Paulo, SP. Os planos disponíveis são:
+A PrepaVaga é uma plataforma operada pela PROAICIRCLE Consultoria Empresarial Ltda (CNPJ 62.805.016/0001-29), com sede em São Paulo, SP. Não há plano gratuito nem assinatura. O modelo de preço é:
 
-- **Free**: 1 preparação grátis vitalícia ao criar a conta.
-- **Pro**: R$30/mês com uso ilimitado (promo de lançamento, preço cheio R$50). Fair use de aproximadamente 50 preparações por mês.
-- **Avulso**: R$10 por preparação. Crédito não expira.
+- **Análise ATS**: sempre gratuita, com ou sem cadastro.
+- **Preparação completa**: R$10 por vaga (pesquisa da empresa, currículo reescrito e roteiros de pergunta). Também em pacote: 3 por R$25 ou 5 por R$40. Crédito não expira.
 
-Todos os pagamentos são processados pelo Asaas (Pix, cartão de crédito ou boleto). Sem fidelidade. Garantia de 7 dias para reembolso. Operação em conformidade com a LGPD (Lei 13.709/2018).
+Todos os pagamentos são processados pelo Asaas (Pix, cartão de crédito ou boleto). Sem mensalidade. Garantia de 7 dias para reembolso. Operação em conformidade com a LGPD (Lei 13.709/2018).
 
 Contato: prepavaga@prepavaga.com.br
 Site: ${SITE_URL}

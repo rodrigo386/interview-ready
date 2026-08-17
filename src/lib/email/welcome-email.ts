@@ -51,28 +51,29 @@ function firstName(name?: string | null): string {
 export async function sendWelcomeEmail(opts: { to: string; name?: string | null }) {
   const hi = firstName(opts.name);
   const heading = hi
-    ? `${hi}, sua primeira preparação é grátis 🎯`
-    : "Sua primeira preparação é grátis 🎯";
+    ? `${hi}, comece com a análise ATS grátis 🎯`
+    : "Comece com a análise ATS grátis 🎯";
 
   const html = shell({
     heading,
     body: `
-<p>Boas-vindas à PrepaVAGA! Sua conta está pronta e você tem <strong>uma preparação completa grátis</strong> (vitalícia).</p>
-<p>A partir do link de uma vaga + seu CV, em cerca de 60 segundos você recebe:</p>
+<p>Boas-vindas à PrepaVAGA! Sua conta está pronta.</p>
+<p>Cole o link de uma vaga + seu CV e receba na hora, <strong>de graça</strong>: a análise ATS do seu currículo contra a vaga, com os pontos críticos que mais pesam.</p>
+<p>Gostou do que viu? A preparação completa acrescenta:</p>
 <ul style="padding-left:20px;">
-  <li><strong>Análise ATS</strong> do seu currículo contra a vaga, com os pontos críticos.</li>
   <li><strong>Pesquisa atualizada da empresa</strong> e perguntas prováveis em 3 níveis.</li>
   <li>Um <strong>CV otimizado</strong> pronto pra baixar.</li>
 </ul>
+<p>Por <strong>R$10</strong> (ou em pacote, saindo mais barato por vaga) — sem mensalidade.</p>
 <p>Tenha em mãos o <strong>link (ou texto) da vaga</strong> e o <strong>seu CV</strong>. Leva 2 minutos.</p>`,
-    cta: { url: `${SITE_URL}/prep/new`, label: "Criar minha preparação grátis →" },
+    cta: { url: `${SITE_URL}/prep/new`, label: "Analisar meu currículo grátis →" },
   });
 
   return sendEmail({
     to: opts.to,
-    subject: "Bem-vindo à PrepaVAGA — sua 1ª preparação é grátis",
+    subject: "Bem-vindo à PrepaVAGA — comece com a análise ATS grátis",
     html,
-    text: `Boas-vindas à PrepaVAGA! Sua primeira preparação é grátis e vitalícia. Crie agora em ${SITE_URL}/prep/new — basta o link da vaga e o seu CV.`,
+    text: `Boas-vindas à PrepaVAGA! Sua análise ATS é grátis — cole o link da vaga e seu CV em ${SITE_URL}/prep/new pra ver os pontos críticos do seu currículo na hora. A preparação completa (pesquisa da empresa, perguntas e CV otimizado) custa R$10.`,
     replyTo: SUPPORT_EMAIL,
   });
 }

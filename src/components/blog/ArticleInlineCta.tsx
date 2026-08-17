@@ -22,10 +22,10 @@ const COPY = {
       <>
         Cola o link da vaga + seu CV. A gente devolve análise ATS, pesquisa
         recente da empresa e roteiros prontos pra cada pergunta.{" "}
-        <strong>Primeira preparação grátis e vitalícia. Sem cartão.</strong>
+        <strong>Análise ATS grátis. Preparação completa por R$10.</strong>
       </>
     ),
-    cta: "Criar minha preparação grátis",
+    cta: "Criar conta e analisar meu CV",
     href: "/signup",
   },
   // A variante `ats` leva pra ferramenta anônima (/analise-ats-gratis), que
@@ -62,7 +62,7 @@ export function ArticleInlineCta({
   const copy = COPY[variant];
   return (
     <aside
-      aria-label="Crie sua preparação grátis"
+      aria-label="Analise seu currículo grátis"
       className="not-prose my-10 rounded-2xl border-2 border-orange-500 bg-orange-soft/40 p-5 shadow-prep sm:p-6"
     >
       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-700">

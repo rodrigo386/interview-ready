@@ -55,44 +55,40 @@ export function UpgradeModal({
           Seus créditos acabaram
         </h3>
         <p className="mt-2 text-sm text-text-secondary">
-          Cada preparação completa consome 1 crédito. Assine o Pro pra uso ilimitado ou compre uma prep avulsa pra continuar.
+          A análise ATS que você já viu continua grátis. Pra gerar o resto da preparação —
+          pesquisa da empresa, currículo reescrito e roteiros de pergunta — compre um crédito.
         </p>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-orange-500 bg-orange-soft p-4">
             <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-orange-700">
-              Recomendado · promo de lançamento
-            </p>
-            <h4 className="mt-1 text-lg font-bold text-ink">Pro</h4>
-            <p className="text-sm text-ink-2">
-              Uso ilimitado.{" "}
-              <span className="text-ink-3 line-through">R$ 50</span>{" "}
-              <strong className="text-orange-700">R$ 30/mês</strong>
-            </p>
-            <p className="mt-1 text-[11px] text-ink-3">
-              Fair use ~50/mês cobre uso intensivo.
-            </p>
-            <Link
-              href="/pricing"
-              className="mt-4 inline-flex w-full items-center justify-center rounded-pill bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
-            >
-              Ver detalhes do Pro
-            </Link>
-          </div>
-          <div className="rounded-lg border border-line bg-bg p-4">
-            <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-ink-3">
               Avulso
             </p>
             <h4 className="mt-1 text-lg font-bold text-ink">1 prep · R$ 10</h4>
-            <p className="text-sm text-ink-2">Pague só este prep, sem mensalidade.</p>
+            <p className="text-sm text-ink-2">Pague só esta preparação, sem mensalidade.</p>
             <Button
               type="button"
-              variant="ghost"
+              variant="primary"
               onClick={() => handle("prep_purchase")}
               disabled={pendingKind !== null}
               className="mt-4 w-full"
             >
               {pendingKind === "prep_purchase" ? "Abrindo…" : "Comprar este prep"}
             </Button>
+          </div>
+          <div className="rounded-lg border border-line bg-bg p-4">
+            <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-ink-3">
+              Economize em pacote
+            </p>
+            <h4 className="mt-1 text-lg font-bold text-ink">3 por R$ 25 · 5 por R$ 40</h4>
+            <p className="text-sm text-ink-2">
+              Créditos não expiram. Use quando precisar, vaga por vaga.
+            </p>
+            <Link
+              href="/pricing"
+              className="mt-4 inline-flex w-full items-center justify-center rounded-pill border border-orange-500 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-soft"
+            >
+              Ver pacotes
+            </Link>
           </div>
         </div>
         <div className="mt-4 flex justify-end">

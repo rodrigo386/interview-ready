@@ -26,7 +26,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://prepavaga.com.br";
 // impressões) — intenção de currículo, não de entrevista. O título liderava
 // com "preparação para entrevista" e não casava com essa busca.
 const DESCRIPTION =
-  "Cole a vaga e envie seu CV: análise ATS, currículo otimizado e as perguntas prováveis da entrevista em minutos. Primeira preparação grátis, sem cartão.";
+  "Cole a vaga e envie seu CV: análise ATS é grátis na hora. A preparação completa com currículo otimizado e as perguntas prováveis da entrevista custa R$10.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

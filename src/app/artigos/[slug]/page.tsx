@@ -264,7 +264,7 @@ export default async function ArticlePage({
             <p className="mt-2 text-sm text-ink-2">
               {ctaVariant === "ats"
                 ? "A PrepaVaga compara seu currículo com a vaga real que você quer e mostra na hora o score ATS e o ajuste que mais está te barrando. Sem cadastro e sem cartão."
-                : "A PrepaVaga gera um pitch personalizado de 90 segundos para uma vaga específica, junto com análise ATS do seu currículo, pesquisa atualizada da empresa e perguntas prováveis. A primeira preparação é grátis."}
+                : "A PrepaVaga gera um pitch personalizado de 90 segundos para uma vaga específica, junto com análise ATS do seu currículo, pesquisa atualizada da empresa e perguntas prováveis. A análise ATS é grátis; a preparação completa custa R$10."}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
               <Link
@@ -273,7 +273,7 @@ export default async function ArticlePage({
               >
                 {ctaVariant === "ats"
                   ? "Analisar meu currículo grátis →"
-                  : "Gerar minha preparação grátis →"}
+                  : "Criar conta e analisar grátis →"}
               </Link>
               <Link
                 href="/exemplo"

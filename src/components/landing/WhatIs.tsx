@@ -24,7 +24,7 @@ export function WhatIs() {
         <p className="mt-4 text-sm leading-[1.65] text-text-tertiary">
           Funciona em qualquer área (TI, marketing, finanças, saúde, jurídico, comercial) e em
           vagas em PT-BR ou inglês. Conteúdo gerado em português brasileiro. Em conformidade com a
-          LGPD. A primeira preparação é grátis — sem cartão.
+          LGPD. A análise ATS é grátis — sem cartão. A preparação completa custa R$10.
         </p>
       </div>
     </section>

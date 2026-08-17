@@ -36,7 +36,7 @@ export function MobileStickyCta() {
       <div className="flex items-center justify-between gap-3">
         <p className="min-w-0 text-xs leading-snug text-text-secondary">
           <span className="block font-semibold text-text-primary">
-            1ª preparação grátis
+            Análise ATS grátis
           </span>
           Sem cartão. Pronta em minutos.
         </p>

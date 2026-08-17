@@ -10,37 +10,33 @@ function firstName(name?: string | null): string {
 }
 
 /**
- * One-off re-engagement nudge for dormant free users who created an account but
- * never generated a prep. Low-pressure, acknowledges the free prep is still
- * waiting. Sent from the /admin "Reengajar dormentes" button (guarded by
+ * One-off re-engagement nudge for dormant users who created an account but
+ * never ran an ATS analysis. Low-pressure, acknowledges the free analysis is
+ * still waiting. Sent from the /admin "Reengajar dormentes" button (guarded by
  * reengagement_email_sent_at so nobody gets it twice). Graceful without
  * RESEND_API_KEY (no-op).
  */
 export async function sendReengagementEmail(opts: { to: string; name?: string | null }) {
   const hi = firstName(opts.name);
   const heading = hi
-    ? `${hi}, sua preparação grátis ainda está te esperando`
-    : "Sua preparação grátis ainda está te esperando";
+    ? `${hi}, sua análise ATS grátis ainda está te esperando`
+    : "Sua análise ATS grátis ainda está te esperando";
 
   const html = shell({
     heading,
     body: `
-<p>Você criou uma conta na PrepaVAGA mas ainda não gerou sua preparação — e ela continua <strong>grátis</strong>, te esperando.</p>
-<p>Em cerca de 60 segundos, a partir do link de uma vaga + seu CV, você recebe:</p>
-<ul style="padding-left:20px;">
-  <li><strong>Análise ATS</strong> do seu currículo contra a vaga, com os pontos críticos.</li>
-  <li><strong>Pesquisa atualizada da empresa</strong> e perguntas prováveis em 3 níveis.</li>
-  <li>Um <strong>CV otimizado</strong> pronto pra baixar.</li>
-</ul>
-<p>Leva 2 minutos e pode fazer diferença na sua próxima entrevista. É só ter o link (ou texto) da vaga e o seu CV em mãos.</p>`,
-    cta: { url: `${SITE_URL}/prep/new`, label: "Gerar minha preparação grátis →" },
+<p>Você criou uma conta na PrepaVAGA mas ainda não testou sua análise ATS — e ela continua <strong>grátis</strong>, te esperando.</p>
+<p>Em menos de 1 minuto, a partir do link de uma vaga + seu CV, você vê a nota do seu currículo e os pontos críticos que mais pesam. Sem pagar nada.</p>
+<p>Se quiser ir além, a preparação completa (pesquisa da empresa, perguntas prováveis em 3 níveis e CV otimizado pra baixar) custa R$10.</p>
+<p>É só ter o link (ou texto) da vaga e o seu CV em mãos.</p>`,
+    cta: { url: `${SITE_URL}/prep/new`, label: "Analisar meu currículo grátis →" },
   });
 
   return sendEmail({
     to: opts.to,
-    subject: "Sua preparação grátis na PrepaVAGA ainda está disponível",
+    subject: "Sua análise ATS grátis na PrepaVAGA ainda está disponível",
     html,
-    text: `Você criou uma conta na PrepaVAGA mas ainda não gerou sua preparação grátis. Crie agora em ${SITE_URL}/prep/new — basta o link da vaga e o seu CV.`,
+    text: `Você criou uma conta na PrepaVAGA mas ainda não testou sua análise ATS grátis. Veja agora em ${SITE_URL}/prep/new — basta o link da vaga e o seu CV. A preparação completa custa R$10.`,
     replyTo: SUPPORT_EMAIL,
   });
 }

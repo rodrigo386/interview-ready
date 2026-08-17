@@ -3,19 +3,19 @@ import { render, fireEvent } from "@testing-library/react";
 import { UpgradeModal } from "./UpgradeModal";
 
 describe("<UpgradeModal />", () => {
-  it("renderiza dois CTAs com valores corretos", () => {
+  it("renderiza o preço avulso e o link de pacotes", () => {
     const { getByText } = render(
       <UpgradeModal open onClose={vi.fn()} onCheckout={vi.fn()} />,
     );
-    expect(getByText(/R\$\s*30/)).toBeInTheDocument();
     expect(getByText(/R\$\s*10/)).toBeInTheDocument();
+    expect(getByText(/3 por R\$\s*25/)).toBeInTheDocument();
   });
 
-  it("CTA do Pro vai pra /pricing", () => {
+  it("CTA de pacotes vai pra /pricing", () => {
     const { getByRole } = render(
       <UpgradeModal open onClose={vi.fn()} onCheckout={vi.fn()} />,
     );
-    const link = getByRole("link", { name: /ver detalhes do pro/i });
+    const link = getByRole("link", { name: /ver pacotes/i });
     expect(link.getAttribute("href")).toBe("/pricing");
   });
 

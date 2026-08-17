@@ -3,14 +3,13 @@ import Link from "next/link";
 type Plan = {
   label: string;
   sub: string;
-  strike?: string;
   badge?: string;
 };
 
 const PLANS: Plan[] = [
-  { label: "1ª prep grátis", sub: "ao criar sua conta" },
-  { label: "R$10 por uso", sub: "1 prep avulso" },
-  { label: "R$30/mês", sub: "ilimitado", strike: "R$50", badge: "Promo de lançamento" },
+  { label: "Análise ATS", sub: "grátis, com ou sem cadastro", badge: "Sempre grátis" },
+  { label: "R$10", sub: "1 preparação completa" },
+  { label: "R$25 · R$40", sub: "pacote de 3 ou 5 preps" },
 ];
 
 export function PricingChips() {
@@ -22,10 +21,11 @@ export function PricingChips() {
       <div className="mx-auto max-w-3xl px-6 text-center">
         <p className="text-sm font-semibold text-brand-600">Preços</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
-          Sem mensalidade obrigatória.
+          Sem mensalidade. Pague só pela preparação que usar.
         </h2>
         <p className="mt-3 text-base leading-[1.6] text-text-secondary">
-          Pague só quando precisar. Ou assine e prepare quantas vagas quiser.
+          A análise ATS é sempre grátis. A preparação completa custa R$10, ou menos por vaga
+          em pacote.
         </p>
 
         <div className="mt-10 grid gap-3 sm:grid-cols-3">
@@ -44,26 +44,14 @@ export function PricingChips() {
                   {p.badge}
                 </span>
               ) : null}
-              <p className="text-base font-semibold text-text-primary">
-                {p.strike ? (
-                  <>
-                    <span className="mr-1.5 text-text-tertiary line-through decoration-[1.5px]">
-                      {p.strike}
-                    </span>
-                    {p.label}
-                  </>
-                ) : (
-                  p.label
-                )}
-              </p>
+              <p className="text-base font-semibold text-text-primary">{p.label}</p>
               <p className="mt-1 text-xs text-text-tertiary">{p.sub}</p>
             </div>
           ))}
         </div>
 
         <p className="mt-4 text-xs text-text-tertiary">
-          O Pro volta a R$50/mês quando a promoção de lançamento encerrar —
-          quem assina agora mantém R$30.
+          Créditos comprados não expiram. Sem renovação automática.
         </p>
 
         <div className="mt-8">
@@ -71,7 +59,7 @@ export function PricingChips() {
             href="/pricing"
             className="text-sm font-semibold text-brand-600 underline-offset-4 hover:underline"
           >
-            Ver detalhes dos planos →
+            Ver detalhes dos preços →
           </Link>
         </div>
       </div>

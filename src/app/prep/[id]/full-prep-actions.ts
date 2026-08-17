@@ -18,9 +18,9 @@ export type GenerateFullPrepState = {
  * salarial) a partir de uma prep que já existe mas ainda não tem `prep_guide`
  * — na prática, a prep reivindicada da ferramenta ATS anônima.
  *
- * COTA: a spec diz que a análise reivindicada NÃO consome a preparação grátis
- * vitalícia, mas gerar a preparação completa CONSOME ("o presente não pode
- * virar pegadinha"). Por isso esta action replica o gate do `createPrep`
+ * COTA: a análise ATS reivindicada da ferramenta anônima NÃO consome crédito
+ * (ela é gratuita), mas gerar a preparação completa CONSOME. Por isso esta
+ * action replica o gate do `createPrep`
  * (`checkQuota` + `consumePrepCredit`) em vez de reaproveitar o `retryPrep`,
  * que é um caminho de recuperação de falha e de propósito não cobra nada —
  * ligar o CTA nele entregaria a preparação completa de graça.

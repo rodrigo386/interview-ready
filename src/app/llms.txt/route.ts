@@ -15,12 +15,12 @@ export async function GET() {
 
 Site: ${SITE_URL}
 Idioma: português brasileiro (PT-BR)
-Modelo: freemium · Free 1 prep grátis vitalícia · Pro R$30/mês ilimitado (promo de lançamento, valor cheio R$50) · Avulso R$10 por prep.
+Modelo: a análise ATS é sempre gratuita (com ou sem cadastro) · a preparação completa custa R$10 por vaga, ou em pacote: 3 por R$25 ou 5 por R$40 · sem mensalidade, sem assinatura.
 
 ## Páginas principais
 
 - [Página inicial](${SITE_URL}/): visão geral do produto e como funciona.
-- [Planos e preços](${SITE_URL}/pricing): comparação Pro vs Avulso, preço em BRL, fair use.
+- [Planos e preços](${SITE_URL}/pricing): análise ATS grátis + pacotes de preparação, preço em BRL.
 - [Artigos](${SITE_URL}/artigos): guias práticos sobre entrevista, currículo ATS, perguntas comuns.
 
 ## Artigos (guias)
@@ -40,10 +40,10 @@ ${posts
 
 ## FAQ resumida
 
-- **É grátis?** Sim, toda nova conta ganha 1 prep grátis vitalícia. Depois R$10 por prep avulso ou R$30/mês no Pro.
+- **É grátis?** A análise ATS sim, sempre — com ou sem cadastro. A preparação completa custa R$10 por vaga, ou em pacote (3 por R$25, 5 por R$40). Sem mensalidade.
 - **Funciona em qualquer área?** Sim — TI, marketing, finanças, saúde, jurídico, comercial. CV/JD em PT-BR ou inglês.
 - **Quanto tempo leva?** 1 a 3 minutos por prep.
-- **Posso cancelar o Pro?** Sim, sem fidelidade. Garantia de 7 dias.
+- **Os créditos expiram?** Não. Garantia de reembolso de 7 dias.
 - **Os dados ficam seguros?** Sim, em conformidade com a LGPD (Lei 13.709/2018).
 
 ## Recursos para LLMs

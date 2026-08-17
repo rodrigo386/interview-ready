@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalLayout, Section } from "@/components/legal/LegalLayout";
-import { PRO_MONTHLY_SOFT_CAP } from "@/lib/billing/quota";
 
 export const metadata: Metadata = {
   title: "Termos de Uso",
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalLayout title="Termos de Uso" path="/termos" updatedAt="30 de abril de 2026">
+    <LegalLayout title="Termos de Uso" path="/termos" updatedAt="17 de agosto de 2026">
       <p className="text-lg text-text-primary">
         Bem-vindo à PrepaVaga. Estes Termos regulam o uso da nossa plataforma de preparação para
         entrevistas com IA. Ao criar sua conta ou usar qualquer parte do serviço, você concorda
@@ -57,23 +56,21 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section number="3." title="Planos e pagamento">
-        <p>Oferecemos três modalidades:</p>
+      <Section number="3." title="Preços e pagamento">
+        <p>
+          Não há plano gratuito nem assinatura mensal. Oferecemos:
+        </p>
         <ul className="ml-5 list-disc space-y-2">
           <li>
-            <strong className="text-text-primary">Plano Free.</strong> 1 prep grátis vitalícia,
-            concedida no momento do cadastro. Após o uso, é necessário assinar Pro ou comprar prep
-            avulso.
+            <strong className="text-text-primary">Análise ATS.</strong> Sempre gratuita, com ou
+            sem cadastro. Mostra a nota de compatibilidade do seu currículo com a vaga e os
+            principais ajustes de vocabulário.
           </li>
           <li>
-            <strong className="text-text-primary">Plano Pro.</strong> R$ 30/mês (preço promocional
-            de lançamento, valor cheio R$ 50/mês). Acesso ilimitado para uso pessoal de preparação,
-            sem cobrança extra por prep, cancelamento a qualquer momento. Sujeito à política de uso
-            justo (fair use) descrita no item 3.1 abaixo.
-          </li>
-          <li>
-            <strong className="text-text-primary">Pay-per-use.</strong> R$ 10 por prep avulso. Sem
-            mensalidade, crédito não expira.
+            <strong className="text-text-primary">Preparação completa.</strong> R$ 10 por
+            preparação (pesquisa da empresa, faixa salarial estimada, currículo reescrito e
+            roteiros de pergunta). Também vendida em pacote: 3 por R$ 25 ou 5 por R$ 40. Sem
+            mensalidade, sem renovação automática — o crédito comprado não expira.
           </li>
         </ul>
         <p>
@@ -81,39 +78,17 @@ export default function TermsPage() {
           cartão de crédito e boleto. A PrepaVaga não armazena dados de cartão. A nota fiscal é
           emitida pelo próprio Asaas.
         </p>
-        <p>
-          A assinatura Pro é renovada automaticamente todo mês até que você cancele. O cancelamento
-          interrompe a renovação, mas mantém o acesso até o fim do ciclo já pago.
-        </p>
-        <p>
-          <strong className="text-text-primary">3.1. Política de uso justo (fair use).</strong> O
-          plano Pro oferece uso ilimitado para preparação real de candidatos. Para evitar abuso e
-          uso automatizado em larga escala, aplicamos um teto operacional de aproximadamente{" "}
-          {PRO_MONTHLY_SOFT_CAP} preps por ciclo mensal — número várias vezes maior que o uso típico
-          de um candidato em busca ativa. Caso você atinja o teto e tenha um caso legítimo de uso
-          mais intenso (ex.: recolocação simultânea em muitas vagas, uso por equipe), basta entrar
-          em contato em{" "}
-          <a
-            href="mailto:prepavaga@prepavaga.com.br"
-            className="font-medium text-orange-700 underline"
-          >
-            prepavaga@prepavaga.com.br
-          </a>{" "}
-          que liberamos o uso adicional sem custo extra. O teto não se aplica a usos automatizados,
-          revenda da plataforma ou criação de contas em massa, situações em que o serviço pode ser
-          suspenso conforme item 6.
-        </p>
       </Section>
 
       <Section number="4." title="Reembolso (garantia de 7 dias)">
         <p>
-          Se você comprou um prep avulso ou assinou o Pro e não ficou satisfeito, pode pedir
-          reembolso integral em até <strong>7 dias corridos</strong> a partir do pagamento, mediante
+          Se você comprou crédito de preparação e não ficou satisfeito, pode pedir reembolso
+          integral em até <strong>7 dias corridos</strong> a partir do pagamento, mediante
           feedback por voz de 10 minutos com a equipe.
         </p>
         <p>
-          Após esse prazo, reembolsos são analisados caso a caso e não são garantidos. A prep grátis
-          do plano Free não é elegível a reembolso por ser, naturalmente, gratuita.
+          Após esse prazo, reembolsos são analisados caso a caso e não são garantidos. A análise
+          ATS não é uma compra — por ser sempre gratuita, não há valor a reembolsar por ela.
         </p>
       </Section>
 
@@ -122,8 +97,8 @@ export default function TermsPage() {
         <ul className="ml-5 list-disc space-y-2">
           <li>Usar a PrepaVaga para fins ilegais, fraudulentos ou para gerar conteúdo ofensivo.</li>
           <li>
-            Tentar burlar limites de quota, criar contas múltiplas para abusar do plano Free, ou
-            automatizar requisições (scraping, bots).
+            Tentar burlar limites de quota, criar contas múltiplas para abusar da análise ATS
+            gratuita, ou automatizar requisições (scraping, bots).
           </li>
           <li>Realizar engenharia reversa, descompilar ou tentar extrair o código-fonte.</li>
           <li>Compartilhar sua conta com terceiros ou revender o acesso.</li>
