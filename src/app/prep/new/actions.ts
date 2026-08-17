@@ -12,6 +12,7 @@ import {
 } from "@/lib/billing/consume";
 import { shouldChargeRetry, shouldRefundOnDiscard } from "@/lib/billing/credit-lifecycle";
 import { classifyRetryRecovery } from "@/lib/prep/retry-gate";
+import { runAtsForSession } from "@/lib/prep/run-ats";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { createPrepInputSchema } from "./schema";
 
@@ -54,21 +55,6 @@ export async function createPrep(
     return {
       error: `Muitas preps em pouco tempo. Tente novamente em ${formatResetPhrase(rl.reset)}.`,
     };
-  }
-
-  // Quota gate.
-  const { data: billingProfile } = await supabase
-    .from("profiles")
-    .select("prep_credits, is_admin")
-    .eq("id", user.id)
-    .single();
-
-  const p = billingProfile as { prep_credits?: number; is_admin?: boolean } | null;
-  const isAdmin = p?.is_admin === true;
-
-  const quota = checkQuota({ prep_credits: p?.prep_credits ?? 0 }, isAdmin);
-  if (!quota.allowed) {
-    return { error: "quota_exceeded" };
   }
 
   // Duplicate-JD check: same user + same JD fingerprint = same prep.
@@ -135,43 +121,20 @@ export async function createPrep(
     return { error: "Não foi possível salvar seu prep agora. Tente novamente em alguns instantes." };
   }
 
-  // Consumo atômico da cota — o RPC só tem GRANT pro service_role (migration
-  // 0024), por isso vai pelo admin client. Precisa do id da sessão porque o
-  // consumo agora MARCA `credit_consumed_at` NELA (raiz da idempotência da
-  // devolução — ver comentário em `consumePrepCredit`), então o insert tem
-  // que vir primeiro: não dá mais pra consumir antes de a sessão existir.
+  // createPrep não cobra mais nada — a análise ATS é gratuita (ver
+  // `checkQuota` em `src/lib/billing/quota.ts`, cujo próprio comentário diz
+  // que ela "não passa por aqui"). Quem cobra 1 crédito é o
+  // `generateFullPrep` (`src/app/prep/[id]/full-prep-actions.ts`), no botão
+  // "Gerar preparação completa" que aparece depois que o ATS termina — não
+  // existe mais consumo nem devolução de crédito neste caminho.
   //
-  // Isso reabre o risco de linha órfã que a rodada anterior tinha fechado
-  // consumindo antes de inserir — resolvido aqui apagando a linha se o
-  // consumo falhar, em vez de mudar a ordem.
-  const admin = createAdminClient();
-  const consumed = await consumePrepCredit(admin, user.id, session.id, isAdmin);
-  if (!consumed) {
-    const { error: deleteError } = await supabase
-      .from("prep_sessions")
-      .delete()
-      .eq("id", session.id)
-      .eq("user_id", user.id);
-    if (deleteError) {
-      console.error(
-        "[createPrep] delete da linha órfã falhou:",
-        deleteError.message,
-        deleteError.code,
-      );
-    }
-    return { error: "quota_exceeded" };
-  }
-
-  // Fire-and-forget the generation pipeline. Server actions on Railway run
-  // inside the long-lived Node process — the promise survives after this
-  // request returns. The /prep/[id] layout polls generation_status and
-  // renders <PrepSkeleton /> until 'complete', so the UX is "redirect now,
-  // skeleton then result" instead of "spinner blocked for 60s".
-  //
-  // Passa userId/isAdmin pra runGenerationInBackground devolver o crédito
-  // se a geração falhar — ver comentário lá dentro sobre por que isso não
-  // dá pra fazer só no .catch.
-  void runGenerationInBackground(session.id, { userId: user.id, isAdmin });
+  // Fire-and-forget: server actions no Railway rodam dentro do processo Node
+  // de vida longa, então a promise sobrevive depois deste request retornar.
+  // A Tela 1 mostra o CTA "Gerar preparação completa" (`shouldOfferFullPrep`)
+  // assim que a sessão nasce com `generation_status: "pending"` e
+  // `prep_guide: null` — exatamente a assinatura que essa função já
+  // reconhece — sem esperar o ATS terminar.
+  void runAtsForSession(session.id);
 
   redirect(`/prep/${session.id}`);
 }
