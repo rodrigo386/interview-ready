@@ -2,6 +2,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { verifyToken, dispatchEvent } from "./webhook";
 import type { AsaasWebhookEvent } from "./types";
+import { trackServer } from "@/lib/analytics/server";
+
+vi.mock("@/lib/analytics/server", () => ({ trackServer: vi.fn(async () => {}) }));
 
 beforeEach(() => {
   vi.stubEnv("ASAAS_API_KEY", "k");
@@ -9,6 +12,7 @@ beforeEach(() => {
   vi.stubEnv("ASAAS_BASE_URL", "https://sandbox.asaas.com/api/v3");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://x.supabase.co");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
+  vi.mocked(trackServer).mockClear();
 });
 
 describe("verifyToken", () => {
@@ -275,6 +279,53 @@ describe("dispatchEvent", () => {
       expect(result.handled).toBe(true);
       expect(calls.rpc[0].name).toBe("handle_payment_refunded");
       expect(calls.rpc[0].args).toMatchObject({ p_credits: 3 });
+    });
+  });
+
+  describe("checkout_confirmado (Task 9)", () => {
+    it("dispara pra prep_purchase com qty e cents do pagamento", async () => {
+      const { supa } = fakeSupabase();
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_RECEIVED",
+        payment: { id: "p1", customer: "c1", value: 25, status: "RECEIVED",
+          billingType: "PIX", externalReference: "prep:u1:3:abc" },
+      };
+      const result = await dispatchEvent(evt, "evt_confirmado_1", supa as never);
+      expect(result.handled).toBe(true);
+      expect(trackServer).toHaveBeenCalledWith("u1", "checkout_confirmado", {
+        qty: 3,
+        cents: 2500,
+      });
+    });
+
+    it("NÃO dispara pra pro_subscription (tem subscription_started próprio)", async () => {
+      const { supa } = fakeSupabase();
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_RECEIVED",
+        payment: { id: "p2", customer: "c1", value: 30, status: "RECEIVED",
+          billingType: "PIX", externalReference: "pro:u1" },
+      };
+      const result = await dispatchEvent(evt, "evt_confirmado_2", supa as never);
+      expect(result.handled).toBe(true);
+      const confirmadoCalls = vi
+        .mocked(trackServer)
+        .mock.calls.filter(([, event]) => event === "checkout_confirmado");
+      expect(confirmadoCalls).toEqual([]);
+    });
+
+    it("uma falha no trackServer não derruba o processamento do pagamento", async () => {
+      vi.mocked(trackServer).mockImplementationOnce(() => {
+        throw new Error("PostHog indisponível");
+      });
+      const { supa, calls } = fakeSupabase();
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_RECEIVED",
+        payment: { id: "p3", customer: "c1", value: 10, status: "RECEIVED",
+          billingType: "PIX", externalReference: "prep:u1:1:abc" },
+      };
+      const result = await dispatchEvent(evt, "evt_confirmado_3", supa as never);
+      expect(result.handled).toBe(true);
+      expect(calls.rpc[0].name).toBe("handle_payment_received");
     });
   });
 });

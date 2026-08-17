@@ -204,6 +204,30 @@ async function handlePaymentReceived(
     console.warn("[analytics] webhook capture failed:", err);
   }
 
+  // `checkout_confirmado` (Task 9): só pra prep_purchase — pro_subscription já
+  // tem `subscription_started` acima. Ao contrário dos dois `await trackServer`
+  // logo acima (padrão pré-existente nesta função, fora do escopo desta task),
+  // este é deliberadamente fire-and-forget: não fazemos `await`, então o
+  // handler não fica parado esperando a ida-e-volta síncrona que
+  // `trackServer` faz até o PostHog (ela mesma faz `await ph.flush()`
+  // internamente). Isso é seguro aqui porque o processo do PrepaVaga é o
+  // `server.js` do Railway — de vida longa, não serverless — então não há
+  // risco do container morrer antes do flush completar em background.
+  // `trackServer` já embrulha capture+flush num try/catch interno e nunca
+  // rejeita, mas o try/catch síncrono abaixo é defesa extra: telemetria não
+  // pode, sob nenhuma circunstância, derrubar o processamento do pagamento —
+  // nem por uma rejeição da Promise (`.catch`), nem por um throw síncrono.
+  if (ref?.kind === "prep_purchase") {
+    try {
+      void trackServer(userId, "checkout_confirmado", {
+        qty: ref.qty,
+        cents,
+      }).catch((err) => console.warn("[analytics] checkout_confirmado failed:", err));
+    } catch (err) {
+      console.warn("[analytics] checkout_confirmado failed:", err);
+    }
+  }
+
   return { handled: true, userId };
 }
 

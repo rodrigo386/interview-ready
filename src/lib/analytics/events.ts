@@ -68,6 +68,17 @@ export type FunnelEventMap = {
     amount_cents: number;
     billing_method?: string;
   };
+  // Funil do crédito avulso (Task 9, PRE-3): sem estes dois, 3 das 4 métricas
+  // de sucesso da spec ficam inapuráveis. `checkout_iniciado` sai do
+  // CheckoutButton, uma vez por clique (uma intenção de compra) — mesmo que
+  // o useCheckoutFlow precise reenviar o POST por causa de um 422
+  // cpf_required/address_required, o evento não repete por tentativa.
+  // `checkout_confirmado` sai do servidor no webhook (`handlePaymentReceived`),
+  // só quando `externalReference.kind === "prep_purchase"` — assinatura tem
+  // seu próprio `subscription_started` e não deve contar aqui. `qty`/`cents`
+  // seguem os SKUs de `PREP_SKUS` (1→1000, 3→2500, 5→4000 centavos).
+  checkout_iniciado: { qty: number; cents: number };
+  checkout_confirmado: { qty: number; cents: number };
 };
 
 export type FunnelEventName = keyof FunnelEventMap;
