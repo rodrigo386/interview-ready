@@ -130,7 +130,7 @@ language sql
 security definer
 set search_path = public
 as $$
-  update public.profiles set prep_credits = prep_credits + 1 where id = p_user_id;
+  update public.profiles set prep_credits = COALESCE(prep_credits, 0) + 1 where id = p_user_id;
 $$;
 
 REVOKE ALL ON FUNCTION public.refund_prep_credit(uuid) FROM PUBLIC, anon, authenticated;

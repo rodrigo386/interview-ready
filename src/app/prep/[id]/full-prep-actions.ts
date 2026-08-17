@@ -117,12 +117,24 @@ export async function generateFullPrep(
 
   // Consumo atômico da cota — o RPC só tem GRANT pro service_role (migration
   // 0024), por isso vai pelo admin client. Se falhar (sem saldo ou erro),
-  // barra aqui e NÃO dispara a geração: a claim acima já marcou a sessão
-  // como "pending" com o placeholder, então o layout mostra skeleton em vez
-  // do CTA — mas sem crédito consumido, ninguém gera de graça.
+  // barra aqui e NÃO dispara a geração.
   const admin = createAdminClient();
   const consumed = await consumePrepCredit(admin, user.id, isAdmin);
   if (!consumed) {
+    // A claim acima já marcou a sessão como "pending" com o placeholder —
+    // sem desfazer isso, ela fica indistinguível de "gerando de verdade"
+    // pro layout (`isPrepGenerating`) até o timeout de 15min, e só depois
+    // disso mostra "Tentar novamente" em vez do CTA original. Não existe
+    // linha órfã pra apagar aqui (a sessão já existia, com a análise ATS
+    // dentro) — o equivalente é desfazer exatamente os dois campos que a
+    // claim escreveu, voltando pro estado `isClaimedAtsOnlyPrep` exato de
+    // antes. O CTA "Gerar preparação completa" reaparece na hora, e a
+    // pessoa não fica trancada esperando um pipeline que nunca vai rodar.
+    await supabase
+      .from("prep_sessions")
+      .update({ generation_status: "pending", prep_guide: null })
+      .eq("id", sessionId)
+      .eq("user_id", user.id);
     return { error: "quota_exceeded" };
   }
 
@@ -147,9 +159,17 @@ function runGenerationInBackground(
 ): void {
   const t0 = Date.now();
   console.log(`[generateFullPrep] background start sessionId=${sessionId}`);
-  import("@/app/prep/new/generation")
-    .then(({ runGeneration }) => runGeneration(sessionId))
-    .then(async () => {
+  // IIFE + try/catch em vez de .then().catch(): os handlers chamam
+  // createAdminClient(), que LANÇA se SUPABASE_SERVICE_ROLE_KEY faltar. Um
+  // handler assíncrono de .catch() que lança vira unhandled rejection — no
+  // Node isso derruba o processo inteiro (todos os usuários, não só este
+  // request). O try/catch aqui garante que nada escapa desta função, nem o
+  // do bloco catch (que tem seu próprio try/catch pra a tentativa de
+  // devolução em si não poder relançar).
+  void (async () => {
+    try {
+      const { runGeneration } = await import("@/app/prep/new/generation");
+      await runGeneration(sessionId);
       console.log(
         `[generateFullPrep] background done sessionId=${sessionId} ${Date.now() - t0}ms`,
       );
@@ -157,31 +177,50 @@ function runGenerationInBackground(
       // inclusive falha, é gravado como status terminal no banco e a promise
       // resolve normalmente. Por isso o único jeito confiável de saber se
       // esta geração falhou é reler o status gravado, não confiar só no
-      // .catch abaixo (que só pega crash que escapou do try/catch interno).
-      const adminClient = createAdminClient();
-      const { data } = await adminClient
+      // catch abaixo (que só pega crash que escapou do try/catch interno).
+      const admin = createAdminClient();
+      const { data, error: statusReadError } = await admin
         .from("prep_sessions")
         .select("generation_status")
         .eq("id", sessionId)
         .single();
+      if (statusReadError) {
+        // Leitura falhou — não sabemos se falhou de verdade, e "devolver na
+        // dúvida" pode dar crédito de graça pra uma prep que na verdade deu
+        // certo. Loga pra não ficar silencioso; sem devolução automática.
+        console.warn(
+          `[generateFullPrep] status read failed sessionId=${sessionId}: ${statusReadError.message}`,
+        );
+        return;
+      }
       if (
         (data as { generation_status?: string } | null)?.generation_status ===
         "failed"
       ) {
-        await refundPrepCredit(adminClient, refundOnFailure.userId, refundOnFailure.isAdmin);
+        await refundPrepCredit(admin, refundOnFailure.userId, refundOnFailure.isAdmin);
       }
-    })
-    .catch(async (err) => {
+    } catch (err) {
       console.error(
         `[generateFullPrep] background CRASHED sessionId=${sessionId}`,
         err instanceof Error ? err.message : String(err),
       );
       // Crash que escapou do try/catch interno do pipeline — ainda é falha
       // de geração, e quem pagou não recebeu.
-      await refundPrepCredit(
-        createAdminClient(),
-        refundOnFailure.userId,
-        refundOnFailure.isAdmin,
-      );
-    });
+      try {
+        await refundPrepCredit(
+          createAdminClient(),
+          refundOnFailure.userId,
+          refundOnFailure.isAdmin,
+        );
+      } catch (refundErr) {
+        // createAdminClient() pode lançar (env var faltando) — não deixa
+        // escapar daqui, senão a promise da IIFE rejeita sem ninguém
+        // observando e derruba o processo de novo.
+        console.error(
+          `[generateFullPrep] refund itself failed sessionId=${sessionId}`,
+          refundErr instanceof Error ? refundErr.message : String(refundErr),
+        );
+      }
+    }
+  })();
 }
