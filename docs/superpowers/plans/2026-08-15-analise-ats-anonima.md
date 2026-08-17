@@ -1655,3 +1655,7 @@ Depois: `pnpm build` limpo → merge em `main` → confirmar o deploy pelo SHA n
 - [ ] Depois de reivindicar, o perfil ainda tem a preparação grátis vitalícia disponível (`profiles.preps_used_this_month` intocado) — a análise anônima não pode consumir a quota
 - [ ] Cookie `pv_anon_ats` marcado `HttpOnly` no navegador
 - [ ] `ANON_ATS_DAILY_CAP` e `CEREBRAS_API_KEY` configurados no Railway
+
+---
+
+**Nota (2026-08-17):** este plano descreve e foi executado com o Cerebras como motor primário da análise anônima (Task 4 acima). O Cerebras foi removido em 2026-08-16 — os dois modelos que o código chamava (`qwen-3-235b-a22b-instruct-2507`, `llama3.1-8b`) sumiram do catálogo, confirmado por HTTP 404 em produção para os dois. `CEREBRAS_API_KEY` não precisa mais ser configurada no Railway. Este documento fica como registro histórico da decisão tomada em 2026-08-15, não editado além desta nota. Detalhes da remoção em `CLAUDE.md` §10 e em `docs/superpowers/specs/2026-08-15-analise-ats-anonima-design.md`.

@@ -1,6 +1,6 @@
 # CLAUDE.md — PrepaVAGA / InterviewReady
 
-Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-05-26.
+Guia de contexto para o Claude trabalhar nesse repo. Atualizado em 2026-08-16.
 
 ## 0. Estado atual — produção ao vivo
 
@@ -42,7 +42,7 @@ Próximas alavancas pós-launch: Sentry, Plausible, sitemap automático, welcome
 | UI | React 19 + Tailwind v4 (`@import "tailwindcss"` + `@config "../../tailwind.config.ts"`) |
 | Lang | TypeScript strict |
 | DB / Auth / Storage | Supabase (project `reslmtzofwczxrswulca`) |
-| AI — sections + ATS + CV rewrite | **Google Gemini** (`gemini-3.1-flash-lite`) via `@google/generative-ai`. Fallback chain → `gemini-3-flash-preview` → `gemini-3.1-pro-preview` → **Cerebras** (`qwen-3-235b-a22b-instruct-2507` + `llama3.1-8b`) |
+| AI — sections + ATS + CV rewrite | **Google Gemini** (`gemini-3.1-flash-lite`) via `@google/generative-ai`. Fallback chain → `gemini-3-flash-preview` → `gemini-3.1-pro-preview` (era → **Cerebras** até 2026-08-16, removido — ver §10) |
 | AI — Company intel (com Google Search grounding) | **Google Gemini** (`gemini-3.1-flash-lite`) via `@google/generative-ai` |
 | File parse | `pdf-parse@2` (PDF), `mammoth` (DOCX) |
 | PDF gen | `pdf-lib` |
@@ -96,7 +96,6 @@ Defesa em camadas contra abuser persistente que fica abaixo do rate limit horár
 - `IP_HASH_SALT` — opcional, usada para o `ip_hash` de auditoria da ferramenta ATS anônima. Sem ela, `hashIp()` devolve `null` e a coluna grava `null` (melhor do que gravar um hash com salt público, que seria reversível por força bruta no espaço de IPv4). O limite por IP continua funcionando com o IP cru como chave.
 - `ANON_ATS_DAILY_CAP` — opcional, padrão 200. Disjuntor de custo da ferramenta ATS anônima: teto global de análises por dia. Independe do Upstash.
 - `RESEND_API_KEY` — opcional, **scope "Sending Access" apenas** (NÃO confundir com SMTP key do Supabase Auth). Habilita emails transacionais de parceiro (aprovação/rejeição/payout). Sem ele, `sendEmail()` loga warn e segue.
-- `CEREBRAS_API_KEY` — opcional, free tier OpenAI-compatible. Último elo do fallback chain de IA quando todos os Geminis dão 503. Get em https://cloud.cerebras.ai
 - `MOCK_ANTHROPIC=1` — kill switch global de AI nos tests (nome legado, vale para Gemini agora)
 
 ### Setup Asaas (sandbox)
@@ -275,10 +274,10 @@ CSS vars em `globals.css`: `--prep-red/--prep-yellow/--prep-green` (consumidas v
 ### Duplicate prep detection
 - `createPrep` server action hasheia (lowercase + collapse whitespace + SHA256) o JD recebido e compara com preps existentes do user. Match retorna `CreatePrepState.duplicate` em vez de gerar novo. UI renderiza panel amarelo com link "Abrir prep existente →". (PR #23)
 
-### Cerebras como último fallback de IA
-- Quando `gemini-3.1-flash-lite` + `gemini-3-flash-preview` + `gemini-3.1-pro-preview` dão 503/timeout, `callGeminiWithRetry` em `src/lib/ai/gemini.ts` cai pra `tryCerebrasFallback` em `src/lib/ai/cerebras.ts` (Cerebras OpenAI-compatible REST, free tier).
-- Cerebras NÃO suporta `responseSchema` nativo → adicionamos `JSON_STRICT_SUFFIX` no system prompt + `coerceCerebrasOutput()` que preenche IDs faltantes (cards do schema exigem `id`, Qwen-3 às vezes esquece).
-- Sem `CEREBRAS_API_KEY`, fallback é silenciosamente pulado e o erro original do Gemini propaga.
+### Cerebras removido do fallback de IA (2026-08-16)
+- Até 2026-08-16, quando `gemini-3.1-flash-lite` + `gemini-3-flash-preview` + `gemini-3.1-pro-preview` davam 503/timeout, `callGeminiWithRetry` caía pra Cerebras (free tier, OpenAI-compatible REST) como último recurso.
+- **Removido, não consertado.** Os dois modelos que o código chamava (`qwen-3-235b-a22b-instruct-2507` e `llama3.1-8b`) sumiram do catálogo Cerebras — produção via HTTP 404 "Model does not exist or you do not have access to it" pros dois, confirmado também na doc oficial. Era a 3ª vez em 4 meses que o catálogo quebrava nesse repo (antes já tinha sido `gpt-oss-120b`). O modo de falha é silencioso por natureza (só aparece quando os 3 Geminis já falharam em sequência), então o risco de reintroduzir sem perceber que quebrou de novo é real.
+- A cadeia de IA agora termina no último Gemini (`gemini-3.1-pro-preview`); se ele falhar, o erro original propaga pro caller em vez de cair num fallback morto. `src/lib/ai/cerebras.ts` foi apagado.
 
 ### Page-view analytics via client beacon (NÃO middleware)
 - **Histórico:** tentei direct-REST do middleware (Edge não expõe `SUPABASE_SERVICE_ROLE_KEY` no Railway standalone → silent failure) e `runtime: 'nodejs'` no middleware (ignorado no Next 15.5 sem flag experimental).
@@ -379,6 +378,12 @@ Vitest config: `environment: "node"` por default, jsdom só em `src/components/*
 
 Trabalho organizado por bloco temático, mais recente em cima. Detalhes específicos em `git log` — aqui só o "porquê" pra navegação.
 
+**Agosto 2026 — remoção do Cerebras:**
+
+| Bloco | O que saiu |
+|---|---|
+| Cerebras removido do fallback de IA (2026-08-16) | Os dois modelos que `tryCerebrasFallback` chamava (`qwen-3-235b-a22b-instruct-2507`, `llama3.1-8b`) sumiram do catálogo Cerebras — logs do Railway mostravam HTTP 404 "Model does not exist or you do not have access to it" pros dois, e a doc oficial confirma que nenhum existe mais. 3ª quebra de catálogo em 4 meses neste repo (antes: `gpt-oss-120b`). `src/lib/ai/cerebras.ts` apagado, cadeia de IA (`src/lib/ai/gemini.ts`) termina no último Gemini, e a ferramenta ATS anônima (`src/lib/anon-ats/analyze.ts`) chama só Gemini. |
+
 **Maio 2026 — Sprint parceiros + SEO + analytics:**
 
 | Bloco | O que entrou |
@@ -415,7 +420,7 @@ Trabalho organizado por bloco temático, mais recente em cima. Detalhes específ
 - **`server-only` package** não está no `node_modules` real (Next 15 não re-exporta). Vitest aliasa pra stub vazio (`vitest.server-only-stub.ts`). Production funciona porque Next bundler resolve antes.
 - **MCP Supabase frequentemente desconectado** nesta sessão (Anthropic-side). Quando precisar aplicar migration: cole o SQL no Supabase SQL Editor manualmente. CLI `supabase db push` não tá auth'd local (sem `SUPABASE_ACCESS_TOKEN`). DB password também não está no `.env.local`.
 - **Migrations não aplicadas automaticamente:** o CI Supabase Preview tenta rodar mas falha por colisão; aplicação real precisa ser manual. Aplicadas em prod até o momento: 0018 (page_views), 0019 (affiliate_payouts) e **0020 (`salary_benchmark` columns em prep_sessions) — aplicada 2026-06-01 via MCP**. ⚠️ Lição: a ausência da 0020 NÃO era só "Stage Salary falha silenciosamente" — `loadPrepSession` (`src/lib/prep/load-session.ts`) faz SELECT dessas colunas, então sem elas o SELECT inteiro dava erro → `loadPrepSession` retornava null → `/prep/[id]` chamava `notFound()` → **todo prep dava 404 após ser criado** (`createPrep` redirecionava ok porque só faz `.select("id")`). Regra geral: aplicar migration ANTES de deployar código que referencia colunas novas.
-- **Env vars novas pra setar no Railway:** `RESEND_API_KEY` (emails parceiro — sem ele só log warn) e `CEREBRAS_API_KEY` (último fallback de IA — sem ele cadeia para no último Gemini).
+- **Env var nova pra setar no Railway:** `RESEND_API_KEY` (emails parceiro — sem ele só log warn). `CEREBRAS_API_KEY` não existe mais no schema — removida em 2026-08-16 junto com a integração (ver §6 "Cerebras removido do fallback de IA"); se ainda estiver setada no Railway, pode ser removida também, é inerte.
 - **Eventos TRANSFER_* a habilitar no painel Asaas** pra webhook funcionar end-to-end: TRANSFER_DONE, TRANSFER_FAILED, TRANSFER_CANCELLED, TRANSFER_PENDING, TRANSFER_BANK_PROCESSING.
 - **Saldo da conta Asaas:** `payPartnerViaPix` exige saldo na conta Asaas (alimentado pelos pagamentos recebidos). Cada Transfer Pix tem taxa ~R$1,99 deduzida do saldo (parceiro recebe valor cheio). Não saque tudo da conta Asaas antes do dia de pagar parceiros.
 - **Edge middleware no Railway standalone**: env vars privadas (sem prefixo `NEXT_PUBLIC_`) NÃO chegam confiavelmente no Edge runtime. Sintoma: silent failure de qualquer fetch que use `SUPABASE_SERVICE_ROLE_KEY` ou similar a partir do middleware. Workaround: tira lógica que precisa de service-role do middleware e move pra API route Node (foi assim que page-view analytics passou pro client beacon). `runtime: 'nodejs'` no middleware config é silenciosamente ignorado em Next 15.5 sem `experimental.nodeMiddleware: true` — flag ainda não tem typings estáveis.

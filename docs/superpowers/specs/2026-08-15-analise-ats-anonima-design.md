@@ -136,3 +136,7 @@ Medir 30 dias depois de subir, comparando com a linha de base atual (visitante �
 - se a perda no passo de upload diminui para quem entra por esse caminho
 
 O tracking de paths internos foi ligado em 2026-08-15 (commit `88326ff`), então esses passos passam a ser observáveis. Com ~3 visitantes reais por dia, são necessárias 2 a 3 semanas de acúmulo antes de qualquer leitura ter significado.
+
+---
+
+**Nota (2026-08-17):** o parágrafo acima sobre "roda no Cerebras, Gemini no fallback" descreve a decisão tomada em 2026-08-15 com a informação daquele momento — mantido como registro histórico, não editado. Na prática o Cerebras foi removido: os dois modelos que o código chamava (`qwen-3-235b-a22b-instruct-2507`, `llama3.1-8b`) sumiram do catálogo (HTTP 404 em produção para os dois, 3ª quebra de catálogo em 4 meses). A análise anônima roda só no Gemini desde então. Detalhes em `CLAUDE.md` §10 ("Agosto 2026 — remoção do Cerebras").
