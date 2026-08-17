@@ -21,6 +21,7 @@ export default async function MetricsAdminPage({
   const totals = {
     signups: sum(series.signups),
     preps: sum(series.preps),
+    delivered: sum(series.prepsDelivered),
     failed: sum(series.prepsFailed),
     revenueCents: sum(series.revenueCents),
   };
@@ -60,10 +61,21 @@ export default async function MetricsAdminPage({
       </Card>
 
       <Card
-        title="Preps geradas por dia"
-        subtitle={`${totals.preps.toLocaleString("pt-BR")} no período · ${totals.failed.toLocaleString("pt-BR")} falhadas`}
+        title="Análises ATS por dia (grátis)"
+        subtitle={`${totals.preps.toLocaleString("pt-BR")} sessões criadas no período — a análise não custa crédito`}
       >
         <LineChart data={series.preps} />
+      </Card>
+
+      <Card
+        title="Preparações completas entregues por dia (pagas)"
+        subtitle={`${totals.delivered.toLocaleString("pt-BR")} no período · ${
+          totals.preps === 0
+            ? 0
+            : Math.round((totals.delivered / totals.preps) * 100)
+        }% das análises viraram preparação`}
+      >
+        <LineChart data={series.prepsDelivered} color="#2DB87F" />
       </Card>
 
       <Card

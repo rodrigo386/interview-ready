@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildKpis, type OverviewRpc } from "./metrics";
+import { buildKpis, type OverviewRpc, type AnonFunnel } from "./metrics";
 
 /**
  * Base "conta zerada": todo teste parte daqui e sobrescreve só o que importa
@@ -101,5 +101,77 @@ describe("buildKpis", () => {
       (k) => k.label === "Ativação 30d",
     );
     expect(kpi?.value).toBe("38%");
+  });
+
+  describe("separação entre produto grátis e pago", () => {
+    it("não chama de 'prep gerada' o que é análise ATS grátis", () => {
+      // `preps24h` conta linhas de prep_sessions, e toda análise ATS cria
+      // uma. O rótulo antigo somava grátis com pago no mesmo card.
+      const ls = labels(overview({ preps24h: 40 }));
+      expect(ls).toContain("Análises ATS logadas 24h");
+      expect(ls.join(" ")).not.toMatch(/preps geradas/i);
+    });
+
+    it("dá card próprio à preparação paga entregue", () => {
+      const kpi = buildKpis(overview({ successPreps30d: 6 })).find(
+        (k) => k.label === "Preparações entregues 30d",
+      );
+      expect(kpi?.value).toBe("6");
+    });
+
+    it("distingue os dois números quando volume grátis e pago divergem", () => {
+      // O cenário que motivou a mudança: muita análise, pouca conversão.
+      const kpis = buildKpis(overview({ preps24h: 100, successPreps30d: 3 }));
+      const gratis = kpis.find((k) => k.label === "Análises ATS logadas 24h");
+      const pago = kpis.find((k) => k.label === "Preparações entregues 30d");
+      expect(gratis?.value).toBe("100");
+      expect(pago?.value).toBe("3");
+    });
+  });
+
+  describe("funil da ferramenta anônima", () => {
+    const funnel = (patch: Partial<AnonFunnel> = {}): AnonFunnel => ({
+      last24h: 0,
+      last7d: 0,
+      last30d: 0,
+      claimed30d: 0,
+      failed30d: 0,
+      ...patch,
+    });
+
+    it("some inteiro quando a tabela não está disponível", () => {
+      // getAnonFunnel devolve null se a 0023 não foi aplicada — o /admin não
+      // pode quebrar nem mostrar zeros que parecem dado real.
+      const ls = labels(overview()).join(" ");
+      expect(ls).not.toMatch(/anônim/i);
+    });
+
+    it("mostra volume e taxa de conversão em conta", () => {
+      const kpis = buildKpis(
+        overview(),
+        funnel({ last24h: 9, last7d: 40, last30d: 200, claimed30d: 50 }),
+      );
+      expect(kpis.find((k) => k.label === "Análises anônimas 24h")?.value).toBe("9");
+      const conv = kpis.find((k) =>
+        k.label.startsWith("Anônimas viradas em conta"),
+      );
+      expect(conv?.value).toBe("25%");
+      expect(conv?.hint).toBe("50 de 200 reivindicadas");
+    });
+
+    it("não divide por zero num período sem nenhuma análise", () => {
+      const conv = buildKpis(overview(), funnel()).find((k) =>
+        k.label.startsWith("Anônimas viradas em conta"),
+      );
+      expect(conv?.value).toBe("0%");
+    });
+
+    it("só mostra falhas quando existem — zero não é alarme", () => {
+      expect(labels(overview()).join(" ")).not.toMatch(/anônimas falhadas/i);
+      const kpi = buildKpis(overview(), funnel({ failed30d: 4 })).find((k) =>
+        k.label.startsWith("Análises anônimas falhadas"),
+      );
+      expect(kpi?.value).toBe("4");
+    });
   });
 });

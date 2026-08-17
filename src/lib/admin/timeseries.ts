@@ -32,7 +32,14 @@ export async function getHistoricalSeries(days = 30) {
     if (signups.has(day)) signups.set(day, (signups.get(day) ?? 0) + 1);
   }
 
+  // `preps` conta TODA sessão criada — e desde que a análise ATS virou
+  // grátis, a maioria nunca vira preparação paga. Sozinha, a série sobe com
+  // o topo de funil e dá a impressão de que o produto pago cresceu junto.
+  // `prepsDelivered` isola o que consumiu crédito: `generation_status` só
+  // chega a 'complete' quando o pipeline pago roda inteiro. As duas juntas
+  // são o gráfico honesto — volume grátis e conversão paga na mesma escala.
   const preps = dayBuckets(days);
+  const prepsDelivered = dayBuckets(days);
   const prepsFailed = dayBuckets(days);
   for (const r of (prepsRes.data ?? []) as {
     created_at: string;
@@ -40,6 +47,9 @@ export async function getHistoricalSeries(days = 30) {
   }[]) {
     const day = r.created_at.slice(0, 10);
     if (preps.has(day)) preps.set(day, (preps.get(day) ?? 0) + 1);
+    if (r.generation_status === "complete" && prepsDelivered.has(day)) {
+      prepsDelivered.set(day, (prepsDelivered.get(day) ?? 0) + 1);
+    }
     if (r.generation_status === "failed" && prepsFailed.has(day)) {
       prepsFailed.set(day, (prepsFailed.get(day) ?? 0) + 1);
     }
@@ -61,6 +71,7 @@ export async function getHistoricalSeries(days = 30) {
   return {
     signups: toPoints(signups),
     preps: toPoints(preps),
+    prepsDelivered: toPoints(prepsDelivered),
     prepsFailed: toPoints(prepsFailed),
     revenueCents: toPoints(revenue),
   };

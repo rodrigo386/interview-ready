@@ -33,8 +33,13 @@ export default async function UsersAdminPage({
     .order("created_at", { ascending: false });
 
   if (q) query = query.ilike("email", `%${q}%`);
-  if (tier === "free") query = query.eq("tier", "free");
-  if (tier === "pro") query = query.eq("tier", "pro");
+  // Filtrar por `tier` deixou de separar alguém: fora a conta admin, todo
+  // perfil é `free`, e o gate nem lê essa coluna. O corte que importa hoje
+  // é saldo — quem tem crédito comprado e ainda não usou (é a quem se deve
+  // produto) e quem está sem (é a quem se vende). O nome do parâmetro
+  // continua `tier` pra não quebrar link salvo; o valor é que mudou.
+  if (tier === "com-credito") query = query.gt("prep_credits", 0);
+  if (tier === "sem-credito") query = query.eq("prep_credits", 0);
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -80,15 +85,15 @@ export default async function UsersAdminPage({
           />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-text-secondary">
-          Plano
+          Saldo
           <select
             name="tier"
             defaultValue={tier}
             className="rounded-md border border-neutral-200 bg-bg px-3 py-2 text-sm dark:border-zinc-800"
           >
             <option value="">Todos</option>
-            <option value="free">Free</option>
-            <option value="pro">Pro</option>
+            <option value="com-credito">Com crédito</option>
+            <option value="sem-credito">Sem crédito</option>
           </select>
         </label>
         <button
