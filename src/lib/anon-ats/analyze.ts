@@ -54,7 +54,19 @@ export async function analyzeAnonAts(
   if (cerebras.ok) {
     const parsed = safeParseAnalysis(cerebras.text);
     if (parsed) return { ok: true, analysis: parsed, modelUsed: "cerebras" };
-    console.warn("[anon-ats] Cerebras fora do schema, caindo pro Gemini");
+    console.warn(
+      `[anon-ats] fallback pro Gemini: Cerebras respondeu (${cerebras.modelId}) mas o JSON não passou no schema`,
+    );
+  } else {
+    // Distinguir os dois motivos importa: "no_key" é configuração faltando no
+    // Railway (custo pago sem necessidade, conserto de 1 minuto), "all_failed"
+    // é o free tier indisponível de verdade. Sem esta linha os dois casos são
+    // indistinguíveis, e a coluna model_used só diz "gemini" nos dois.
+    console.warn(
+      `[anon-ats] fallback pro Gemini: Cerebras indisponível (${cerebras.reason}${
+        cerebras.detail ? `: ${cerebras.detail}` : ""
+      })`,
+    );
   }
 
   try {
