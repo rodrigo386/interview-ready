@@ -7,7 +7,7 @@ import { buildCvRewritePrompt } from "@/lib/ai/prompts/cv-rewriter";
 import { generateCvRewrite, GeminiResponseError } from "@/lib/ai/gemini";
 import { atsAnalysisSchema } from "@/lib/ai/schemas";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
-import { decideCvRewriteAccess } from "@/lib/prep/cv-rewrite-gate";
+import { decideCvRewriteGeneration } from "@/lib/prep/cv-rewrite-gate";
 
 export async function runCvRewrite(sessionId: string): Promise<void> {
   const supabase = await createClient();
@@ -30,7 +30,7 @@ export async function runCvRewrite(sessionId: string): Promise<void> {
   // Gate de receita (Task 10): o CV reescrito é o entregável pago. Exige
   // `prep_guide` não nulo (preparação completa já gerada), não só ATS
   // completo — ver src/lib/prep/cv-rewrite-gate.ts.
-  const access = decideCvRewriteAccess({
+  const access = decideCvRewriteGeneration({
     prepGuide: session.prep_guide,
     atsStatus: session.ats_status,
   });

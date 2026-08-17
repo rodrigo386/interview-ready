@@ -14,7 +14,7 @@ import { runAtsAnalysis } from "@/app/prep/[id]/ats-actions";
 import { PendingButton } from "@/components/prep/PendingButton";
 import { GenerateFullPrepCta } from "@/components/prep/GenerateFullPrepCta";
 import { shouldOfferFullPrep } from "@/lib/prep/full-prep";
-import { decideCvRewriteAccess } from "@/lib/prep/cv-rewrite-gate";
+import { decideCvRewriteGeneration } from "@/lib/prep/cv-rewrite-gate";
 
 export default async function AtsPage({
   params,
@@ -70,7 +70,7 @@ export default async function AtsPage({
   // o lugar certo pra converter é o `GenerateFullPrepCta` já renderizado
   // acima (`offerFullPrep`) — não duplicamos um segundo CTA de compra aqui,
   // só explicamos que o CV reescrito vem incluso nele.
-  const rewriteAccess = decideCvRewriteAccess({
+  const rewriteAccess = decideCvRewriteGeneration({
     prepGuide: session.prep_guide,
     atsStatus: session.ats_status,
   });
