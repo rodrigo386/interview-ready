@@ -14,14 +14,14 @@ export function LockedFix({ remaining }: { remaining: number }) {
         🔒 Mais {remaining} {plural} esperando
       </p>
       <p className="mt-1 text-sm text-ink-2">
-        Crie sua conta grátis pra ver todos os ajustes da sua análise ATS.
-        Sua análise já fica salva — você não precisa colar nada de novo.
+        Crie sua conta grátis pra ver mais ajustes da sua análise ATS (até 3 no
+        total). Sua análise já fica salva — você não precisa colar nada de novo.
       </p>
       <Link
         href="/signup"
         className="mt-4 inline-flex rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
       >
-        Ver todos os ajustes, sem pagar →
+        Ver mais ajustes, sem pagar →
       </Link>
     </div>
   );
