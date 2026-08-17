@@ -29,10 +29,15 @@ const LEGAL = [
   { href: "/lgpd", label: "LGPD" },
 ];
 
+// "Começar grátis" apontando pro /signup era o último resto do rótulo que
+// prometia algo grátis e entregava um formulário de cadastro. No rodapé isso é
+// link de mapa do site, então o rótulo passa a dizer o que a página faz.
+// "Planos" virou "Preços": não há mais plano nenhum, e sim crédito avulso.
 const CONTA = [
+  { href: "/analise-ats-gratis", label: "Análise ATS grátis" },
   { href: "/login", label: "Entrar" },
-  { href: "/signup", label: "Começar grátis" },
-  { href: "/pricing", label: "Planos" },
+  { href: "/signup", label: "Criar conta" },
+  { href: "/pricing", label: "Preços" },
 ];
 
 export function LandingFooter() {
