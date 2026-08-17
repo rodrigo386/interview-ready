@@ -19,7 +19,8 @@ begin
 end;
 $$;
 
-revoke all on function public.consume_prep_credit(uuid) from public, anon, authenticated;
+REVOKE ALL ON FUNCTION public.consume_prep_credit(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.consume_prep_credit(uuid) TO service_role;
 
 -- 2) Creditar N em vez de 1.
 --
