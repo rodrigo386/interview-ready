@@ -130,10 +130,21 @@ export async function createPrep(
   //
   // Fire-and-forget: server actions no Railway rodam dentro do processo Node
   // de vida longa, então a promise sobrevive depois deste request retornar.
-  // A Tela 1 mostra o CTA "Gerar preparação completa" (`shouldOfferFullPrep`)
-  // assim que a sessão nasce com `generation_status: "pending"` e
-  // `prep_guide: null` — exatamente a assinatura que essa função já
-  // reconhece — sem esperar o ATS terminar.
+  //
+  // A Tela 1 (`/prep/[id]`) renderiza IMEDIATAMENTE — sem esperar nem o ATS
+  // nem nada: `isPrepGenerating` (`src/lib/prep/generation-gate.ts`) só
+  // olha pra `generation_status`/`prep_guide`/`company_intel_status` (não
+  // pra `ats_status`), e a sessão já nasce com a assinatura de "nenhum
+  // pipeline pago disparado" (`generation_status: "pending"` +
+  // `prep_guide: null` + `company_intel_status: null`, este último nunca
+  // tocado por `createPrep`). O CTA "Gerar preparação completa"
+  // (`shouldOfferFullPrep`), por outro lado, só aparece quando o ATS
+  // CONCLUI (`ats_status === "complete"`) — ver `isClaimedAtsOnlyPrep` — de
+  // propósito, pra não distrair do resultado grátis antes dele estar
+  // pronto. Enquanto o ATS roda em background, a Tela 1 mostra o fluxo
+  // normal (FocusCard apontando pra `/ats`); quem entra em `/ats` vê o
+  // estado certo pro que `ats_status` for (skeleton, CTA, resultado ou
+  // falha com retry grátis) — nunca o skeleton de página inteira.
   void runAtsForSession(session.id);
 
   redirect(`/prep/${session.id}`);

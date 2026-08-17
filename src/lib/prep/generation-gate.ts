@@ -5,13 +5,56 @@ export type GenerationGateInput = {
   /**
    * `company_intel_status`. A coluna nasce NULL (migration 0006 não define
    * DEFAULT) e o `runPipeline` a escreve como "researching" no seu PRIMEIRO
-   * update, junto com `generation_status: "generating"`. Ninguém volta a
-   * gravar NULL: nem o `retryPrep`, nem o `rerunCompanyIntel`, nem o próprio
-   * pipeline. É por isso que ela serve de marca durável de "esta linha já
-   * teve um pipeline" — ver `isClaimedAtsOnlyPrep`.
+   * update, junto com `generation_status: "generating"` (a mesma UPDATE —
+   * as duas colunas mudam atomicamente, nunca uma sem a outra). Ninguém
+   * volta a gravar NULL: nem o `retryPrep`, nem o `rerunCompanyIntel`, nem o
+   * próprio pipeline. É por isso que ela serve de marca durável de "esta
+   * linha já teve um pipeline pago" — ver `hasNoPaidPipelineStarted`.
    */
   companyIntelStatus: string | null;
 };
+
+/**
+ * Sinal de "nenhum pipeline PAGO (`runPipeline`/`generation.ts`) foi
+ * disparado nesta sessão ainda" — nem a geração completa de uma prep normal,
+ * nem um `retryPrep`, nem um `generateFullPrep`. Três colunas bastam, e
+ * nenhuma delas é o ATS:
+ *
+ *  - `generation_status === "pending"`: todo pipeline pago, ao rodar, flipa
+ *    isso pra "generating" na MESMA escrita que preenche
+ *    `company_intel_status` (ver o comentário da coluna acima) — então
+ *    "pending" sozinho nunca significa "pipeline rodando", só "não rodou
+ *    ainda" ou "não roda mais".
+ *  - `prep_guide === null`: `generateFullPrep` grava um placeholder NÃO
+ *    nulo ANTES de disparar o pipeline (a claim/cadeado dele) — guide nulo
+ *    descarta esse caminho também.
+ *  - `company_intel_status === null`: a marca durável de "nunca teve
+ *    pipeline pago", explicada no campo acima. `retryPrep` NÃO zera essa
+ *    coluna, então uma prep normal em retry sempre chega aqui com ela
+ *    preenchida (da geração anterior) — é o que separa "sem pipeline" de
+ *    "com pipeline, regenerando".
+ *
+ * `ats_status` propositalmente NÃO entra aqui. Desde a Task 5
+ * (`createPrep` passou a disparar só a análise ATS grátis, nunca mais o
+ * pipeline pago), TODA prep nasce nesse estado — e o ATS pode estar em
+ * qualquer um dos seus 4 estados (null, generating, complete, failed) sem
+ * que isso diga nada sobre o pipeline pago, porque o pipeline pago nem
+ * sabe que o ATS existe. Fazer o gate depender de `ats_status === "complete"`
+ * (como era antes da Task 5, quando só a prep reivindicada do ATS anônimo
+ * nascia neste estado) prendia QUALQUER falha ou demora da análise GRÁTIS
+ * atrás do skeleton de página inteira e, 15 minutos depois, da tela
+ * `PrepFailed` — a tela de falha da geração PAGA, com um botão que ou cobra
+ * (`retryPrep` sem crédito) ou dispara o pipeline completo pago só pra
+ * refazer uma análise grátis. Exatamente o paywall que esta prep ainda nem
+ * decidiu se vai cruzar.
+ */
+export function hasNoPaidPipelineStarted(input: GenerationGateInput): boolean {
+  return (
+    input.generationStatus === "pending" &&
+    input.prepGuide === null &&
+    input.companyIntelStatus === null
+  );
+}
 
 /**
  * Decide se uma prep deve ser tratada como "gerando de verdade" pelo gate do
@@ -19,61 +62,33 @@ export type GenerationGateInput = {
  * skeleton ou a tela de "travou" enquanto isso for `true`.
  *
  * `generation_status` pending/generating normalmente SIGNIFICA "gerando" —
- * mas uma prep reivindicada da ferramenta ATS anônima (`claimAnonAnalysis` /
- * `anonAnalysisToPrepSession` em `src/lib/anon-ats/`) nasce exatamente nesse
- * estado: `generation_status: "pending"`, `prep_guide: null`, e
- * `ats_status: "complete"` (o ATS já veio pronto da análise anônima). Nada
- * dispara o pipeline de geração automaticamente pra essa prep — gerar a
- * preparação completa consome a cota grátis vitalícia da pessoa e tem que
- * ser escolha dela, não algo que acontece sozinho no cadastro.
- *
- * Sem essa distinção, o gate prendia essas preps num skeleton "Gerando seu
- * dossiê" que nunca avançava (nada roda em background pra elas) e, depois
- * de `STALE_GENERATION_MS`, numa mensagem de erro falsa ("a geração
- * travou — instabilidade do serviço de IA") quando na verdade nada tinha
- * rodado — a pessoa que acabou de criar conta pra ver a nota ATS que já
- * tinha ficava sem conseguir vê-la.
+ * mas uma prep sem pipeline pago disparado (ver `hasNoPaidPipelineStarted`)
+ * nasce exatamente nesse estado de "pending" e nada roda em background pra
+ * ela: gerar a preparação completa consome 1 crédito e tem que ser escolha
+ * da pessoa, não algo automático. `ats_status` é irrelevante pra essa
+ * decisão — ver o comentário de `hasNoPaidPipelineStarted`.
  */
 export function isPrepGenerating(input: GenerationGateInput): boolean {
   const { generationStatus } = input;
   if (generationStatus !== "pending" && generationStatus !== "generating") return false;
-  return !isClaimedAtsOnlyPrep(input);
+  return !hasNoPaidPipelineStarted(input);
 }
 
 /**
- * Assinatura exata de uma prep vinda da ferramenta ATS anônima que ainda só
- * tem a etapa 2: `generation_status: "pending"` (nada roda em background pra
- * ela), `prep_guide: null`, `ats_status: "complete"` e — o ponto decisivo —
- * `company_intel_status: null`.
+ * Assinatura de uma prep sem pipeline pago cujo ATS já concluiu — o momento
+ * exato em que faz sentido oferecer "Gerar preparação completa" (que cobra 1
+ * crédito). Ao contrário de `isPrepGenerating`, esta função PRECISA exigir
+ * `ats_status === "complete"`: o CTA pago só deve aparecer depois que a
+ * pessoa já viu o resultado do ATS grátis, nunca antes (distrairia do valor
+ * gratuito que a Task 5 existe pra entregar primeiro) nem durante uma falha
+ * do ATS (que tem seu próprio retry grátis em `/prep/[id]/ats`).
  *
- * O `companyIntelStatus` está aqui porque as três primeiras condições sozinhas
- * NÃO separam a prep reivindicada de uma prep normal em retry:
- * `retryPrep` (`app/prep/new/actions.ts`) grava exatamente
- * `generation_status: "pending"` + `prep_guide: null`, e numa prep em que o
- * usuário já rodou o ATS o `ats_status` também é "complete". O efeito era
- * grave nos dois sentidos: o skeleton sumia durante uma regeração legítima e,
- * pior, aparecia o CTA "Gerar preparação completa" — que COBRA — para quem já
- * tinha pago por aquela prep e só estava tentando de novo. Se o job de retry
- * morresse antes da primeira escrita do pipeline, o convite a pagar de novo
- * ficava permanente.
- *
- * `company_intel_status` resolve isso sem depender de timing: a prep
- * reivindicada é inserida por `anonAnalysisToPrepSession` sem essa coluna
- * (fica NULL) e nunca teve pipeline; qualquer prep que já rodou tem a coluna
- * preenchida desde o primeiro update do `runPipeline`, e nada a devolve pra
- * NULL. "Já teve pipeline" é exatamente a pergunta que precisa ser respondida.
- *
- * Usado em dois lugares que precisam concordar: o gate do layout (não é
- * "gerando", é "esperando a pessoa decidir") e a oferta de gerar a preparação
- * completa (`decideFullPrepGeneration` em `./full-prep`, mais o CTA na tela
- * de ATS e no `StepNotGenerated`). Duplicar a condição faria os dois
- * divergirem no primeiro ajuste.
+ * Usada só por `decideFullPrepGeneration` (`./full-prep.ts`) — o gate do
+ * layout usa `hasNoPaidPipelineStarted` direto, sem a exigência de ATS
+ * completo. As duas funções DIVERGEM de propósito desde a Task 5: o layout
+ * só precisa saber "há pipeline pago rodando?" (resposta nunca depende do
+ * ATS), enquanto o CTA precisa saber "o ATS já terminou?" também.
  */
 export function isClaimedAtsOnlyPrep(input: GenerationGateInput): boolean {
-  return (
-    input.generationStatus === "pending" &&
-    input.prepGuide === null &&
-    input.atsStatus === "complete" &&
-    input.companyIntelStatus === null
-  );
+  return hasNoPaidPipelineStarted(input) && input.atsStatus === "complete";
 }
