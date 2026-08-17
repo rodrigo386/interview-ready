@@ -99,8 +99,7 @@ export async function reconcileBillingFromAsaas(
       });
       let added = 0;
       for (const p of oneOffs) {
-        const credited = await insertOneOffIfNew(supabase, userId, p);
-        if (credited) added += 1;
+        added += await creditOneOffIfNew(supabase, userId, p);
       }
       if (added > 0) changes.creditsAdded = added;
     } catch (err) {
@@ -134,33 +133,52 @@ async function upsertProSubscriptionPayment(
   );
 }
 
-async function insertOneOffIfNew(
+/**
+ * Concede os créditos de UM pagamento avulso, pelo MESMO caminho do webhook
+ * (`handle_payment_received`, migration 0024). Devolve quantos créditos
+ * foram de fato concedidos — 0 quando este pagamento já tinha sido creditado.
+ *
+ * Duas correções em relação à versão anterior, que fazia insert-e-credita à
+ * mão aqui:
+ *
+ *  1. A QUANTIDADE. Creditava `+1` fixo, ignorando o `qty` que este mesmo
+ *     arquivo já parseava do `externalReference` para decidir quais
+ *     pagamentos processar. Quem comprava o pacote de 5 e voltava do
+ *     checkout por `/dashboard?billing=ok` (o caminho feliz de TODA compra)
+ *     podia receber 1 crédito.
+ *  2. A IDEMPOTÊNCIA. A proteção era o INSERT falhar com 23505 — o que
+ *     dedupa reconcile contra reconcile, mas NÃO reconcile contra webhook:
+ *     na ordem "webhook primeiro" o INSERT falhava e o crédito do webhook
+ *     valia; na ordem inversa, os dois creditavam e somavam. Agora o
+ *     cadeado é `payments.credits_granted_at`, compartilhado pelos dois
+ *     caminhos, então a ordem deixou de importar.
+ *
+ * Exige o client de service-role (o RPC só tem GRANT para `service_role`) —
+ * os dois call sites de `reconcileBillingFromAsaas` já passam o admin client.
+ */
+async function creditOneOffIfNew(
   supabase: SupabaseClient,
   userId: string,
   p: AsaasPayment,
-): Promise<boolean> {
-  const insertRes = await supabase.from("payments").insert({
-    user_id: userId,
-    asaas_payment_id: p.id,
-    kind: "prep_purchase",
-    amount_cents: Math.round(p.value * 100),
-    status: p.status === "CONFIRMED" ? "confirmed" : "received",
-    billing_method: p.billingType,
-    paid_at: p.paymentDate ?? new Date().toISOString(),
-    raw_payload: p as unknown,
+): Promise<number> {
+  const qty = parseExternalReference(p.externalReference);
+  const credits = qty?.kind === "prep_purchase" ? qty.qty : 1;
+  const { data, error } = await supabase.rpc("handle_payment_received", {
+    p_user_id: userId,
+    p_payment_id: p.id,
+    p_kind: "prep_purchase",
+    p_amount_cents: Math.round(p.value * 100),
+    p_billing_method: p.billingType,
+    p_paid_at: p.paymentDate ?? new Date().toISOString(),
+    p_raw_payload: p as unknown,
+    p_next_due_date: null,
+    p_credits: credits,
   });
-  if (insertRes.error) {
-    // 23505 = unique violation on asaas_payment_id → already credited.
-    return false;
+  if (error) {
+    console.warn(`[reconcile] handle_payment_received falhou pro pagamento ${p.id}: ${error.message}`);
+    return 0;
   }
-  const { data: prof } = await supabase
-    .from("profiles")
-    .select("prep_credits")
-    .eq("id", userId)
-    .single();
-  const credits = ((prof as { prep_credits?: number } | null)?.prep_credits ?? 0) + 1;
-  await supabase.from("profiles").update({ prep_credits: credits }).eq("id", userId);
-  return true;
+  return typeof data === "number" ? data : 0;
 }
 
 async function fetchAsaas<T>(path: string): Promise<T> {

@@ -71,7 +71,56 @@ $$;
 REVOKE ALL ON FUNCTION public.consume_prep_credit(uuid, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.consume_prep_credit(uuid, uuid) TO service_role;
 
--- 2) Creditar N em vez de 1.
+-- 1.5) Registro do ciclo de vida do crédito NO PRÓPRIO PAGAMENTO.
+--
+-- Mesmo remédio do bloco 0, um nível acima: lá o problema era "esta SESSÃO
+-- já teve o crédito devolvido?", aqui é "este PAGAMENTO já foi creditado?".
+-- O `ON CONFLICT (asaas_payment_id)` do bloco 2 sempre dedupou a LINHA de
+-- `payments`, mas o `UPDATE profiles SET prep_credits = ... + p_credits`
+-- logo em seguida era INCONDICIONAL — duas entradas para o MESMO pagamento
+-- creditavam duas vezes. E existem duas entradas de sobra:
+--
+--   (a) o webhook do Asaas está configurado com `PAYMENT_CONFIRMED` E
+--       `PAYMENT_RECEIVED`, e o Asaas emite os dois para o mesmo pagamento
+--       (cartão: CONFIRMED na autorização, RECEIVED na liquidação). São
+--       eventos DIFERENTES, com `asaas_event_id` diferente, então a
+--       idempotência por evento de `subscription_events` não pega nada;
+--   (b) `reconcileBillingFromAsaas` (`src/lib/billing/reconcile.ts`), que
+--       roda no retorno do checkout (`/dashboard?billing=ok`), credita o
+--       mesmo pagamento que o webhook credita — em qualquer ordem.
+--
+-- Com estas colunas a concessão vira idempotente POR PAGAMENTO: o UPDATE
+-- condicional em `payments` é o cadeado (mesmo espírito de
+-- `consume_prep_credit` e `refund_prep_credit`), e a marca é gravada no
+-- MESMO UPDATE que decide creditar. Quem chegar depois afeta 0 linhas e
+-- devolve 0 — não importa quantas vezes, nem por qual caminho.
+--
+-- `credits_granted` guarda QUANTOS créditos aquele pagamento concedeu, para
+-- o estorno devolver exatamente isso (um pacote de 5 estornado tira 5, não
+-- 1) sem depender de reparsear o `externalReference` no caminho de saída.
+alter table public.payments
+  add column if not exists credits_granted    integer not null default 0,
+  add column if not exists credits_granted_at timestamptz null,
+  add column if not exists credits_revoked_at timestamptz null;
+
+-- Backfill: pagamentos que JÁ passaram pelo `handle_payment_received` antigo
+-- já tiveram o crédito concedido pela versão incondicional. Sem esta marca,
+-- a primeira execução do reconcile depois do deploy varre os últimos 20
+-- pagamentos do cliente, vê `credits_granted_at IS NULL` e credita tudo de
+-- novo. Todo pagamento avulso anterior a esta branch valia 1 (o formato
+-- `prep:<uid>:<qtd>:<nano>` nasceu aqui), daí o literal.
+update public.payments
+   set credits_granted_at = coalesce(paid_at, created_at, now()),
+       credits_granted    = case when kind = 'prep_purchase' then 1 else 0 end
+ where credits_granted_at is null
+   and status in ('confirmed', 'received', 'refunded');
+
+update public.payments
+   set credits_revoked_at = coalesce(paid_at, created_at, now())
+ where status = 'refunded'
+   and credits_revoked_at is null;
+
+-- 2) Creditar N em vez de 1, no máximo UMA vez por pagamento.
 --
 -- ATENÇÃO: `CREATE OR REPLACE FUNCTION` com lista de argumentos DIFERENTE
 -- cria uma SOBRECARGA nova, não substitui a antiga. Com DEFAULT, a chamada
@@ -80,6 +129,14 @@ GRANT EXECUTE ON FUNCTION public.consume_prep_credit(uuid, uuid) TO service_role
 -- confirmado falharia. Por isso a antiga é derrubada explicitamente.
 drop function if exists public.handle_payment_received(
   uuid, text, text, integer, text, timestamptz, jsonb, date
+);
+-- E a de 9 argumentos também: ela nasceu nesta mesma migration devolvendo
+-- `void`, e `CREATE OR REPLACE` NÃO muda tipo de retorno ("cannot change
+-- return type of existing function"). Sem este drop, reaplicar a migration
+-- por cima de uma versão anterior dela mesma falha — e o Supabase Preview
+-- re-roda tudo do zero a cada rebase.
+drop function if exists public.handle_payment_received(
+  uuid, text, text, integer, text, timestamptz, jsonb, date, integer
 );
 
 create or replace function public.handle_payment_received(
@@ -92,11 +149,13 @@ create or replace function public.handle_payment_received(
   p_raw_payload    jsonb,
   p_next_due_date  date DEFAULT NULL,
   p_credits        integer DEFAULT 1
-) returns void
+) returns integer
 language plpgsql
 security definer
 set search_path = public
 as $$
+DECLARE
+  v_afetadas int;
 BEGIN
   INSERT INTO payments (
     user_id, asaas_payment_id, kind, amount_cents, status,
@@ -113,17 +172,35 @@ BEGIN
     raw_payload    = EXCLUDED.raw_payload;
 
   IF p_kind = 'pro_subscription' THEN
+    -- Assinatura não concede crédito, e este UPDATE é idempotente por
+    -- natureza (grava um estado, não incrementa um saldo).
     UPDATE profiles
        SET tier = 'pro',
            subscription_status = 'active',
            subscription_renews_at = p_next_due_date
      WHERE id = p_user_id;
-  ELSE
-    -- prep_purchase: credita a quantidade comprada, atômico.
-    UPDATE profiles
-       SET prep_credits = COALESCE(prep_credits, 0) + p_credits
-     WHERE id = p_user_id;
+    RETURN 0;
   END IF;
+
+  -- prep_purchase: O CADEADO. Só concede se este pagamento nunca concedeu.
+  -- O `INSERT ... ON CONFLICT` acima já segurou o lock desta linha até o
+  -- fim da transação, então uma segunda chamada concorrente para o mesmo
+  -- `asaas_payment_id` só chega aqui depois do commit da primeira — e aí
+  -- encontra `credits_granted_at` preenchido e afeta 0 linhas.
+  UPDATE payments
+     SET credits_granted_at = now(),
+         credits_granted    = p_credits
+   WHERE asaas_payment_id = p_payment_id
+     AND credits_granted_at IS NULL;
+  GET DIAGNOSTICS v_afetadas = row_count;
+  IF v_afetadas = 0 THEN
+    RETURN 0;
+  END IF;
+
+  UPDATE profiles
+     SET prep_credits = COALESCE(prep_credits, 0) + p_credits
+   WHERE id = p_user_id;
+  RETURN p_credits;
 END;
 $$;
 
@@ -134,19 +211,29 @@ GRANT EXECUTE ON FUNCTION public.handle_payment_received(
   uuid, text, text, integer, text, timestamptz, jsonb, date, integer
 ) TO service_role;
 
--- 3) Estornar N. Mesma armadilha de sobrecarga.
+-- 3) Estornar exatamente o que foi concedido, no máximo uma vez. Mesma
+--    armadilha de sobrecarga, e a mesma troca de `void` por `integer`.
 drop function if exists public.handle_payment_refunded(uuid, text, text);
+drop function if exists public.handle_payment_refunded(uuid, text, text, integer);
 
 create or replace function public.handle_payment_refunded(
   p_user_id    uuid,
   p_payment_id text,
   p_kind       text,
+  -- LEGADO, IGNORADO DE PROPÓSITO. A quantidade a estornar vem de
+  -- `payments.credits_granted` — o que ESTE pagamento de fato concedeu —,
+  -- nunca de um reparse do `externalReference` no caminho de saída. Se um
+  -- pagamento nunca concedeu nada (estorno de cobrança que nunca foi
+  -- creditada), o estorno não pode tirar crédito do saldo. Mantido na
+  -- assinatura só para não quebrar o call site do webhook.
   p_credits    integer DEFAULT 1
-) returns void
+) returns integer
 language plpgsql
 security definer
 set search_path = public
 as $$
+DECLARE
+  v_creditos int;
 BEGIN
   UPDATE payments
      SET status = 'refunded'
@@ -157,11 +244,29 @@ BEGIN
        SET tier = 'free',
            subscription_status = 'expired'
      WHERE id = p_user_id;
-  ELSIF p_kind = 'prep_purchase' THEN
-    UPDATE profiles
-       SET prep_credits = GREATEST(0, COALESCE(prep_credits, 0) - p_credits)
-     WHERE id = p_user_id;
+    RETURN 0;
   END IF;
+
+  -- Cadeado simétrico ao do bloco 2: só tira do saldo se este pagamento
+  -- tinha de fato concedido (`credits_granted_at IS NOT NULL`) e ainda não
+  -- tinha sido estornado (`credits_revoked_at IS NULL`), e a marca é
+  -- gravada no MESMO UPDATE que decide tirar. `RETURNING ... INTO` deixa
+  -- `v_creditos` nulo quando 0 linhas são afetadas.
+  UPDATE payments
+     SET credits_revoked_at = now()
+   WHERE asaas_payment_id = p_payment_id
+     AND credits_granted_at IS NOT NULL
+     AND credits_revoked_at IS NULL
+  RETURNING credits_granted INTO v_creditos;
+
+  IF v_creditos IS NULL THEN
+    RETURN 0;
+  END IF;
+
+  UPDATE profiles
+     SET prep_credits = GREATEST(0, COALESCE(prep_credits, 0) - v_creditos)
+   WHERE id = p_user_id;
+  RETURN v_creditos;
 END;
 $$;
 

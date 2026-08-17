@@ -121,10 +121,19 @@ export async function dispatchEvent(
 // transaction. Atomicity prevents the historical "user paid but tier
 // stayed free" failure mode where the connection died between two writes.
 //
-// They also use atomic UPDATE expressions for prep_credits
-// (`prep_credits + 1` instead of read-modify-write), eliminating a race
-// between concurrent webhooks that idempotency-by-event-id alone doesn't
-// fully cover.
+// They also use atomic UPDATE expressions for prep_credits (instead of
+// read-modify-write), eliminating a race between concurrent webhooks that
+// idempotency-by-event-id alone doesn't fully cover.
+//
+// A idempotência por EVENTO (`subscription_events.asaas_event_id`) nunca
+// cobriu concessão de crédito, e isso é estrutural: o Asaas emite
+// `PAYMENT_CONFIRMED` E `PAYMENT_RECEIVED` para o mesmo pagamento — dois
+// eventos distintos, dois ids distintos, os dois passando pelo insert de
+// idempotência sem colidir — e o `reconcileBillingFromAsaas` credita o mesmo
+// pagamento por fora do webhook. Quem garante "no máximo uma concessão por
+// pagamento" é o cadeado `payments.credits_granted_at` dentro do
+// `handle_payment_received` (migration 0024, bloco 2), compartilhado pelos
+// dois caminhos. As chamadas abaixo podem repetir à vontade.
 
 async function handlePaymentReceived(
   evt: AsaasWebhookEvent,
@@ -258,6 +267,10 @@ async function handlePaymentRefunded(
   const p = evt.payment!;
   const ref = parseExternalReference(p.externalReference);
   const kind = ref?.kind ?? null;
+  // `p_credits` é ignorado pelo RPC desde a migration 0024: a quantidade a
+  // estornar é a que ESTE pagamento de fato concedeu (`credits_granted`),
+  // não a que o `externalReference` diz que foi comprada. Um estorno de
+  // cobrança que nunca chegou a creditar não pode tirar crédito do saldo.
   const credits = ref?.kind === "prep_purchase" ? ref.qty : 1;
   const { error } = await supabase.rpc("handle_payment_refunded", {
     p_user_id: userId,
