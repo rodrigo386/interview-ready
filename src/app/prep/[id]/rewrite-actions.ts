@@ -7,6 +7,7 @@ import { buildCvRewritePrompt } from "@/lib/ai/prompts/cv-rewriter";
 import { generateCvRewrite, GeminiResponseError } from "@/lib/ai/gemini";
 import { atsAnalysisSchema } from "@/lib/ai/schemas";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
+import { decideCvRewriteAccess } from "@/lib/prep/cv-rewrite-gate";
 
 export async function runCvRewrite(sessionId: string): Promise<void> {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export async function runCvRewrite(sessionId: string): Promise<void> {
   const { data: session, error } = await supabase
     .from("prep_sessions")
     .select(
-      "id, user_id, cv_text, job_description, job_title, company_name, ats_status, ats_analysis, cv_rewrite_status",
+      "id, user_id, cv_text, job_description, job_title, company_name, ats_status, ats_analysis, cv_rewrite_status, prep_guide",
     )
     .eq("id", sessionId)
     .eq("user_id", user.id)
@@ -26,7 +27,14 @@ export async function runCvRewrite(sessionId: string): Promise<void> {
 
   if (error || !session) redirect("/dashboard");
 
-  if (session.ats_status !== "complete") {
+  // Gate de receita (Task 10): o CV reescrito é o entregável pago. Exige
+  // `prep_guide` não nulo (preparação completa já gerada), não só ATS
+  // completo — ver src/lib/prep/cv-rewrite-gate.ts.
+  const access = decideCvRewriteAccess({
+    prepGuide: session.prep_guide,
+    atsStatus: session.ats_status,
+  });
+  if (access.kind !== "allowed") {
     revalidatePath(`/prep/${sessionId}`);
     return;
   }

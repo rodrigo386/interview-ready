@@ -14,6 +14,7 @@ import { runAtsAnalysis } from "@/app/prep/[id]/ats-actions";
 import { PendingButton } from "@/components/prep/PendingButton";
 import { GenerateFullPrepCta } from "@/components/prep/GenerateFullPrepCta";
 import { shouldOfferFullPrep } from "@/lib/prep/full-prep";
+import { decideCvRewriteAccess } from "@/lib/prep/cv-rewrite-gate";
 
 export default async function AtsPage({
   params,
@@ -64,6 +65,16 @@ export default async function AtsPage({
       : null;
   const validRewrite = rewriteParsed?.success ? rewriteParsed.data : null;
 
+  // Gate de receita (Task 10): o CTA de reescrita só aparece se a action vai
+  // aceitar o clique. Sem `prep_guide` (preparação completa ainda não paga),
+  // o lugar certo pra converter é o `GenerateFullPrepCta` já renderizado
+  // acima (`offerFullPrep`) — não duplicamos um segundo CTA de compra aqui,
+  // só explicamos que o CV reescrito vem incluso nele.
+  const rewriteAccess = decideCvRewriteAccess({
+    prepGuide: session.prep_guide,
+    atsStatus: session.ats_status,
+  });
+
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between gap-4">
@@ -107,8 +118,13 @@ export default async function AtsPage({
           <CvRewriteFailed sessionId={session.id} errorMessage={session.cv_rewrite_error ?? null} />
         ) : session.cv_rewrite_status === "complete" && validRewrite ? (
           <CvRewriteView rewrite={validRewrite} sessionId={session.id} />
-        ) : analysis.top_fixes.length > 0 ? (
+        ) : analysis.top_fixes.length > 0 && rewriteAccess.kind === "allowed" ? (
           <CvRewriteCta sessionId={session.id} />
+        ) : analysis.top_fixes.length > 0 ? (
+          <p className="mt-8 text-sm text-ink-3">
+            O currículo reescrito faz parte da preparação completa — gere a
+            preparação completa acima para desbloquear.
+          </p>
         ) : null}
       </section>
     </div>
