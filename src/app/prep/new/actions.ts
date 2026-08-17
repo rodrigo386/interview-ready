@@ -10,6 +10,7 @@ import {
   refundPrepCredit,
   creditPrepRefundUnconditional,
 } from "@/lib/billing/consume";
+import { shouldChargeRetry, shouldRefundOnDiscard } from "@/lib/billing/credit-lifecycle";
 import { classifyRetryRecovery } from "@/lib/prep/retry-gate";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { createPrepInputSchema } from "./schema";
@@ -288,30 +289,40 @@ export type RetryPrepState = {
 
 /**
  * DECISÃO DO DONO DO PRODUTO (revoga a decisão original desta task, que
- * dizia "retryPrep não consome cota"): retry agora consome 1 crédito, igual
- * createPrep e generateFullPrep — MAS só quando o crédito da tentativa
- * anterior já voltou pro saldo. Ver `classifyRetryRecovery` em
- * `src/lib/prep/retry-gate.ts`: `generation_status === "failed"` significa
- * que `runGenerationInBackground` já devolveu; `pending`/`generating`
- * travado além do stale threshold significa que o processo que devolveria
- * morreu junto — o crédito continua gasto e sem volta, cobrar de novo
- * pagaria duas vezes pela mesma preparação que nunca chegou.
+ * dizia "retryPrep não consome cota"): retry consome 1 crédito, igual
+ * createPrep e generateFullPrep — MAS só quando não há crédito pendente de
+ * uso nesta sessão.
  *
- * Motivo original da mudança: com a devolução automática em falha, manter o
- * retry SEMPRE gratuito abria compensação dupla — falha devolve o crédito,
- * e "Tentar novamente" gerava de novo sem cobrar nada, repetível à vontade.
- * O modelo correto é "a pessoa paga uma vez por cada preparação que
- * efetivamente recebe": falhou (com devolução), tenta de novo, paga de
- * novo; travou (sem devolução), tenta de novo, não paga de novo — já pagou.
+ * Modelo econômico: a pessoa paga uma vez por cada preparação que
+ * efetivamente recebe. Nem duas vezes, nem zero.
  *
- * `classifyRetryRecovery` reavalia staleness AQUI, no servidor, em vez de
- * confiar que "pending"/"generating" só chega até aqui já travado. Essa
- * premissa (do layout, que só mostra `PrepFailed` quando `isGenerationStale`
- * já deu true) quebra depois de um retry bem sucedido: a linha volta a
- * "pending" FRESCO, e uma segunda aba com o `PrepFailed` antigo ainda
- * montado chama `retryPrep` de novo — sem reavaliar, seria classificada
- * como zumbi e dispararia um SEGUNDO runner correndo em paralelo com o
- * primeiro, com `prep_guide` sendo apagado no meio da execução dele.
+ * DE ONDE VEM A DECISÃO DE COBRAR: das colunas `credit_consumed_at` /
+ * `credit_refunded_at` da própria sessão (`shouldChargeRetry` em
+ * `src/lib/billing/credit-lifecycle.ts`), NÃO do `generation_status`. As três
+ * rodadas anteriores derivavam a cobrança do status e cada uma fechou um
+ * buraco abrindo o inverso, porque o status é volátil (reescrito a cada
+ * tentativa) e não sabe nada sobre dinheiro:
+ *
+ *  - status "failed" cuja devolução não aconteceu (RPC com erro, processo
+ *    morto logo depois de gravar o status) era classificado como
+ *    "failed_refunded" e cobrado de novo — a pessoa pagava duas vezes pela
+ *    preparação que nunca recebeu;
+ *  - linha "pending" cujo processo morreu ANTES do consumo (entre o INSERT e
+ *    o RPC) era tratada como zumbi já pago e regerada de graça.
+ *
+ * Nos dois casos as colunas já continham a resposta certa. `credit_consumed_at`
+ * nulo = nunca pagou, cobra; `credit_refunded_at` preenchido = o crédito
+ * voltou, esta é uma preparação nova, cobra; consumido e não devolvido = já
+ * pagou e não recebeu, NÃO cobra.
+ *
+ * `classifyRetryRecovery` (`src/lib/prep/retry-gate.ts`) continua respondendo
+ * a outra pergunta, sobre a GERAÇÃO e não sobre o crédito: dá pra reiniciar
+ * agora? Ele reavalia staleness aqui no servidor em vez de confiar que
+ * "pending"/"generating" só chega até aqui já travado — essa premissa (do
+ * layout, que só mostra `PrepFailed` quando `isGenerationStale` já deu true)
+ * quebra depois de um retry bem sucedido: a linha volta a "pending" FRESCO, e
+ * uma segunda aba com o `PrepFailed` antigo ainda montado chama `retryPrep`
+ * de novo, disparando um SEGUNDO runner em paralelo com o primeiro.
  */
 export async function retryPrep(
   id: string,
@@ -326,7 +337,9 @@ export async function retryPrep(
 
   const { data: session, error } = await supabase
     .from("prep_sessions")
-    .select("id, user_id, generation_status, error_message, prep_guide, updated_at, created_at")
+    .select(
+      "id, user_id, generation_status, error_message, prep_guide, updated_at, created_at, credit_consumed_at, credit_refunded_at",
+    )
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -367,7 +380,12 @@ export async function retryPrep(
   const p = billingProfile as { prep_credits?: number; is_admin?: boolean } | null;
   const isAdmin = p?.is_admin === true;
 
-  const shouldCharge = recovery.kind === "failed_refunded";
+  // A decisão de cobrar sai das colunas de crédito da sessão, não do
+  // `generation_status` — ver o docblock acima e `credit-lifecycle.ts`.
+  const shouldCharge = shouldChargeRetry({
+    creditConsumedAt: session.credit_consumed_at,
+    creditRefundedAt: session.credit_refunded_at,
+  });
   if (shouldCharge) {
     // Checagem ANTES de tocar a linha — igual createPrep/generateFullPrep:
     // sem saldo, sai sem efeito colateral nenhum.
@@ -376,6 +394,15 @@ export async function retryPrep(
       return { error: "quota_exceeded" };
     }
   }
+
+  // O ciclo de vida da geração (`generation_status`, `error_message`,
+  // `prep_guide`) não tem mais GRANT de UPDATE pra `authenticated`
+  // (migration 0024, bloco 6): com ele, qualquer pessoa logada marcava a
+  // própria prep entregue como "failed" pela anon key e depois pedia
+  // devolução. Estas escritas passam pelo service-role client — a posse
+  // continua garantida pelo `.eq("user_id", user.id)` explícito, que antes
+  // era redundante com a RLS e agora é a barreira.
+  const admin = createAdminClient();
 
   // Cadeado: o reset só afeta a linha se `generation_status` ainda for
   // exatamente o que acabamos de ler. Sem isso, dois submits do mesmo botão
@@ -386,7 +413,7 @@ export async function retryPrep(
   // primeiro runner não devolvia nada: crédito consumido, nada entregue,
   // sem devolução. Quem perde a corrida (0 linhas afetadas) só volta pra
   // tela — a regeração de quem ganhou já está em andamento.
-  const { data: claimed, error: resetError } = await supabase
+  const { data: claimed, error: resetError } = await admin
     .from("prep_sessions")
     .update({
       generation_status: "pending",
@@ -409,7 +436,6 @@ export async function retryPrep(
   }
 
   if (shouldCharge) {
-    const admin = createAdminClient();
     const consumed = await consumePrepCredit(admin, user.id, id, isAdmin);
     if (!consumed) {
       // Desfaz o cadeado: sem isso a sessão fica travada em "pending" com
@@ -418,7 +444,7 @@ export async function retryPrep(
       // Condicionado ao "pending" que o cadeado acabou de gravar, e com o
       // erro checado — reverter às cegas foi exatamente o Minor D desta
       // mesma rodada de revisão (achado no `generateFullPrep`).
-      const { error: revertError } = await supabase
+      const { error: revertError } = await admin
         .from("prep_sessions")
         .update({
           generation_status: session.generation_status,
@@ -445,6 +471,12 @@ export async function retryPrep(
   redirect(`/prep/${id}`);
 }
 
+/**
+ * "Excluir e começar de novo" da tela de falha. Só descarta sessões que a
+ * geração não entregou — e devolve o crédito exatamente quando ele está
+ * pendente de uso (consumido e não devolvido), pela mesma fonte de verdade do
+ * `retryPrep`: as colunas de crédito da linha que este DELETE apagou.
+ */
 export async function deleteFailedPrep(id: string) {
   const supabase = await createClient();
   const {
@@ -470,6 +502,19 @@ export async function deleteFailedPrep(id: string) {
     // Geração genuinamente em andamento — apagar por baixo do pipeline que
     // já está escrevendo nela corromperia a execução dele. Recusa, igual
     // retryPrep.
+    redirect(`/prep/${id}`);
+  }
+  if (recovery.kind === "not_retryable") {
+    // `complete`: a preparação FOI ENTREGUE. Este caminho não pode apagá-la,
+    // porque uma prep completa tem exatamente o mesmo par de colunas de um
+    // crédito pendente (`credit_consumed_at` preenchido, `credit_refunded_at`
+    // nulo) — apagar aqui devolveria o dinheiro de algo que a pessoa recebeu.
+    // Cenário sem nenhum hack: aba A parada na tela de falha, aba B clica em
+    // "tentar novamente" (cobra 1) e desta vez dá certo; a aba A ainda mostra
+    // o botão de excluir. O `retryPrep` já tinha a guarda equivalente.
+    //
+    // Excluir uma prep entregue continua possível pelo caminho normal
+    // (`deletePrep`, na zona de perigo da Tela 1), que não mexe em crédito.
     redirect(`/prep/${id}`);
   }
 
@@ -507,7 +552,12 @@ export async function deleteFailedPrep(id: string) {
     | { credit_consumed_at: string | null; credit_refunded_at: string | null }
     | undefined;
 
-  if (deletedRow?.credit_consumed_at && !deletedRow.credit_refunded_at) {
+  if (
+    shouldRefundOnDiscard({
+      creditConsumedAt: deletedRow?.credit_consumed_at,
+      creditRefundedAt: deletedRow?.credit_refunded_at,
+    })
+  ) {
     const { data: billingProfile } = await supabase
       .from("profiles")
       .select("is_admin")

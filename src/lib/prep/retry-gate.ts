@@ -1,8 +1,7 @@
 import { isGenerationStale } from "./generation-stale";
 
 export type RetryRecovery =
-  | { kind: "failed_refunded" }
-  | { kind: "zombie_unrefunded" }
+  | { kind: "retryable" }
   | { kind: "still_running" }
   | { kind: "not_retryable" };
 
@@ -14,45 +13,40 @@ export type RetryRecoveryInput = {
 };
 
 /**
- * Decide, a partir do estado JÁ LIDO do banco no momento da chamada, se o
- * crédito gasto pela tentativa anterior já voltou pro saldo — e portanto se
- * um `retryPrep`/`deleteFailedPrep` deve cobrar/devolver
- * (`src/app/prep/new/actions.ts`).
+ * Decide se a geração desta sessão PODE ser reiniciada ou descartada agora —
+ * e só isso. Quem decide dinheiro é `src/lib/billing/credit-lifecycle.ts`, a
+ * partir de `credit_consumed_at`/`credit_refunded_at`.
  *
- * "failed": o pipeline (`runPipeline`, que nunca lança) ou o catch de
- * `runGenerationInBackground` já correu até o fim e já chamou
- * `refundPrepCredit` (ver `src/lib/billing/consume.ts`). O crédito está de
- * volta no saldo — tentar de novo é uma preparação nova, cobra. Não depende
- * de staleness: "failed" é sempre terminal.
+ * Essa separação é a correção da rodada 4: até aqui a classificação devolvia
+ * `failed_refunded` / `zombie_unrefunded`, ou seja, afirmava sobre o CRÉDITO a
+ * partir do `generation_status`. O nome mentia sempre que a devolução não
+ * tinha acontecido de fato (RPC com erro, processo morto depois de gravar
+ * "failed"), e cobrava de novo uma preparação que a pessoa já tinha pago.
+ * `generation_status` diz o que aconteceu com a GERAÇÃO; o que aconteceu com o
+ * dinheiro está gravado nas colunas de crédito, que só mudam junto com o
+ * saldo.
  *
- * "pending"/"generating": aqui está o ponto que mudou na rodada 3 de
- * correção. A premissa antiga era "só chega em retryPrep já stale, porque só
- * o layout mostra PrepFailed nesse caso" — falsa: depois de um retry bem
- * sucedido em ganhar a corrida, a linha volta a "pending" FRESCO, e uma
- * SEGUNDA aba com o PrepFailed antigo ainda montado (ou um duplo clique) tenta
- * `retryPrep` de novo. Sem reavaliar staleness aqui dentro, esse segundo
- * clique seria classificado como zumbi (não cobra) e dispararia um SEGUNDO
- * `runGenerationInBackground` correndo em paralelo com o primeiro — dois
- * pipelines escrevendo na mesma linha, um deles apagando `prep_guide` no
- * meio da execução do outro.
- *
- * Por isso a checagem agora é feita com o mesmo critério do layout
- * (`isGenerationStale`, `src/lib/prep/generation-stale.ts`, 15 min desde
- * `updated_at`): só quando a linha está de fato velha é que tratamos como
- * zumbi (processo morreu, ninguém devolveu, retry não cobra). Uma linha
- * pending/generating recente é uma geração genuinamente em andamento —
- * "still_running" — e o retry deve RECUSAR, não resetar por baixo dela.
- *
- * "complete" ou `null`: nada a recuperar — os call sites já redirecionam
- * pra longe antes de perguntar isso pra prep completa; existe aqui só pra
- * cobrir o caso defensivamente sem lançar.
+ * - "failed": desfecho terminal, sempre reiniciável.
+ * - "pending"/"generating" além do threshold de stale (`isGenerationStale`,
+ *   15 min desde `updated_at` — mesmo critério do layout): zumbi, o processo
+ *   que geraria morreu. Reiniciável.
+ * - "pending"/"generating" recente: geração genuinamente em andamento. NÃO
+ *   pode ser reiniciada nem apagada por baixo do runner que está escrevendo
+ *   na linha. A premissa antiga ("só chega aqui já stale, porque só o layout
+ *   mostra PrepFailed") quebra depois de um retry ganhar a corrida: a linha
+ *   volta a "pending" FRESCO e uma segunda aba com a tela antiga dispararia
+ *   um segundo pipeline em paralelo.
+ * - "complete" ou `null`: nada a recuperar. Os call sites redirecionam pra
+ *   prep sem tocar em nada — em especial `deleteFailedPrep`, que num
+ *   "complete" estaria apagando uma preparação ENTREGUE e (por ela ainda
+ *   constar como consumida e não devolvida) devolvendo o crédito dela.
  */
 export function classifyRetryRecovery(input: RetryRecoveryInput): RetryRecovery {
   const { generationStatus, updatedAt, now } = input;
-  if (generationStatus === "failed") return { kind: "failed_refunded" };
+  if (generationStatus === "failed") return { kind: "retryable" };
   if (generationStatus === "pending" || generationStatus === "generating") {
     return isGenerationStale(generationStatus, updatedAt, now)
-      ? { kind: "zombie_unrefunded" }
+      ? { kind: "retryable" }
       : { kind: "still_running" };
   }
   return { kind: "not_retryable" };

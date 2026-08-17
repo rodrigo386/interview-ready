@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   generateSection,
   generateCompanyIntel,
@@ -22,7 +22,17 @@ import type { CompanyIntel, PrepSection } from "@/lib/ai/schemas";
  * Never throws — always writes a terminal status.
  */
 export async function runPipeline(sessionId: string): Promise<void> {
-  const supabase = await createClient();
+  // Service-role client, não o do usuário: o pipeline escreve
+  // `generation_status`, `prep_guide`, `error_message` e `progress_step`, e
+  // essas colunas deixaram de ter GRANT de UPDATE pra `authenticated`
+  // (migration 0024, bloco 6). Enquanto o cliente podia escrevê-las, dava pra
+  // marcar uma prep JÁ ENTREGUE como "failed" pela anon key e depois pedir a
+  // devolução do crédito dela.
+  //
+  // Efeito colateral bem-vindo: este código roda fire-and-forget DEPOIS que a
+  // request respondeu, e o client do usuário depende de `cookies()` do
+  // next/headers — o admin client não depende de nada do request.
+  const supabase = createAdminClient();
 
   const { data: session, error } = await supabase
     .from("prep_sessions")
@@ -85,7 +95,7 @@ export async function runPipeline(sessionId: string): Promise<void> {
 async function setProgress(
   sessionId: string,
   step: string | null,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createAdminClient>,
 ): Promise<void> {
   try {
     await supabase
@@ -103,7 +113,7 @@ async function runStageA(
     company_name: string;
     job_title: string;
   },
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createAdminClient>,
 ): Promise<CompanyIntel | null> {
   const prompt = buildCompanyResearchPrompt({
     companyName: session.company_name,
@@ -155,7 +165,7 @@ async function runStageSalary(
     job_title: string;
     job_description: string;
   },
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createAdminClient>,
 ): Promise<void> {
   await setProgress(sessionId, "salary_benchmark", supabase);
   await supabase
@@ -214,7 +224,7 @@ async function runStageB(
   },
   intel: CompanyIntel | null,
   meta: { role: string; company: string; estimated_prep_time_minutes: number },
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createAdminClient>,
 ): Promise<void> {
   // Sequential (not parallel) to avoid burst rate limits on Gemini.
   // Trade-off: prep takes ~2-3 min instead of ~30s, but reliability >> speed.

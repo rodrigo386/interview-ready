@@ -94,7 +94,16 @@ export async function generateFullPrep(
   // no seu primeiro update (`{ meta, sections: [] }`), e é sobrescrito por
   // ele segundos depois. Efeito colateral desejado: com `prep_guide` não
   // nulo, o layout para de mostrar o CTA e passa a mostrar o skeleton.
-  const { data: claimed } = await supabase
+  // A claim (e o revert dela) escreve `generation_status`/`error_message`/
+  // `prep_guide`, que não têm mais GRANT de UPDATE pra `authenticated`
+  // (migration 0024, bloco 6) — com ele, qualquer pessoa logada marcava a
+  // própria prep entregue como "failed" pela anon key e depois pedia
+  // devolução. Vai pelo service-role client; a posse continua garantida pelo
+  // `.eq("user_id", user.id)` explícito, que antes era redundante com a RLS
+  // e agora é a barreira.
+  const admin = createAdminClient();
+
+  const { data: claimed } = await admin
     .from("prep_sessions")
     .update({
       generation_status: "pending",
@@ -116,9 +125,8 @@ export async function generateFullPrep(
   if (!claimed || claimed.length === 0) redirect(`/prep/${sessionId}`);
 
   // Consumo atômico da cota — o RPC só tem GRANT pro service_role (migration
-  // 0024), por isso vai pelo admin client. Se falhar (sem saldo ou erro),
-  // barra aqui e NÃO dispara a geração.
-  const admin = createAdminClient();
+  // 0024), por isso vai pelo mesmo admin client. Se falhar (sem saldo ou
+  // erro), barra aqui e NÃO dispara a geração.
   const consumed = await consumePrepCredit(admin, user.id, sessionId, isAdmin);
   if (!consumed) {
     // A claim acima já marcou a sessão como "pending" com o placeholder —
@@ -136,7 +144,7 @@ export async function generateFullPrep(
     // mudou a linha nesse meio-tempo. E o erro é checado: se o UPDATE
     // falhar, a sessão fica com o placeholder e cai no falso "geração
     // travou" 15min depois — loga pra isso não ficar silencioso.
-    const { data: reverted, error: revertError } = await supabase
+    const { data: reverted, error: revertError } = await admin
       .from("prep_sessions")
       .update({ generation_status: "pending", prep_guide: null })
       .eq("id", sessionId)

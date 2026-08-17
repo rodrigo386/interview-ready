@@ -16,9 +16,13 @@
 -- marca `credit_refunded_at` no MESMO UPDATE que decide creditar — mesmo
 -- espírito do cadeado de `consume_prep_credit` (bloco 1), só que a fonte de
 -- verdade agora é a sessão, não mais o profile ou o generation_status.
+--
+-- `IF NOT EXISTS` porque o Supabase Preview re-roda as migrations do zero a
+-- cada rebase e um `add column` cru derruba a branch inteira com "column
+-- already exists" (mesmo motivo da 0017).
 alter table public.prep_sessions
-  add column credit_consumed_at timestamptz null,
-  add column credit_refunded_at timestamptz null;
+  add column if not exists credit_consumed_at timestamptz null,
+  add column if not exists credit_refunded_at timestamptz null;
 
 -- 1) Consumo atômico: o UPDATE condicional em `profiles` é o cadeado
 --    contra duplo consumo — se afetar 0 linhas, não havia saldo (ou outra
@@ -36,6 +40,18 @@ as $$
 declare
   v_afetadas int;
 begin
+  -- Guarda de posse NO BANCO: sem ela, um `p_session_id` de outro usuário
+  -- debitaria o crédito de `p_user_id` e marcaria o consumo na sessão alheia.
+  -- Hoje os callers já validam a posse antes de chamar, mas a barreira não
+  -- pode depender só disso — quem move dinheiro checa por conta própria.
+  -- Falha fechada: devolve false e o caller barra a geração.
+  if not exists (
+    select 1 from public.prep_sessions
+     where id = p_session_id and user_id = p_user_id
+  ) then
+    return false;
+  end if;
+
   update public.profiles
      set prep_credits = prep_credits - 1
    where id = p_user_id
@@ -45,7 +61,8 @@ begin
     update public.prep_sessions
        set credit_consumed_at = now(),
            credit_refunded_at = null
-     where id = p_session_id;
+     where id = p_session_id
+       and user_id = p_user_id;
   end if;
   return v_afetadas > 0;
 end;
@@ -191,9 +208,12 @@ as $$
 declare
   v_afetadas int;
 begin
+  -- `user_id = p_user_id` é a guarda de posse: sem ela, um id de sessão
+  -- errado creditaria o saldo de um usuário consumindo a marca de outro.
   update public.prep_sessions
      set credit_refunded_at = now()
    where id = p_session_id
+     and user_id = p_user_id
      and credit_consumed_at is not null
      and credit_refunded_at is null;
   get diagnostics v_afetadas = row_count;
@@ -206,3 +226,66 @@ $$;
 
 REVOKE ALL ON FUNCTION public.refund_prep_credit(uuid, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.refund_prep_credit(uuid, uuid) TO service_role;
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- 6) prep_sessions: privilégio por COLUNA (mesmo molde da 0011 em `profiles`)
+-- ───────────────────────────────────────────────────────────────────────────
+--
+-- RLS decide QUAIS LINHAS, nunca QUAIS COLUNAS. As policies de
+-- `prep_sessions` (0011) garantem "só a própria linha" e nada mais — com o
+-- INSERT/UPDATE de tabela inteira que o Supabase concede por padrão a
+-- `authenticated`, qualquer pessoa logada podia escrever, com a anon key
+-- direto do navegador, exatamente as colunas que decidem dinheiro:
+--
+--   1. `update({ credit_refunded_at: null })` reciclava uma devolução já
+--      feita — a sessão voltava a "consumida e não devolvida" e uma nova
+--      devolução era liberada. Repetível: 1 crédito comprado virava saldo
+--      infinito.
+--   2. `insert({ credit_consumed_at: now() })` fabricava uma sessão que
+--      "pagou" sem nunca ter pago; excluí-la devolvia +1.
+--   3. `update({ generation_status: 'failed' })` numa prep JÁ ENTREGUE (PDF
+--      exportado) fazia a tela de falha aparecer, e o "Excluir e começar de
+--      novo" via a linha como consumida-e-não-devolvida e creditava +1.
+--
+-- Por isso o ciclo de vida da geração (`generation_status`, `error_message`,
+-- `prep_guide`, `progress_step`) sai da mão do cliente junto com as duas
+-- colunas de crédito: é o pipeline (`src/lib/ai/pipeline.ts`) e os cadeados
+-- de `retryPrep`/`generateFullPrep` que escrevem esses campos, e todos
+-- passaram a usar o service-role client neste mesmo commit.
+--
+-- O que sobra pra `authenticated` são só os artefatos de IA que o próprio
+-- usuário dispara e re-dispara pela UI (ATS, reescrita de CV, pesquisa da
+-- empresa, benchmark salarial). Nenhum deles decide cobrança.
+REVOKE INSERT, UPDATE ON public.prep_sessions FROM anon, authenticated;
+
+-- INSERT: exatamente as colunas que `createPrep` grava
+-- (`src/app/prep/new/actions.ts`). `credit_consumed_at` fora da lista é o que
+-- impede fabricar uma sessão "já paga".
+GRANT INSERT (
+  user_id,
+  job_title,
+  company_name,
+  cv_text,
+  cv_id,
+  job_description,
+  generation_status
+) ON public.prep_sessions TO authenticated;
+
+-- UPDATE: só os artefatos de IA re-disparáveis pela UI —
+-- `runAtsAnalysis`/`runCvRewrite` (`ats-actions.ts`, `rewrite-actions.ts`),
+-- `rerunCompanyIntel`/`rerunSalaryBenchmark` (`prep/[id]/actions.ts`) e o
+-- reset de reescrita do perfil (`(app)/profile/actions.ts`).
+GRANT UPDATE (
+  ats_analysis,
+  ats_status,
+  ats_error_message,
+  company_intel,
+  company_intel_status,
+  company_intel_error,
+  salary_benchmark,
+  salary_benchmark_status,
+  salary_benchmark_error,
+  cv_rewrite,
+  cv_rewrite_status,
+  cv_rewrite_error
+) ON public.prep_sessions TO authenticated;
