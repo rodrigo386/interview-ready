@@ -135,6 +135,9 @@ async function handlePaymentReceived(
   const ref = parseExternalReference(p.externalReference);
   const kind = ref?.kind ?? "pro_subscription";
   const cents = Math.round(p.value * 100);
+  // A quantidade creditada vem do externalReference (Task 2), NUNCA do
+  // valor pago — casar por valor quebraria em qualquer promoção/ajuste.
+  const credits = ref?.kind === "prep_purchase" ? ref.qty : 1;
 
   const { error } = await supabase.rpc("handle_payment_received", {
     p_user_id: userId,
@@ -145,6 +148,7 @@ async function handlePaymentReceived(
     p_paid_at: p.paymentDate ?? new Date().toISOString(),
     p_raw_payload: p as unknown,
     p_next_due_date: kind === "pro_subscription" ? p.nextDueDate ?? null : null,
+    p_credits: credits,
   });
   if (error) return { handled: false, reason: "error", detail: error.message };
 
@@ -228,11 +232,14 @@ async function handlePaymentRefunded(
   supabase: SupabaseClient,
 ): Promise<DispatchResult> {
   const p = evt.payment!;
-  const kind = parseExternalReference(p.externalReference)?.kind ?? null;
+  const ref = parseExternalReference(p.externalReference);
+  const kind = ref?.kind ?? null;
+  const credits = ref?.kind === "prep_purchase" ? ref.qty : 1;
   const { error } = await supabase.rpc("handle_payment_refunded", {
     p_user_id: userId,
     p_payment_id: p.id,
     p_kind: kind,
+    p_credits: credits,
   });
   if (error) return { handled: false, reason: "error", detail: error.message };
 

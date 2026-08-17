@@ -4,12 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { asaas } from "@/lib/billing/asaas";
 import { buildExternalReference } from "@/lib/billing/ids";
-import { PRO_AMOUNT_CENTS, PER_USE_AMOUNT_CENTS } from "@/lib/billing/prices";
+import { PRO_AMOUNT_CENTS, findSku } from "@/lib/billing/prices";
 import { env } from "@/lib/env";
 import { resolveOrigin } from "@/lib/http/host";
 
 const bodySchema = z.object({
   kind: z.enum(["pro_subscription", "prep_purchase"]),
+  qty: z.number().int().optional(),
   cpfCnpj: z.string().trim().min(11).max(20).optional(),
   address: z
     .object({
@@ -49,6 +50,16 @@ export async function POST(req: Request) {
     parsed = bodySchema.parse(await req.json());
   } catch {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
+
+  // Quantidade válida só se aplica a prep_purchase — o pacote decide o
+  // valor cobrado (`sku.cents`), nunca o inverso.
+  const sku = parsed.kind === "prep_purchase" ? findSku(parsed.qty ?? 1) : null;
+  if (parsed.kind === "prep_purchase" && !sku) {
+    return NextResponse.json(
+      { error: "Quantidade inválida. Escolha um dos pacotes disponíveis." },
+      { status: 400 },
+    );
   }
 
   const supabase = await createClient();
@@ -231,16 +242,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ checkoutUrl });
   }
 
-  // prep_purchase
+  // prep_purchase — `sku` já validado acima (400 se quantidade inválida).
+  const chosenSku = sku!;
   const pay = await asaas.createPayment({
     customer: customerId,
     billingType: "UNDEFINED",
-    value: PER_USE_AMOUNT_CENTS / 100,
+    value: chosenSku.cents / 100,
     dueDate: tomorrowIso(),
-    description: "PrepaVaga · 1 prep avulso",
+    description:
+      chosenSku.qty === 1
+        ? "PrepaVaga · 1 prep avulso"
+        : `PrepaVaga · pacote de ${chosenSku.qty} preps avulsos`,
     externalReference: buildExternalReference({
       kind: "prep_purchase",
       userId: p.id,
+      qty: chosenSku.qty,
       nano: nano(),
     }),
     callback: { successUrl: oneOffSuccessUrl, autoRedirect: true },

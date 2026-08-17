@@ -238,4 +238,43 @@ describe("dispatchEvent", () => {
       expect(calls.rpc[0].name).toBe("handle_payment_received");
     });
   });
+
+  describe("crédito por quantidade", () => {
+    it("passa p_credits igual à quantidade do externalReference", async () => {
+      const { supa, calls } = fakeSupabase();
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_RECEIVED",
+        payment: { id: "p1", customer: "c1", value: 25, status: "RECEIVED",
+          billingType: "PIX", externalReference: "prep:u1:3:abc" },
+      };
+      const result = await dispatchEvent(evt, "evt_qty_3", supa as never);
+      expect(result.handled).toBe(true);
+      expect(calls.rpc[0].args).toMatchObject({ p_credits: 3 });
+    });
+
+    it("formato antigo credita 1", async () => {
+      const { supa, calls } = fakeSupabase();
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_RECEIVED",
+        payment: { id: "p2", customer: "c1", value: 10, status: "RECEIVED",
+          billingType: "PIX", externalReference: "prep:u1:abc" },
+      };
+      const result = await dispatchEvent(evt, "evt_qty_legacy", supa as never);
+      expect(result.handled).toBe(true);
+      expect(calls.rpc[0].args).toMatchObject({ p_credits: 1 });
+    });
+
+    it("handle_payment_refunded também recebe p_credits da quantidade", async () => {
+      const { supa, calls } = fakeSupabase();
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_REFUNDED",
+        payment: { id: "p3", customer: "c1", value: 25, status: "REFUNDED",
+          billingType: "PIX", externalReference: "prep:u1:3:abc" },
+      };
+      const result = await dispatchEvent(evt, "evt_refund_qty_3", supa as never);
+      expect(result.handled).toBe(true);
+      expect(calls.rpc[0].name).toBe("handle_payment_refunded");
+      expect(calls.rpc[0].args).toMatchObject({ p_credits: 3 });
+    });
+  });
 });
