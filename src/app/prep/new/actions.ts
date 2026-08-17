@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkQuota } from "@/lib/billing/quota";
 import { consumePrepCredit, refundPrepCredit } from "@/lib/billing/consume";
+import { classifyRetryRecovery } from "@/lib/prep/retry-gate";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { createPrepInputSchema } from "./schema";
 
@@ -176,13 +177,21 @@ function runGenerationInBackground(
 ): void {
   const t0 = Date.now();
   console.log(`[runGeneration] background start sessionId=${sessionId}`);
-  // IIFE + try/catch em vez do antigo .then().catch(): os handlers chamam
+  // IIFE + try/catch em vez de .then().catch(): os handlers chamam
   // createAdminClient(), que LANÇA se SUPABASE_SERVICE_ROLE_KEY faltar. Um
-  // handler assíncrono de .catch() que lança vira unhandled rejection — no
-  // Node isso derruba o processo inteiro (todos os usuários, não só este
-  // request). O try/catch aqui garante que nada escapa desta função, nem o
-  // do bloco catch (que tem seu próprio try/catch pra a tentativa de
-  // devolução em si não poder relançar).
+  // handler assíncrono que lança vira unhandled rejection — no Node isso
+  // derruba o processo inteiro (todos os usuários, não só este request).
+  //
+  // O try/catch cobre SÓ o `runGeneration(sessionId)` em si — não a
+  // releitura de status pós-geração. Cobrir os dois no mesmo catch foi um
+  // bug da rodada anterior: uma exceção na releitura (depois de uma geração
+  // BEM-SUCEDIDA) caía no catch de crash e devolvia o crédito de uma prep
+  // que já tinha sido entregue — pessoa ficava com o prep E o crédito de
+  // volta. Com o escopo estreito, o catch só dispara pra erro real do
+  // pipeline (onde devolver é sempre correto); a releitura tem seu próprio
+  // try/catch que NUNCA devolve em caso de erro (não dá pra saber se a
+  // prep foi entregue ou não, e "devolver na dúvida" é o mesmo bug ao
+  // contrário).
   void (async () => {
     try {
       // Dynamic import keeps generation.ts (and its Gemini deps) out of the
@@ -193,12 +202,40 @@ function runGenerationInBackground(
       console.log(
         `[runGeneration] background done sessionId=${sessionId} ${Date.now() - t0}ms`,
       );
-      if (!refundOnFailure) return;
-      // runPipeline (src/lib/ai/pipeline.ts) NUNCA lança — todo desfecho,
-      // inclusive falha, é gravado como status terminal no banco e a promise
-      // resolve normalmente. Por isso o único jeito confiável de saber se
-      // esta geração falhou é reler o status gravado, não confiar só no
-      // catch abaixo (que só pega crash que escapou do try/catch interno).
+    } catch (err) {
+      console.error(
+        `[runGeneration] background CRASHED sessionId=${sessionId}`,
+        err instanceof Error ? err.message : String(err),
+      );
+      // Crash real do pipeline (ou da import) — refund incondicional é
+      // seguro aqui: só chegamos neste catch quando `runGeneration` NUNCA
+      // terminou com sucesso.
+      if (refundOnFailure) {
+        try {
+          await refundPrepCredit(
+            createAdminClient(),
+            refundOnFailure.userId,
+            refundOnFailure.isAdmin,
+          );
+        } catch (refundErr) {
+          // createAdminClient() pode lançar (env var faltando) — não deixa
+          // escapar daqui, senão a promise da IIFE rejeita sem ninguém
+          // observando e derruba o processo de novo.
+          console.error(
+            `[runGeneration] refund itself failed sessionId=${sessionId}`,
+            refundErr instanceof Error ? refundErr.message : String(refundErr),
+          );
+        }
+      }
+      return;
+    }
+
+    // A partir daqui `runGeneration` já terminou SEM lançar. runPipeline
+    // (src/lib/ai/pipeline.ts) nunca lança — todo desfecho, inclusive
+    // falha, é gravado como status terminal no banco. Por isso o único
+    // jeito confiável de saber se esta geração falhou é reler o status.
+    if (!refundOnFailure) return;
+    try {
       const admin = createAdminClient();
       const { data, error: statusReadError } = await admin
         .from("prep_sessions")
@@ -221,28 +258,13 @@ function runGenerationInBackground(
         await refundPrepCredit(admin, refundOnFailure.userId, refundOnFailure.isAdmin);
       }
     } catch (err) {
+      // Erro aqui é só na LEITURA pós-geração, não na geração em si (que já
+      // terminou). Não devolve — devolver às cegas arriscaria dar crédito
+      // de graça por uma prep que pode ter sido entregue.
       console.error(
-        `[runGeneration] background CRASHED sessionId=${sessionId}`,
+        `[runGeneration] post-generation status check failed sessionId=${sessionId}`,
         err instanceof Error ? err.message : String(err),
       );
-      // Crash que escapou do try/catch interno do pipeline — ainda é falha
-      // de geração, e quem pagou não recebeu.
-      if (!refundOnFailure) return;
-      try {
-        await refundPrepCredit(
-          createAdminClient(),
-          refundOnFailure.userId,
-          refundOnFailure.isAdmin,
-        );
-      } catch (refundErr) {
-        // createAdminClient() pode lançar (env var faltando) — não deixa
-        // escapar daqui, senão a promise da IIFE rejeita sem ninguém
-        // observando e derruba o processo de novo.
-        console.error(
-          `[runGeneration] refund itself failed sessionId=${sessionId}`,
-          refundErr instanceof Error ? refundErr.message : String(refundErr),
-        );
-      }
     }
   })();
 }
@@ -255,15 +277,20 @@ export type RetryPrepState = {
 /**
  * DECISÃO DO DONO DO PRODUTO (revoga a decisão original desta task, que
  * dizia "retryPrep não consome cota"): retry agora consome 1 crédito, igual
- * createPrep e generateFullPrep.
+ * createPrep e generateFullPrep — MAS só quando o crédito da tentativa
+ * anterior já voltou pro saldo. Ver `classifyRetryRecovery` em
+ * `src/lib/prep/retry-gate.ts`: `generation_status === "failed"` significa
+ * que `runGenerationInBackground` já devolveu; `pending`/`generating`
+ * travado além do stale threshold significa que o processo que devolveria
+ * morreu junto — o crédito continua gasto e sem volta, cobrar de novo
+ * pagaria duas vezes pela mesma preparação que nunca chegou.
  *
- * Motivo: com a devolução automática em falha (`refundPrepCredit`, ligada em
- * `runGenerationInBackground`), manter o retry gratuito abria compensação
- * dupla — falha devolve o crédito, e o botão "Tentar novamente" gerava a
- * preparação de novo sem cobrar nada, repetível à vontade. O modelo correto
- * é "a pessoa paga uma vez por cada preparação que efetivamente recebe":
- * falhou, devolve; tenta de novo, paga de novo; se der certo dessa vez,
- * recebeu o que pagou.
+ * Motivo original da mudança: com a devolução automática em falha, manter o
+ * retry SEMPRE gratuito abria compensação dupla — falha devolve o crédito,
+ * e "Tentar novamente" gerava de novo sem cobrar nada, repetível à vontade.
+ * O modelo correto é "a pessoa paga uma vez por cada preparação que
+ * efetivamente recebe": falhou (com devolução), tenta de novo, paga de
+ * novo; travou (sem devolução), tenta de novo, não paga de novo — já pagou.
  */
 export async function retryPrep(
   id: string,
@@ -278,7 +305,7 @@ export async function retryPrep(
 
   const { data: session, error } = await supabase
     .from("prep_sessions")
-    .select("id, user_id, generation_status")
+    .select("id, user_id, generation_status, error_message, prep_guide")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -286,7 +313,20 @@ export async function retryPrep(
   if (error || !session) redirect("/dashboard");
   if (session.generation_status === "complete") redirect(`/prep/${id}`);
 
-  // Mesmo gate de createPrep/generateFullPrep.
+  const recovery = classifyRetryRecovery(session.generation_status);
+  if (recovery.kind === "not_retryable") redirect(`/prep/${id}`);
+
+  // Mesmo limite dos outros dois caminhos de geração — retry também chama o
+  // mesmo pipeline caro.
+  const rl = await rateLimit(`user:${user.id}`, LIMITS.createPrep);
+  if (!rl.success) {
+    return {
+      error: `Muitas preps em pouco tempo. Tente novamente em ${formatResetPhrase(rl.reset)}.`,
+    };
+  }
+
+  // isAdmin é necessário nos dois ramos (cobrando ou não) — runGenerationInBackground
+  // usa pra decidir se `refundPrepCredit` faz algo em caso de falha.
   const { data: billingProfile } = await supabase
     .from("profiles")
     .select("prep_credits, is_admin")
@@ -295,25 +335,78 @@ export async function retryPrep(
   const p = billingProfile as { prep_credits?: number; is_admin?: boolean } | null;
   const isAdmin = p?.is_admin === true;
 
-  const quota = checkQuota({ prep_credits: p?.prep_credits ?? 0 }, isAdmin);
-  if (!quota.allowed) {
-    return { error: "quota_exceeded" };
+  const shouldCharge = recovery.kind === "failed_refunded";
+  if (shouldCharge) {
+    // Checagem ANTES de tocar a linha — igual createPrep/generateFullPrep:
+    // sem saldo, sai sem efeito colateral nenhum.
+    const quota = checkQuota({ prep_credits: p?.prep_credits ?? 0 }, isAdmin);
+    if (!quota.allowed) {
+      return { error: "quota_exceeded" };
+    }
   }
 
-  const admin = createAdminClient();
-  const consumed = await consumePrepCredit(admin, user.id, isAdmin);
-  if (!consumed) {
-    return { error: "quota_exceeded" };
-  }
-
-  await supabase
+  // Cadeado: o reset só afeta a linha se `generation_status` ainda for
+  // exatamente o que acabamos de ler. Sem isso, dois submits do mesmo botão
+  // (segunda aba, bfcache, voltar no histórico) resetavam a linha duas
+  // vezes e cada um disparava um `runGenerationInBackground` — o segundo
+  // `runPipeline` lia "generating" (escrito pelo primeiro) e virava no-op
+  // sem gravar "failed" nem "complete", então a releitura de status do
+  // primeiro runner não devolvia nada: crédito consumido, nada entregue,
+  // sem devolução. Quem perde a corrida (0 linhas afetadas) só volta pra
+  // tela — a regeração de quem ganhou já está em andamento.
+  const { data: claimed, error: resetError } = await supabase
     .from("prep_sessions")
     .update({
       generation_status: "pending",
       error_message: null,
       prep_guide: null,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .eq("generation_status", session.generation_status)
+    .select("id");
+
+  if (resetError) {
+    console.error("[retryPrep] reset failed:", resetError.message, resetError.code);
+    return {
+      error: "Não foi possível reiniciar sua prep agora. Tente novamente em alguns instantes.",
+    };
+  }
+  if (!claimed || claimed.length === 0) {
+    redirect(`/prep/${id}`);
+  }
+
+  if (shouldCharge) {
+    const admin = createAdminClient();
+    const consumed = await consumePrepCredit(admin, user.id, isAdmin);
+    if (!consumed) {
+      // Desfaz o cadeado: sem isso a sessão fica travada em "pending" com
+      // `prep_guide` null — indistinguível de "gerando de verdade" até o
+      // próximo timeout de stale, e a pessoa nem chegou a tentar de novo.
+      // Condicionado ao "pending" que o cadeado acabou de gravar, e com o
+      // erro checado — reverter às cegas foi exatamente o Minor D desta
+      // mesma rodada de revisão (achado no `generateFullPrep`).
+      const { error: revertError } = await supabase
+        .from("prep_sessions")
+        .update({
+          generation_status: session.generation_status,
+          error_message: session.error_message,
+          prep_guide: session.prep_guide,
+        })
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .eq("generation_status", "pending")
+        .select("id");
+      if (revertError) {
+        console.error(
+          "[retryPrep] revert do cadeado falhou:",
+          revertError.message,
+          revertError.code,
+        );
+      }
+      return { error: "quota_exceeded" };
+    }
+  }
 
   void runGenerationInBackground(id, { userId: user.id, isAdmin });
 
@@ -326,6 +419,30 @@ export async function deleteFailedPrep(id: string) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const { data: session } = await supabase
+    .from("prep_sessions")
+    .select("id, generation_status")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  // Prep zumbi (pending/generating travada): o crédito foi consumido e
+  // NUNCA devolvido, porque o runner que faria isso morreu junto com o
+  // processo (mesma classificação de `retryPrep`, ver retry-gate.ts).
+  // "Excluir e começar de novo" abandona essa tentativa pra sempre — sem
+  // devolver aqui, o crédito some junto com a linha excluída. Uma prep
+  // "failed" já foi devolvida por `runGenerationInBackground`, então não
+  // devolve de novo.
+  if (session && classifyRetryRecovery(session.generation_status).kind === "zombie_unrefunded") {
+    const { data: billingProfile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+    const isAdmin = (billingProfile as { is_admin?: boolean } | null)?.is_admin === true;
+    await refundPrepCredit(createAdminClient(), user.id, isAdmin);
+  }
 
   await supabase
     .from("prep_sessions")

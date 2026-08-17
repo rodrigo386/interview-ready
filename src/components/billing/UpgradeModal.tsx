@@ -52,10 +52,10 @@ export function UpgradeModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="upgrade-modal-title" className="text-xl font-bold text-text-primary">
-          Você já usou sua prep grátis
+          Seus créditos acabaram
         </h3>
         <p className="mt-2 text-sm text-text-secondary">
-          Sua prep grátis vem 1 vez por conta. Pra continuar, assine o Pro ou compre uma prep avulsa.
+          Cada preparação completa consome 1 crédito. Assine o Pro pra uso ilimitado ou compre uma prep avulsa pra continuar.
         </p>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-orange-500 bg-orange-soft p-4">

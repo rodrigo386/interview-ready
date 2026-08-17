@@ -130,11 +130,30 @@ export async function generateFullPrep(
     // claim escreveu, voltando pro estado `isClaimedAtsOnlyPrep` exato de
     // antes. O CTA "Gerar preparação completa" reaparece na hora, e a
     // pessoa não fica trancada esperando um pipeline que nunca vai rodar.
-    await supabase
+    //
+    // `.eq("generation_status", "pending")` condiciona o revert ao estado
+    // que a própria claim acabou de gravar — não reverte às cegas se algo
+    // mudou a linha nesse meio-tempo. E o erro é checado: se o UPDATE
+    // falhar, a sessão fica com o placeholder e cai no falso "geração
+    // travou" 15min depois — loga pra isso não ficar silencioso.
+    const { data: reverted, error: revertError } = await supabase
       .from("prep_sessions")
       .update({ generation_status: "pending", prep_guide: null })
       .eq("id", sessionId)
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .eq("generation_status", "pending")
+      .select("id");
+    if (revertError) {
+      console.error(
+        "[generateFullPrep] revert da claim falhou:",
+        revertError.message,
+        revertError.code,
+      );
+    } else if (!reverted || reverted.length === 0) {
+      console.warn(
+        `[generateFullPrep] revert da claim não afetou linhas sessionId=${sessionId} — estado mudou entre a claim e o revert`,
+      );
+    }
     return { error: "quota_exceeded" };
   }
 
@@ -161,11 +180,16 @@ function runGenerationInBackground(
   console.log(`[generateFullPrep] background start sessionId=${sessionId}`);
   // IIFE + try/catch em vez de .then().catch(): os handlers chamam
   // createAdminClient(), que LANÇA se SUPABASE_SERVICE_ROLE_KEY faltar. Um
-  // handler assíncrono de .catch() que lança vira unhandled rejection — no
-  // Node isso derruba o processo inteiro (todos os usuários, não só este
-  // request). O try/catch aqui garante que nada escapa desta função, nem o
-  // do bloco catch (que tem seu próprio try/catch pra a tentativa de
-  // devolução em si não poder relançar).
+  // handler assíncrono que lança vira unhandled rejection — no Node isso
+  // derruba o processo inteiro (todos os usuários, não só este request).
+  //
+  // O try/catch cobre SÓ o `runGeneration(sessionId)` em si — não a
+  // releitura de status pós-geração. Cobrir os dois no mesmo catch foi um
+  // bug da rodada anterior: uma exceção na releitura (depois de uma geração
+  // BEM-SUCEDIDA) caía no catch de crash e devolvia o crédito de uma prep
+  // que já tinha sido entregue. Com o escopo estreito, o catch só dispara
+  // pra erro real do pipeline; a releitura tem seu próprio try/catch que
+  // NUNCA devolve em caso de erro.
   void (async () => {
     try {
       const { runGeneration } = await import("@/app/prep/new/generation");
@@ -173,11 +197,37 @@ function runGenerationInBackground(
       console.log(
         `[generateFullPrep] background done sessionId=${sessionId} ${Date.now() - t0}ms`,
       );
-      // runPipeline (src/lib/ai/pipeline.ts) NUNCA lança — todo desfecho,
-      // inclusive falha, é gravado como status terminal no banco e a promise
-      // resolve normalmente. Por isso o único jeito confiável de saber se
-      // esta geração falhou é reler o status gravado, não confiar só no
-      // catch abaixo (que só pega crash que escapou do try/catch interno).
+    } catch (err) {
+      console.error(
+        `[generateFullPrep] background CRASHED sessionId=${sessionId}`,
+        err instanceof Error ? err.message : String(err),
+      );
+      // Crash real do pipeline (ou da import) — refund incondicional é
+      // seguro aqui: só chegamos neste catch quando `runGeneration` NUNCA
+      // terminou com sucesso.
+      try {
+        await refundPrepCredit(
+          createAdminClient(),
+          refundOnFailure.userId,
+          refundOnFailure.isAdmin,
+        );
+      } catch (refundErr) {
+        // createAdminClient() pode lançar (env var faltando) — não deixa
+        // escapar daqui, senão a promise da IIFE rejeita sem ninguém
+        // observando e derruba o processo de novo.
+        console.error(
+          `[generateFullPrep] refund itself failed sessionId=${sessionId}`,
+          refundErr instanceof Error ? refundErr.message : String(refundErr),
+        );
+      }
+      return;
+    }
+
+    // A partir daqui `runGeneration` já terminou SEM lançar. runPipeline
+    // (src/lib/ai/pipeline.ts) nunca lança — todo desfecho, inclusive
+    // falha, é gravado como status terminal no banco. Por isso o único
+    // jeito confiável de saber se esta geração falhou é reler o status.
+    try {
       const admin = createAdminClient();
       const { data, error: statusReadError } = await admin
         .from("prep_sessions")
@@ -200,27 +250,13 @@ function runGenerationInBackground(
         await refundPrepCredit(admin, refundOnFailure.userId, refundOnFailure.isAdmin);
       }
     } catch (err) {
+      // Erro aqui é só na LEITURA pós-geração, não na geração em si (que já
+      // terminou). Não devolve — devolver às cegas arriscaria dar crédito
+      // de graça por uma prep que pode ter sido entregue.
       console.error(
-        `[generateFullPrep] background CRASHED sessionId=${sessionId}`,
+        `[generateFullPrep] post-generation status check failed sessionId=${sessionId}`,
         err instanceof Error ? err.message : String(err),
       );
-      // Crash que escapou do try/catch interno do pipeline — ainda é falha
-      // de geração, e quem pagou não recebeu.
-      try {
-        await refundPrepCredit(
-          createAdminClient(),
-          refundOnFailure.userId,
-          refundOnFailure.isAdmin,
-        );
-      } catch (refundErr) {
-        // createAdminClient() pode lançar (env var faltando) — não deixa
-        // escapar daqui, senão a promise da IIFE rejeita sem ninguém
-        // observando e derruba o processo de novo.
-        console.error(
-          `[generateFullPrep] refund itself failed sessionId=${sessionId}`,
-          refundErr instanceof Error ? refundErr.message : String(refundErr),
-        );
-      }
     }
   })();
 }
