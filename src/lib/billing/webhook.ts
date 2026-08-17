@@ -148,7 +148,7 @@ async function handlePaymentReceived(
   // valor pago — casar por valor quebraria em qualquer promoção/ajuste.
   const credits = ref?.kind === "prep_purchase" ? ref.qty : 1;
 
-  const { error } = await supabase.rpc("handle_payment_received", {
+  const { data: creditsGrantedRaw, error } = await supabase.rpc("handle_payment_received", {
     p_user_id: userId,
     p_payment_id: p.id,
     p_kind: kind,
@@ -160,6 +160,14 @@ async function handlePaymentReceived(
     p_credits: credits,
   });
   if (error) return { handled: false, reason: "error", detail: error.message };
+  // `handle_payment_received` (migration 0024) devolve QUANTOS créditos este
+  // pagamento concedeu de fato: `p_credits` na primeira entrada, `0` em toda
+  // reentrada do mesmo pagamento (o Asaas manda PAYMENT_CONFIRMED E
+  // PAYMENT_RECEIVED pro mesmo pagamento — dois eventos, dois
+  // asaas_event_id, a idempotência por evento não pega). Usamos isso abaixo
+  // pra não contar `checkout_confirmado` duas vezes pro mesmo pagamento.
+  const creditsGranted =
+    typeof creditsGrantedRaw === "number" ? creditsGrantedRaw : Number(creditsGrantedRaw ?? 0);
 
   // Affiliate commission side-effect (Stage 3). Idempotent via UNIQUE(payment_id).
   // Failures are tolerated — webhook still acks. Reconciliation is handled
@@ -214,19 +222,28 @@ async function handlePaymentReceived(
   }
 
   // `checkout_confirmado` (Task 9): só pra prep_purchase — pro_subscription já
-  // tem `subscription_started` acima. Ao contrário dos dois `await trackServer`
-  // logo acima (padrão pré-existente nesta função, fora do escopo desta task),
-  // este é deliberadamente fire-and-forget: não fazemos `await`, então o
-  // handler não fica parado esperando a ida-e-volta síncrona que
-  // `trackServer` faz até o PostHog (ela mesma faz `await ph.flush()`
-  // internamente). Isso é seguro aqui porque o processo do PrepaVaga é o
-  // `server.js` do Railway — de vida longa, não serverless — então não há
-  // risco do container morrer antes do flush completar em background.
-  // `trackServer` já embrulha capture+flush num try/catch interno e nunca
-  // rejeita, mas o try/catch síncrono abaixo é defesa extra: telemetria não
-  // pode, sob nenhuma circunstância, derrubar o processamento do pagamento —
-  // nem por uma rejeição da Promise (`.catch`), nem por um throw síncrono.
-  if (ref?.kind === "prep_purchase") {
+  // tem `subscription_started` acima. E só quando `creditsGranted > 0`: o
+  // Asaas manda PAYMENT_CONFIRMED E PAYMENT_RECEIVED pro mesmo pagamento
+  // (cartão: um na autorização, outro na liquidação), e como são eventos
+  // diferentes a idempotência por `asaas_event_id` não filtra o segundo. Sem
+  // este gate, todo pagamento de cartão emitia `checkout_confirmado` 2x e a
+  // taxa de conversão do funil ficava inflada em 2x no numerador. Alinhamos
+  // com o que de fato aconteceu: um evento por pagamento que realmente
+  // concedeu crédito (ver comentário acima de `creditsGranted`).
+  //
+  // Ao contrário dos dois `await trackServer` logo acima (padrão
+  // pré-existente nesta função, fora do escopo desta task), este é
+  // deliberadamente fire-and-forget: não fazemos `await`, então o handler
+  // não fica parado esperando a ida-e-volta síncrona que `trackServer` faz
+  // até o PostHog (ela mesma faz `await ph.flush()` internamente). Isso é
+  // seguro aqui porque o processo do PrepaVaga é o `server.js` do Railway —
+  // de vida longa, não serverless — então não há risco do container morrer
+  // antes do flush completar em background. `trackServer` já embrulha
+  // capture+flush num try/catch interno e nunca rejeita, mas o try/catch
+  // síncrono abaixo é defesa extra: telemetria não pode, sob nenhuma
+  // circunstância, derrubar o processamento do pagamento — nem por uma
+  // rejeição da Promise (`.catch`), nem por um throw síncrono.
+  if (ref?.kind === "prep_purchase" && creditsGranted > 0) {
     try {
       void trackServer(userId, "checkout_confirmado", {
         qty: ref.qty,

@@ -41,6 +41,15 @@ function fakeSupabase(opts: {
   profileSelectByCol?: (col: string, val: unknown) => unknown;
   /** Make a specific RPC return an error to test the failure path. */
   rpcError?: (name: string) => string | null;
+  /**
+   * Override what a given RPC call returns as `data`. Defaults to
+   * `args.p_credits` for `handle_payment_received` (as if this were the
+   * first, credit-granting call for the payment — matches migration 0024's
+   * `handle_payment_received`, which returns `p_credits` the first time and
+   * `0` on every subsequent call for the same payment) and `null` for
+   * everything else.
+   */
+  rpcData?: (name: string, args: Record<string, unknown>) => unknown;
 } = {}) {
   const calls: DbCalls = { insertEvent: [], rpc: [] };
   const supa = {
@@ -85,7 +94,13 @@ function fakeSupabase(opts: {
     rpc: async (name: string, args: Record<string, unknown>) => {
       calls.rpc.push({ name, args });
       const err = opts.rpcError?.(name);
-      return err ? { data: null, error: { message: err } } : { data: null, error: null };
+      if (err) return { data: null, error: { message: err } };
+      const data = opts.rpcData
+        ? opts.rpcData(name, args)
+        : name === "handle_payment_received"
+          ? (args.p_credits ?? 1)
+          : null;
+      return { data, error: null };
     },
   };
   return { supa, calls };
@@ -326,6 +341,48 @@ describe("dispatchEvent", () => {
       const result = await dispatchEvent(evt, "evt_confirmado_3", supa as never);
       expect(result.handled).toBe(true);
       expect(calls.rpc[0].name).toBe("handle_payment_received");
+    });
+
+    it("NÃO dispara quando o RPC devolve 0 créditos concedidos (PAYMENT_CONFIRMED + PAYMENT_RECEIVED do mesmo pagamento)", async () => {
+      // handle_payment_received (migration 0024) devolve 0 na segunda
+      // entrada do mesmo pagamento — o Asaas manda PAYMENT_CONFIRMED e
+      // PAYMENT_RECEIVED separados pro mesmo pagamento de cartão, cada um
+      // com asaas_event_id diferente, então a idempotência por evento não
+      // filtra a segunda. Esta é a regressão que a correção evita: sem o
+      // gate em creditsGranted > 0, este teste dispararia checkout_confirmado
+      // de novo e contaria o mesmo pagamento 2x na métrica de conversão.
+      const { supa, calls } = fakeSupabase({
+        rpcData: (name) => (name === "handle_payment_received" ? 0 : null),
+      });
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_CONFIRMED",
+        payment: { id: "p4", customer: "c1", value: 10, status: "CONFIRMED",
+          billingType: "CREDIT_CARD", externalReference: "prep:u1:1:abc" },
+      };
+      const result = await dispatchEvent(evt, "evt_confirmado_4", supa as never);
+      expect(result.handled).toBe(true);
+      expect(calls.rpc[0].name).toBe("handle_payment_received");
+      const confirmadoCalls = vi
+        .mocked(trackServer)
+        .mock.calls.filter(([, event]) => event === "checkout_confirmado");
+      expect(confirmadoCalls).toEqual([]);
+    });
+
+    it("dispara quando o RPC devolve créditos > 0 (primeira entrada do pagamento)", async () => {
+      const { supa } = fakeSupabase({
+        rpcData: (name, args) => (name === "handle_payment_received" ? args.p_credits : null),
+      });
+      const evt: AsaasWebhookEvent = {
+        event: "PAYMENT_CONFIRMED",
+        payment: { id: "p5", customer: "c1", value: 10, status: "CONFIRMED",
+          billingType: "CREDIT_CARD", externalReference: "prep:u1:1:abc" },
+      };
+      const result = await dispatchEvent(evt, "evt_confirmado_5", supa as never);
+      expect(result.handled).toBe(true);
+      expect(trackServer).toHaveBeenCalledWith("u1", "checkout_confirmado", {
+        qty: 1,
+        cents: 1000,
+      });
     });
   });
 });
