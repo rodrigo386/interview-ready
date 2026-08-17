@@ -100,7 +100,9 @@ export default function LgpdPage() {
             .
           </li>
           <li>
-            <strong className="text-text-primary">Cancelar assinatura</strong> Pro: mesmo lugar.
+            <strong className="text-text-primary">Ver seus pagamentos e créditos</strong>: mesmo
+            lugar. Não há assinatura nem cobrança recorrente — o crédito é comprado avulso e não
+            expira.
           </li>
         </ul>
         <p>Para os demais direitos (portabilidade, anonimização, esclarecimentos):</p>

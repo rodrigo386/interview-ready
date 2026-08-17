@@ -328,7 +328,7 @@ Storage buckets: `cvs` (privado, org-scoped por user_id), **`avatars`** (públic
 
 | Rota | Método | Função |
 |---|---|---|
-| `/prep/new` | server action `createPrep` | gerar novo prep + **quota gate** (consome 1 crédito via `consumePrepCredit`, antes de inserir a linha) + duplicate JD detection |
+| `/prep/new` | server action `createPrep` | cria a sessão e dispara a análise ATS. **Não cobra crédito** — a ATS é grátis aqui igual à ferramenta anônima. Quem cobra é o `generateFullPrep`, no botão que aparece depois que o ATS conclui. + duplicate JD detection |
 | `/prep/new` | server action `uploadCv` | upload + parse de PDF/DOCX/TXT |
 | `/prep/new` | server action `fetchJdFromUrl` | extrai texto via Jina Reader + cleanup Gemini (strip cookies/footer) |
 | `/prep/[id]/ats` | server action `runAtsAnalysis` | dispara ATS analysis (Gemini, determinístico temp=0) |
