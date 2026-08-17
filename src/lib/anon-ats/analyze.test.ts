@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { analyzeAnonAts } from "./analyze";
 
 const input = {
@@ -18,41 +18,17 @@ const valido = {
 };
 
 describe("analyzeAnonAts", () => {
-  it("usa o Cerebras quando ele responde válido, sem tocar no Gemini", async () => {
-    const gemini = vi.fn();
+  it("devolve a análise quando o Gemini responde válido", async () => {
     const r = await analyzeAnonAts(input, {
-      callCerebras: async () => ({ ok: true, text: JSON.stringify(valido), modelId: "qwen" }),
-      callGemini: gemini,
+      callGemini: async () => valido,
     });
 
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.modelUsed).toBe("cerebras");
-    expect(gemini).not.toHaveBeenCalled();
+    if (r.ok) expect(r.analysis).toEqual(valido);
   });
 
-  it("cai pro Gemini quando o Cerebras devolve JSON fora do schema", async () => {
+  it("devolve erro em PT-BR quando o Gemini falha", async () => {
     const r = await analyzeAnonAts(input, {
-      callCerebras: async () => ({ ok: true, text: '{"score":"muito alto"}', modelId: "qwen" }),
-      callGemini: async () => valido as never,
-    });
-
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(r.modelUsed).toBe("gemini");
-  });
-
-  it("cai pro Gemini quando o Cerebras está indisponível", async () => {
-    const r = await analyzeAnonAts(input, {
-      callCerebras: async () => ({ ok: false, reason: "all_failed" as const }),
-      callGemini: async () => valido as never,
-    });
-
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(r.modelUsed).toBe("gemini");
-  });
-
-  it("devolve erro em PT-BR quando os dois falham", async () => {
-    const r = await analyzeAnonAts(input, {
-      callCerebras: async () => ({ ok: false, reason: "all_failed" as const }),
       callGemini: async () => {
         throw new Error("503 overloaded");
       },
@@ -64,12 +40,7 @@ describe("analyzeAnonAts", () => {
 
   it("aceita top_fixes vazio — CV que casa perfeitamente", async () => {
     const r = await analyzeAnonAts(input, {
-      callCerebras: async () => ({
-        ok: true,
-        text: JSON.stringify({ ...valido, score: 94, top_fixes: [] }),
-        modelId: "qwen",
-      }),
-      callGemini: vi.fn(),
+      callGemini: async () => ({ ...valido, score: 94, top_fixes: [] }),
     });
 
     expect(r.ok).toBe(true);

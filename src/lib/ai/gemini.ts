@@ -13,8 +13,6 @@ import {
   type SalaryBenchmark,
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
-import { callCerebrasJson } from "@/lib/ai/cerebras";
-import type { ZodSchema } from "zod";
 
 // Primary model for structured-output tasks (sections, ATS, CV rewrite).
 // `gemini-3.1-flash-lite` went GA on 2026-05-07. Same pricing as the
@@ -26,7 +24,7 @@ const MODEL_ID = "gemini-3.1-flash-lite";
 
 // Fallback chain: when the primary `gemini-3.1-flash-lite` returns transient
 // failures (503/429/UNAVAILABLE) AFTER 3 retries with backoff, we try each
-// fallback once. If all fail, propagates to Cerebras (last resort).
+// fallback once. If all fail, the original error propagates to the caller.
 //
 // Order (per user request 2026-05-07): escalate to bigger/smarter models
 // in the same Gemini family, hoping their separate capacity pools have
@@ -36,7 +34,12 @@ const MODEL_ID = "gemini-3.1-flash-lite";
 //   Supports responseSchema + googleSearch. ~6x output cost ($0.50/$3.00
 //   per 1M) — only fires on primary failure so impact is low.
 // - `gemini-3.1-pro-preview`: reasoning-heavy, slowest + most expensive,
-//   last Gemini-family attempt before Cerebras takes over.
+//   last attempt in the chain. Until 2026-08-16 a Cerebras free-tier call
+//   fired after this one as a last resort; removed because both models it
+//   used (qwen-3-235b-a22b-instruct-2507, llama3.1-8b) had vanished from
+//   Cerebras's catalog — production logs showed HTTP 404 "Model does not
+//   exist or you do not have access to it" for both. The chain now just
+//   ends here and propagates the error.
 const FALLBACK_MODELS = [
   "gemini-3-flash-preview",
   "gemini-3.1-pro-preview",
@@ -184,103 +187,6 @@ async function callGeminiWithRetry<T>(
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
-/**
- * Lenient pre-process for Cerebras output: fills common missing fields with
- * sensible defaults before Zod safeParse. Cerebras's `response_format:
- * json_object` only guarantees valid JSON, not schema match — Llama / Qwen
- * habitually skip required fields like card `id` (production-observed
- * 2026-05-07: "expected string, received undefined" at path cards.0.id).
- *
- * Strategy: fill what's safely auto-derivable (ids), leave the rest to Zod.
- * If still failing, propagation continues normally.
- */
-function coerceCerebrasOutput(raw: unknown, label: string): unknown {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
-  const obj = raw as Record<string, unknown>;
-  const out: Record<string, unknown> = { ...obj };
-
-  // Sections schema: cards[].id is required and Cerebras often skips it.
-  if (Array.isArray(obj.cards)) {
-    out.cards = (obj.cards as unknown[]).map((card, i) => {
-      if (!card || typeof card !== "object" || Array.isArray(card)) return card;
-      const c = card as Record<string, unknown>;
-      if (typeof c.id !== "string" || !c.id) {
-        return { ...c, id: `${label}-${i + 1}` };
-      }
-      return c;
-    });
-  }
-
-  // Sections schema: top-level id/title/icon/summary required.
-  if (typeof out.id !== "string" || !out.id) out.id = label;
-  return out;
-}
-
-/**
- * Last-resort fallback: when the entire Gemini chain (primary + 2 GA
- * fallbacks) is exhausted by 503s, try Cerebras Cloud Inference. Returns
- * the parsed Zod result on success, or throws the original Gemini error
- * to preserve diagnostics. Never throws from Cerebras itself — silent fail
- * to original error so user sees the most informative message.
- *
- * Cerebras with `response_format: json_object` is looser on schema
- * adherence than Gemini's `responseSchema`, so the Zod safeParse is the
- * only enforcement. We pre-coerce common missing fields (auto-fill card
- * ids, etc.) before validation to recover from minor schema drift.
- */
-async function tryCerebrasFallback<T>(opts: {
-  label: string;
-  systemPrompt: string;
-  userPrompt: string;
-  temperature: number;
-  maxTokens: number;
-  schema: ZodSchema<T>;
-  geminiErr: unknown;
-}): Promise<T> {
-  const result = await callCerebrasJson({
-    systemPrompt: opts.systemPrompt,
-    userPrompt: opts.userPrompt,
-    temperature: opts.temperature,
-    maxTokens: opts.maxTokens,
-    label: opts.label,
-  });
-  if (!result.ok) {
-    // No key OR all Cerebras models failed. Surface the ORIGINAL Gemini
-    // error — it's more diagnostic than "Cerebras has no key".
-    throw opts.geminiErr instanceof Error
-      ? opts.geminiErr
-      : new Error(String(opts.geminiErr));
-  }
-
-  let raw: unknown;
-  try {
-    raw = JSON.parse(result.text);
-  } catch {
-    console.warn(`[cerebras] ${opts.label} non-JSON output, propagating Gemini error`);
-    throw opts.geminiErr instanceof Error
-      ? opts.geminiErr
-      : new Error(String(opts.geminiErr));
-  }
-
-  // Lenient pre-process: fill predictable missing fields (card ids etc).
-  const coerced = coerceCerebrasOutput(raw, opts.label);
-
-  const parsed = opts.schema.safeParse(coerced);
-  if (!parsed.success) {
-    console.warn(
-      `[cerebras] ${opts.label} schema failed after coercion: ${parsed.error.message.slice(0, 200)}`,
-    );
-    throw opts.geminiErr instanceof Error
-      ? opts.geminiErr
-      : new Error(String(opts.geminiErr));
-  }
-
-  console.log(
-    `[cerebras] ${opts.label} succeeded as fallback (${result.modelId})`,
-  );
-  return parsed.data;
-}
-
 // Re-export the mock fixtures by importing them lazily (anthropic.ts owns them
 // to avoid circular concerns). For test paths, MOCK_ANTHROPIC=1 already short-
 // circuits in anthropic.ts; for parity we honor the same env var here.
@@ -399,36 +305,22 @@ export async function generateSection(params: {
 
   const start = Date.now();
   console.log(`[gemini] section ${params.kind} starting`);
-  let result;
-  try {
-    result = await callGeminiWithRetry(`section-${params.kind}`, (modelId) => {
-      const model = client.getGenerativeModel({
-        model: modelId,
-        systemInstruction: params.system,
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: sectionResponseSchema,
-          // 12288 (4096 → 8192 → 12288): PT-BR consumes ~1.3-1.5x more
-          // tokens than EN. Verbose models with reasoning (gpt-oss, gemini-3-pro)
-          // can chew through 8k easily on a section with 5 dense cards.
-          maxOutputTokens: 12288,
-          temperature: 0.7,
-        },
-      });
-      return model.generateContent(params.user);
+  const result = await callGeminiWithRetry(`section-${params.kind}`, (modelId) => {
+    const model = client.getGenerativeModel({
+      model: modelId,
+      systemInstruction: params.system,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: sectionResponseSchema,
+        // 12288 (4096 → 8192 → 12288): PT-BR consumes ~1.3-1.5x more
+        // tokens than EN. Verbose models with reasoning (gpt-oss, gemini-3-pro)
+        // can chew through 8k easily on a section with 5 dense cards.
+        maxOutputTokens: 12288,
+        temperature: 0.7,
+      },
     });
-  } catch (geminiErr) {
-    // All Gemini models exhausted — try Cerebras as last resort.
-    return tryCerebrasFallback({
-      label: `section-${params.kind}`,
-      systemPrompt: params.system,
-      userPrompt: params.user,
-      temperature: 0.7,
-      maxTokens: 12288,
-      schema: prepSectionSchema,
-      geminiErr,
-    });
-  }
+    return model.generateContent(params.user);
+  });
   const text = result.response.text();
   // Detect truncation: when Gemini hits maxOutputTokens, finishReason is
   // "MAX_TOKENS" and the JSON is unterminated mid-string. Surface as a
@@ -513,35 +405,22 @@ export async function generateCvRewrite(params: {
 
   const start = Date.now();
   console.log("[gemini] cv-rewrite starting");
-  let result;
-  try {
-    result = await callGeminiWithRetry("cv-rewrite", (modelId) => {
-      const model = client.getGenerativeModel({
-        model: modelId,
-        systemInstruction: params.system,
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: cvRewriteResponseSchema,
-          // 16k (was 8k): CV rewrite output is the full markdown CV plus
-          // summary_of_changes (up to 40 entries) plus preserved_facts (up
-          // to 60). Hit 8k truncation on long CVs in PT-BR.
-          maxOutputTokens: 16384,
-          temperature: 0.5,
-        },
-      });
-      return model.generateContent(params.user);
+  const result = await callGeminiWithRetry("cv-rewrite", (modelId) => {
+    const model = client.getGenerativeModel({
+      model: modelId,
+      systemInstruction: params.system,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: cvRewriteResponseSchema,
+        // 16k (was 8k): CV rewrite output is the full markdown CV plus
+        // summary_of_changes (up to 40 entries) plus preserved_facts (up
+        // to 60). Hit 8k truncation on long CVs in PT-BR.
+        maxOutputTokens: 16384,
+        temperature: 0.5,
+      },
     });
-  } catch (geminiErr) {
-    return tryCerebrasFallback({
-      label: "cv-rewrite",
-      systemPrompt: params.system,
-      userPrompt: params.user,
-      temperature: 0.5,
-      maxTokens: 16384,
-      schema: cvRewriteSchema,
-      geminiErr,
-    });
-  }
+    return model.generateContent(params.user);
+  });
   const text = result.response.text();
   const finishReason =
     result.response.candidates?.[0]?.finishReason ?? null;
@@ -684,42 +563,29 @@ export async function generateAtsAnalysis(params: {
 
   const start = Date.now();
   console.log("[gemini] ats starting");
-  let result;
-  try {
-    result = await callGeminiWithRetry("ats", (modelId) => {
-      const model = client.getGenerativeModel({
-        model: modelId,
-        systemInstruction: params.system,
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: atsResponseSchema,
-          // 16384 (4096 → 8192 → 16384): ATS keyword_analysis has 3 buckets
-          // (critical/high/medium) of unbounded length; top_fixes entries
-          // each carry up to 4 long strings. PT-BR sample on prod hit 8k
-          // truncation. 16k matches CV rewrite.
-          maxOutputTokens: 16384,
-          // Deterministic-as-possible: same CV + JD should produce the same
-          // score and analysis on re-run. temperature=0 + topK=1 collapses the
-          // sampling distribution; minor variation may still leak from float
-          // ops on the server, but it's no longer the wild swings users saw.
-          temperature: 0,
-          topK: 1,
-          topP: 0,
-        },
-      });
-      return model.generateContent(params.user);
+  const result = await callGeminiWithRetry("ats", (modelId) => {
+    const model = client.getGenerativeModel({
+      model: modelId,
+      systemInstruction: params.system,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: atsResponseSchema,
+        // 16384 (4096 → 8192 → 16384): ATS keyword_analysis has 3 buckets
+        // (critical/high/medium) of unbounded length; top_fixes entries
+        // each carry up to 4 long strings. PT-BR sample on prod hit 8k
+        // truncation. 16k matches CV rewrite.
+        maxOutputTokens: 16384,
+        // Deterministic-as-possible: same CV + JD should produce the same
+        // score and analysis on re-run. temperature=0 + topK=1 collapses the
+        // sampling distribution; minor variation may still leak from float
+        // ops on the server, but it's no longer the wild swings users saw.
+        temperature: 0,
+        topK: 1,
+        topP: 0,
+      },
     });
-  } catch (geminiErr) {
-    return tryCerebrasFallback({
-      label: "ats",
-      systemPrompt: params.system,
-      userPrompt: params.user,
-      temperature: 0,
-      maxTokens: 16384,
-      schema: atsAnalysisSchema,
-      geminiErr,
-    });
-  }
+    return model.generateContent(params.user);
+  });
   const text = result.response.text();
   const finishReason =
     result.response.candidates?.[0]?.finishReason ?? null;

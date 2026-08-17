@@ -94,7 +94,11 @@ export async function runAnonAtsAnalysis(
     jobTitle: normalized.value.jobTitle,
     companyName: normalized.value.companyName,
     analysis: result.analysis,
-    modelUsed: result.modelUsed,
+    // Sempre "gemini" agora — Cerebras removido em 2026-08-16. A coluna
+    // model_used continua existindo (linhas antigas gravaram "cerebras")
+    // então este valor literal fica explícito aqui em vez de vir da
+    // resposta de analyzeAnonAts, que não carrega mais essa informação.
+    modelUsed: "gemini",
     ipHash: hashIp(ip),
   });
   if (!saved) {

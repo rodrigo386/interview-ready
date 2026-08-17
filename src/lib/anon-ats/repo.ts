@@ -51,7 +51,11 @@ export async function insertAnonAnalysis(row: {
   jobTitle: string;
   companyName: string;
   analysis: AtsAnalysis;
-  modelUsed: "cerebras" | "gemini";
+  // Cerebras foi removido em 2026-08-16 (ver CLAUDE.md §10) — só o Gemini
+  // gera análise agora. O parâmetro fica como valor único em vez de
+  // hardcoded aqui dentro porque a coluna `model_used` é histórica (linhas
+  // antigas têm "cerebras") e o chamador é quem decide o que gravar.
+  modelUsed: "gemini";
   ipHash: string | null;
 }): Promise<boolean> {
   const sb = createAdminClient();

@@ -81,9 +81,13 @@ export type PrepSessionInsert = {
 };
 
 /**
- * Copia a análise anônima para dentro da conta. NUNCA re-executa a IA: o
- * lado anônimo roda em Cerebras e o logado em Gemini, então rodar de novo
- * mudaria a nota entre "antes" e "depois" do cadastro — e a nota é a isca.
+ * Copia a análise anônima para dentro da conta. NUNCA re-executa a IA: rodar
+ * de novo arriscaria mudar a nota entre "antes" e "depois" do cadastro — e a
+ * nota é a isca. Até 2026-08-16 essa regra também impedia um risco maior: o
+ * lado anônimo rodava em Cerebras e o logado em Gemini, dois modelos
+ * diferentes que quase certamente dariam notas diferentes (Cerebras foi
+ * removido — ver CLAUDE.md §10 — os dois lados rodam em Gemini agora, mas a
+ * política de nunca re-executar continua valendo).
  */
 export function anonAnalysisToPrepSession(
   row: {

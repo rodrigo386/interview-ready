@@ -58,7 +58,8 @@ export type FunnelEventMap = {
   anon_ats_completed: {
     score: number;
     fixes_count: number;
-    /** "cerebras" | "gemini" — qual modelo produziu a nota. */
+    /** "gemini" — qual modelo produziu a nota. Linhas de antes de
+     * 2026-08-16 podem trazer "cerebras" (removido, ver CLAUDE.md §10). */
     model_used?: string;
   };
   anon_ats_claimed: { method: "email" | "google" };
