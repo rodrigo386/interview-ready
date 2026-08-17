@@ -34,15 +34,25 @@ describe("<PartialPrepBanner />", () => {
     ).toBeDefined();
   });
 
-  it("explica o caminho real pra refazer a MESMA vaga: excluir e criar de novo", () => {
+  it("explica o caminho real pra refazer a mesma vaga: excluir e criar de novo", () => {
+    // "esta vaga" fica dentro de um <strong> (ênfase, não caixa-alta), então a
+    // frase inteira não é um único nó de texto — checamos o parágrafo inteiro
+    // pelo textContent em vez de casar a regex contra um nó só.
     const { getByText } = render(<PartialPrepBanner failedSections={["likely"]} />);
-    expect(
-      getByText(/Pra refazer ESTA vaga, exclua este prep primeiro/),
-    ).toBeDefined();
+    const paragraph = getByText(/devolvemos o crédito usado/).closest("p");
+    expect(paragraph?.textContent).toMatch(
+      /Pra refazer esta vaga, exclua este prep antes de criar um novo\./,
+    );
   });
 
-  it("continua avisando que o que foi gerado continua do usuário", () => {
+  it("diz que o crédito já está disponível no saldo (não pendente)", () => {
     const { getByText } = render(<PartialPrepBanner failedSections={["likely"]} />);
-    expect(getByText(/O que foi gerado aqui continua seu/)).toBeDefined();
+    expect(getByText(/já está no seu saldo/)).toBeDefined();
+  });
+
+  it("usa <strong>, não caixa-alta, pra dar ênfase a 'esta vaga' (padrão dos vizinhos em src/components/prep/*.tsx)", () => {
+    const { getByText } = render(<PartialPrepBanner failedSections={["likely"]} />);
+    const emphasis = getByText("esta vaga");
+    expect(emphasis.tagName).toBe("STRONG");
   });
 });

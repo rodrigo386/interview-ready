@@ -61,11 +61,10 @@ export function PartialPrepBanner({
           </p>
           <p className="mt-2 text-sm text-ink-2">
             Como a preparação não veio inteira,{" "}
-            <strong className="text-ink">devolvemos o crédito usado</strong> — ele
-            já voltou pro seu saldo e vale por uma preparação nova pra outra vaga.
-            Pra refazer ESTA vaga, exclua este prep primeiro (opção abaixo): enquanto
-            ele existir, detectamos a mesma descrição como duplicada e não deixamos
-            gerar de novo. O que foi gerado aqui continua seu.
+            <strong className="text-ink">devolvemos o crédito usado</strong> — já
+            está no seu saldo e vale por uma preparação nova pra outra vaga. Pra
+            refazer <strong className="text-ink">esta vaga</strong>, exclua este
+            prep antes de criar um novo.
           </p>
         </div>
       </div>
