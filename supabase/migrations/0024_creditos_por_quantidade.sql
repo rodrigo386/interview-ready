@@ -332,6 +332,58 @@ $$;
 REVOKE ALL ON FUNCTION public.refund_prep_credit(uuid, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.refund_prep_credit(uuid, uuid) TO service_role;
 
+-- 5.5) Concessão manual de crédito pelo operador.
+--
+-- Sem isto não existia NENHUM caminho no código que aumentasse
+-- `prep_credits` fora do webhook e do reconcile: o `GrantProButton` do
+-- `/admin/users` só escreve `tier = 'pro'`, e o `checkQuota` deixou de olhar
+-- para `tier` — o botão "Conceder Pro" não destrava uma preparação sequer.
+-- Vão existir clientes que pagaram e não receberam (estorno que não voltou,
+-- pagamento que caiu fora do webhook e fora da janela do reconcile, falha
+-- que não devolveu), e o operador precisa poder compensar sem abrir o SQL
+-- Editor de produção.
+--
+-- Incremento atômico dentro do banco, e não read-modify-write no TS, pelo
+-- mesmo motivo de todo o resto desta migration: é saldo, não estado.
+--
+-- Teto de 50 por chamada: é botão de compensação pontual, não de emissão em
+-- massa. Erro de digitação num campo de número não pode virar saldo
+-- ilimitado. `raise exception` (em vez de devolver 0) porque quem chama é
+-- uma action de admin que precisa distinguir "não fiz nada" de "fiz" —
+-- silêncio aqui viraria concessão fantasma.
+create or replace function public.admin_grant_prep_credits(
+  p_user_id uuid,
+  p_credits integer
+) returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_saldo int;
+begin
+  if p_credits is null or p_credits < 1 or p_credits > 50 then
+    raise exception 'p_credits fora do intervalo permitido (1..50): %', p_credits;
+  end if;
+
+  update public.profiles
+     set prep_credits = COALESCE(prep_credits, 0) + p_credits
+   where id = p_user_id
+  returning prep_credits into v_saldo;
+
+  if v_saldo is null then
+    raise exception 'perfil % não encontrado', p_user_id;
+  end if;
+
+  return v_saldo;
+end;
+$$;
+
+REVOKE ALL ON FUNCTION public.admin_grant_prep_credits(uuid, integer)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_grant_prep_credits(uuid, integer)
+  TO service_role;
+
 -- ───────────────────────────────────────────────────────────────────────────
 -- 6) prep_sessions: privilégio por COLUNA (mesmo molde da 0011 em `profiles`)
 -- ───────────────────────────────────────────────────────────────────────────

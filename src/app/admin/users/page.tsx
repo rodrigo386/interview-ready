@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DeleteUserButton } from "@/components/admin/DeleteUserButton";
 import { GrantProButton } from "@/components/admin/GrantProButton";
+import { GrantCreditsButton } from "@/components/admin/GrantCreditsButton";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -166,6 +167,11 @@ export default async function UsersAdminPage({
                     </td>
                     <td className="px-4 py-3 align-top text-right">
                       <div className="flex justify-end gap-1.5">
+                        <GrantCreditsButton
+                          userId={u.id}
+                          email={u.email}
+                          prepCredits={u.prep_credits ?? 0}
+                        />
                         <GrantProButton
                           userId={u.id}
                           email={u.email}

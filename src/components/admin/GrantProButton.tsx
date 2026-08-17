@@ -70,13 +70,21 @@ export function GrantProButton({
             <p className="mt-2 text-sm text-text-secondary">
               {isPro ? (
                 <>
-                  Voltar <strong>{email}</strong> para o plano Free? Perde acesso ilimitado a preps imediatamente.
+                  Voltar <strong>{email}</strong> para <code>tier=free</code>?
                 </>
               ) : (
                 <>
-                  Dar acesso Pro ilimitado a <strong>{email}</strong> sem cobrança? Marca como <code>tier=pro</code> + <code>subscription_status=active</code>.
+                  Marcar <strong>{email}</strong> como <code>tier=pro</code> +{" "}
+                  <code>subscription_status=active</code>?
                 </>
               )}
+            </p>
+            <p className="mt-2 rounded-md border border-yellow-soft bg-yellow-soft/40 px-3 py-2 text-xs text-yellow-700 dark:border-yellow-900 dark:bg-yellow-950/30 dark:text-yellow-300">
+              Isto <strong>não</strong> destrava nenhuma preparação. Não existe
+              mais plano ilimitado: o gate (<code>checkQuota</code>) só olha
+              <code> prep_credits</code>, e estas duas colunas sobrevivem apenas
+              para o assinante legado. Para compensar alguém, use{" "}
+              <strong>+ Crédito</strong>.
             </p>
             {hasAsaasSubscription && (
               <p className="mt-3 rounded-md border border-yellow-soft bg-yellow-soft/40 px-3 py-2 text-xs text-yellow-700 dark:border-yellow-900 dark:bg-yellow-950/30 dark:text-yellow-300">

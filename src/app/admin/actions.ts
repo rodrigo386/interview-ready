@@ -61,6 +61,45 @@ export async function grantProAction(userId: string): Promise<AdminActionResult>
   return { ok: true };
 }
 
+export type GrantCreditsResult =
+  | { ok: true; balance: number }
+  | { ok: false; error: string };
+
+/**
+ * Concede crédito de preparação a um usuário. É a única forma no código de
+ * aumentar `prep_credits` fora do webhook e do reconcile.
+ *
+ * Existe porque vão existir clientes que pagaram e não receberam — estorno
+ * que não voltou, pagamento fora da janela do reconcile e perdido pelo
+ * webhook, falha que não devolveu — e a alternativa era abrir o SQL Editor
+ * de produção. Note que `grantProAction` NÃO serve pra isso: ela só escreve
+ * `tier = 'pro'`, e o `checkQuota` só olha `prep_credits`.
+ *
+ * O incremento acontece dentro do banco (`admin_grant_prep_credits`,
+ * migration 0024), não aqui, porque é saldo e não estado — o mesmo motivo
+ * que fez todo o resto do fluxo de crédito sair do read-modify-write.
+ */
+export async function grantCreditsAction(
+  userId: string,
+  credits: number,
+): Promise<GrantCreditsResult> {
+  await requireAdmin();
+  if (!Number.isInteger(credits) || credits < 1 || credits > 50) {
+    return { ok: false, error: "Informe um número inteiro de 1 a 50." };
+  }
+
+  const sb = createAdminClient();
+  const { data, error } = await sb.rpc("admin_grant_prep_credits", {
+    p_user_id: userId,
+    p_credits: credits,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { ok: true, balance: typeof data === "number" ? data : credits };
+}
+
 export type IndexNowSubmitResult =
   | { ok: true; submitted: number; status: number }
   | { ok: false; error: string };
