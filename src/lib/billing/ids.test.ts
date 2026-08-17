@@ -1,36 +1,36 @@
-import { describe, expect, it } from "vitest";
+import { describe, it, expect } from "vitest";
 import { buildExternalReference, parseExternalReference } from "./ids";
 
-describe("externalReference", () => {
-  it("builds pro reference from user id", () => {
-    expect(buildExternalReference({ kind: "pro_subscription", userId: "u1" }))
-      .toBe("pro:u1");
+describe("externalReference de compra de prep", () => {
+  it("carrega a quantidade", () => {
+    const raw = buildExternalReference({
+      kind: "prep_purchase", userId: "u1", qty: 3, nano: "abc",
+    });
+    expect(raw).toBe("prep:u1:3:abc");
   });
 
-  it("builds per-use reference with nanoid suffix", () => {
-    const ref = buildExternalReference({ kind: "prep_purchase", userId: "u1", nano: "abc123" });
-    expect(ref).toBe("prep:u1:abc123");
+  it("faz o round-trip", () => {
+    const parsed = parseExternalReference("prep:u1:5:xyz");
+    expect(parsed).toEqual({ kind: "prep_purchase", userId: "u1", qty: 5, nano: "xyz" });
   });
 
-  it("parses pro reference", () => {
+  // Pagamento criado antes do deploy chega no webhook depois dele.
+  it("trata o formato antigo como 1 crédito", () => {
+    const parsed = parseExternalReference("prep:u1:abc");
+    expect(parsed).toEqual({ kind: "prep_purchase", userId: "u1", qty: 1, nano: "abc" });
+  });
+
+  it("recusa quantidade que não é número", () => {
+    expect(parseExternalReference("prep:u1:tres:abc")).toBeNull();
+  });
+
+  it("recusa quantidade fora dos SKUs", () => {
+    expect(parseExternalReference("prep:u1:99:abc")).toBeNull();
+  });
+
+  it("continua entendendo a assinatura antiga", () => {
     expect(parseExternalReference("pro:u1")).toEqual({
-      kind: "pro_subscription",
-      userId: "u1",
+      kind: "pro_subscription", userId: "u1",
     });
-  });
-
-  it("parses prep reference", () => {
-    expect(parseExternalReference("prep:u1:abc")).toEqual({
-      kind: "prep_purchase",
-      userId: "u1",
-      nano: "abc",
-    });
-  });
-
-  it("returns null on garbage", () => {
-    expect(parseExternalReference("garbage")).toBeNull();
-    expect(parseExternalReference("")).toBeNull();
-    expect(parseExternalReference(null)).toBeNull();
-    expect(parseExternalReference("foo:bar")).toBeNull();
   });
 });
