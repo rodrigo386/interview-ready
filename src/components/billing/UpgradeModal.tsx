@@ -5,8 +5,18 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useDialogFocus } from "@/components/ui/useDialogFocus";
 import { track } from "@/lib/analytics/client";
+import { findSku } from "@/lib/billing/prices";
 
-type Kind = "pro_subscription" | "prep_purchase";
+type Kind = "prep_purchase";
+
+/**
+ * O botão de compra deste modal sempre leva ao SKU de 1 crédito — quem quer
+ * pacote vai pelo link "Ver pacotes" → `/pricing`, onde o `CheckoutButton`
+ * decide a quantidade. Constante nomeada (e propagada até o `start`) porque a
+ * mesma quantidade precisa aparecer no evento e na cobrança: se um dia o
+ * modal passar a vender pacote, as duas mudam juntas ou nenhuma muda.
+ */
+const MODAL_QTY = 1;
 
 export function UpgradeModal({
   open,
@@ -16,7 +26,7 @@ export function UpgradeModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onCheckout: (kind: Kind) => void;
+  onCheckout: (kind: Kind, qty: number) => void;
   reason?: "quota_exceeded" | "soft_cap" | "other";
 }) {
   const [pendingKind, setPendingKind] = useState<Kind | null>(null);
@@ -34,8 +44,26 @@ export function UpgradeModal({
   if (!open) return null;
 
   const handle = (kind: Kind) => {
+    // `checkout_iniciado` também sai daqui, e não só do `CheckoutButton`.
+    // Este modal é o paywall de verdade — o que `GenerateFullPrepCta`,
+    // `NewPrepForm` e `PrepFailed` abrem quando o saldo acaba —, e ele
+    // chamava `checkout.start()` direto, sem emitir nada. Como o webhook
+    // emite `checkout_confirmado` para TODA compra, a taxa "checkout
+    // iniciado → pagamento confirmado" (métrica de sucesso da spec) saía
+    // maior que 100% e sem denominador confiável.
+    //
+    // Emitido no clique, pelo mesmo motivo do `CheckoutButton`: uma intenção
+    // de compra, um evento. O laço de retry dos 422 de
+    // `cpf_required`/`address_required` vive DENTRO do `start()` e reenvia o
+    // POST até 3 vezes — emitir lá dentro contaria tentativa, não intenção.
+    // O `disabled={pendingKind !== null}` do botão fecha a outra ponta: não
+    // dá para clicar duas vezes no mesmo modal aberto.
+    track("checkout_iniciado", {
+      qty: MODAL_QTY,
+      cents: findSku(MODAL_QTY)?.cents ?? 0,
+    });
     setPendingKind(kind);
-    onCheckout(kind);
+    onCheckout(kind, MODAL_QTY);
   };
 
   return (

@@ -180,7 +180,7 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
           onClose={() => {
             window.location.reload();
           }}
-          onCheckout={(kind) => checkout.start(kind)}
+          onCheckout={(kind, qty) => checkout.start(kind, qty)}
         />
         {checkout.error && (
           <p
