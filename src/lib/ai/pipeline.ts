@@ -13,6 +13,7 @@ import {
   type SectionKind,
 } from "@/lib/ai/prompts/section-generator";
 import type { CompanyIntel, PrepSection } from "@/lib/ai/schemas";
+import { refundPrepCredit } from "@/lib/billing/consume";
 
 /**
  * Orchestrates the full prep generation pipeline:
@@ -37,7 +38,7 @@ export async function runPipeline(sessionId: string): Promise<void> {
   const { data: session, error } = await supabase
     .from("prep_sessions")
     .select(
-      "id, cv_text, job_description, job_title, company_name, generation_status",
+      "id, user_id, cv_text, job_description, job_title, company_name, generation_status",
     )
     .eq("id", sessionId)
     .single();
@@ -217,6 +218,7 @@ const SECTION_INTER_DELAY_MS = 1500;
 async function runStageB(
   sessionId: string,
   session: {
+    user_id: string;
     cv_text: string;
     job_description: string;
     job_title: string;
@@ -288,6 +290,32 @@ async function runStageB(
       progress_step: null,
     })
     .eq("id", sessionId);
+
+  // Entrega parcial DEVOLVE o crédito (decisão do dono do produto). A
+  // preparação vendida são as 5 seções; entregar 3 ou 4 e cobrar cheio é o
+  // caso mais defensável de "não recebeu o que pagou" — e não existe saída
+  // pela UI, porque `classifyRetryRecovery` trata `complete` como não
+  // retentável e o `retryPrep` redireciona antes de qualquer coisa. A pessoa
+  // fica com o que deu certo E com o crédito de volta para uma preparação
+  // nova; o produto absorve o custo da falha da IA, que é dele.
+  //
+  // Depois do UPDATE de propósito: se a devolução falhar, a pessoa pelo menos
+  // continua com o dossiê parcial que já foi gerado.
+  //
+  // `refundPrepCredit` é idempotente POR SESSÃO (o UPDATE condicional dentro
+  // do `refund_prep_credit` é o cadeado), então isto não pode devolver duas
+  // vezes nem colidir com a devolução de falha total que
+  // `runGenerationInBackground` dispara ao reler o status — que aliás nem
+  // dispara aqui, porque o status gravado é `complete`, não `failed`. E não
+  // devolve para entrega completa porque este ramo só roda quando
+  // `isPartial`.
+  //
+  // `isAdmin: false` é correto e não um atalho: admin nunca chega a consumir
+  // (`consumePrepCredit` sai antes de tocar o banco), então
+  // `credit_consumed_at` fica nulo na sessão dele e o RPC vira no-op sozinho.
+  if (isPartial) {
+    await refundPrepCredit(supabase, session.user_id, sessionId, false);
+  }
 }
 
 async function generateOne(

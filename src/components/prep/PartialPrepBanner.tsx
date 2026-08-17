@@ -3,6 +3,14 @@
  * Surfaces that one or more sections failed during generation but the
  * prep is still usable. Listing the missing sections helps the user know
  * what's available before clicking through.
+ *
+ * A última linha diz o que de fato acontece: entrega parcial devolve o
+ * crédito (`runStageB` em `src/lib/ai/pipeline.ts` chama `refundPrepCredit`
+ * ao gravar o parcial). O texto anterior prometia "você pode regerar o prep
+ * inteiro", que nunca foi verdade — o parcial é gravado como `complete`,
+ * `classifyRetryRecovery` trata `complete` como não retentável e o
+ * `retryPrep` redireciona antes de fazer qualquer coisa. Não havia, e não há,
+ * caminho de regeração pela UI.
  */
 
 const SECTION_LABELS: Record<string, string> = {
@@ -39,9 +47,11 @@ export function PartialPrepBanner({
             <strong className="text-ink">{labels.join(", ")}</strong>. O resto do
             seu dossiê está completo e utilizável.
           </p>
-          <p className="mt-2 text-xs text-ink-3">
-            Você pode regerar o prep inteiro em alguns minutos quando o serviço
-            estiver mais estável, ou continuar com o que temos agora.
+          <p className="mt-2 text-sm text-ink-2">
+            Como a preparação não veio inteira,{" "}
+            <strong className="text-ink">devolvemos o crédito usado</strong> — ele
+            já voltou pro seu saldo e vale por uma preparação nova, pra esta vaga
+            ou pra outra. O que foi gerado aqui continua seu.
           </p>
         </div>
       </div>
