@@ -3,6 +3,7 @@
 import { useProfileShell } from "@/components/profile/ProfileShellProvider";
 import { CheckoutButton } from "./CheckoutButton";
 import { CancelSubscriptionDialog } from "./CancelSubscriptionDialog";
+import { PREP_SKUS, brlLabel } from "@/lib/billing/prices";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "-";
@@ -13,70 +14,57 @@ function formatDate(iso: string | null): string {
   });
 }
 
+/**
+ * Não existe mais assinatura pra vender — o produto pago é crédito avulso
+ * de preparação completa (PREP_SKUS). `subscriptionStatus` ainda pode
+ * trazer um estado legado (assinante de antes da migração pra crédito);
+ * quando isso acontece, mostramos um aviso + o botão de cancelar, sem
+ * oferecer reativação — não há mais o que reativar.
+ */
 export function PlanCard() {
   const data = useProfileShell();
   const status = data.subscriptionStatus;
+  const legacySubscription = status === "active" || status === "overdue";
 
-  if (status === "active") {
-    return (
-      <div className="rounded-md border border-border p-4">
-        <p className="text-sm text-text-primary">
-          Plano <strong>Pro</strong>. Renova em {formatDate(data.subscriptionRenewsAt)}.
-        </p>
-        {data.prepCredits > 0 && (
-          <p className="mt-1 text-xs text-text-tertiary">
-            +{data.prepCredits} {data.prepCredits === 1 ? "crédito avulso" : "créditos avulsos"}
-          </p>
-        )}
-        <div className="mt-3 flex flex-wrap gap-2">
-          <CancelSubscriptionDialog />
-        </div>
-      </div>
-    );
-  }
-
-  if (status === "overdue") {
-    return (
-      <div className="rounded-md border border-yellow-500 bg-yellow-soft p-4">
-        <p className="text-sm text-text-primary">
-          ⚠️ Pagamento em atraso. Atualize seu cartão pra manter o Pro.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <CheckoutButton kind="pro_subscription">Atualizar pagamento</CheckoutButton>
-          <CancelSubscriptionDialog />
-        </div>
-      </div>
-    );
-  }
-
-  if (status === "canceled") {
-    return (
-      <div className="rounded-md border border-border p-4">
-        <p className="text-sm text-text-primary">
-          Cancelado. Acesso Pro até {formatDate(data.subscriptionRenewsAt)}.
-        </p>
-        <div className="mt-3">
-          <CheckoutButton kind="pro_subscription">Reativar Pro</CheckoutButton>
-        </div>
-      </div>
-    );
-  }
-
-  // none / expired
   return (
     <div className="rounded-md border border-border p-4">
-      <p className="text-sm text-text-primary">
-        Plano <strong>Free</strong>: 1 prep grátis no cadastro.
-      </p>
-      {data.prepCredits > 0 && (
-        <p className="mt-1 text-xs text-text-tertiary">
-          Você tem {data.prepCredits}{" "}
-          {data.prepCredits === 1 ? "crédito avulso" : "créditos avulsos"}
-        </p>
+      {legacySubscription && (
+        <div className="mb-4 rounded-md border border-yellow-500 bg-yellow-soft p-3">
+          <p className="text-sm text-text-primary">
+            {status === "overdue"
+              ? "⚠️ Pagamento em atraso na sua assinatura anterior."
+              : `Assinatura anterior ativa até ${formatDate(data.subscriptionRenewsAt)}.`}{" "}
+            A assinatura Pro saiu de linha — agora é só crédito avulso.
+          </p>
+          <div className="mt-2">
+            <CancelSubscriptionDialog />
+          </div>
+        </div>
       )}
+
+      <p className="text-sm text-text-primary">
+        Você tem{" "}
+        <strong>
+          {data.prepCredits} {data.prepCredits === 1 ? "crédito" : "créditos"}
+        </strong>{" "}
+        de preparação completa.
+      </p>
+      <p className="mt-1 text-xs text-text-tertiary">
+        A análise ATS é sempre gratuita. Cada crédito libera 1 preparação completa.
+      </p>
+
       <div className="mt-3 flex flex-wrap gap-2">
-        <CheckoutButton kind="pro_subscription">Assinar Pro · R$ 30/mês</CheckoutButton>
-        <CheckoutButton kind="prep_purchase" variant="ghost">Comprar 1 prep · R$ 10</CheckoutButton>
+        {PREP_SKUS.map((sku) => (
+          <CheckoutButton
+            key={sku.qty}
+            qty={sku.qty}
+            variant={sku.qty === 1 ? "primary" : "ghost"}
+          >
+            {sku.qty === 1
+              ? `Comprar 1 · ${brlLabel(sku.cents)}`
+              : `${sku.qty} por ${brlLabel(sku.cents)}`}
+          </CheckoutButton>
+        ))}
       </div>
     </div>
   );

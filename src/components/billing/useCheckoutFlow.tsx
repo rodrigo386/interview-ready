@@ -12,6 +12,7 @@ type Kind = "pro_subscription" | "prep_purchase";
 
 type CheckoutBody = {
   kind: Kind;
+  qty?: number;
   cpfCnpj?: string;
   address?: AddressDialogValue;
 };
@@ -117,12 +118,12 @@ export function useCheckoutFlow() {
     }
   }
 
-  function start(kind: Kind) {
+  function start(kind: Kind, qty?: number) {
     setError(null);
     track("checkout_started", { kind });
     startTransition(async () => {
       try {
-        let body: CheckoutBody = { kind };
+        let body: CheckoutBody = qty !== undefined ? { kind, qty } : { kind };
         let res = await doPost(body);
 
         // 2 possíveis 422s: cpf_required, address_required. Pode disparar

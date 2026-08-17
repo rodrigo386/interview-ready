@@ -2,14 +2,16 @@
 
 import { useCheckoutFlow } from "./useCheckoutFlow";
 
-type Kind = "pro_subscription" | "prep_purchase";
-
+/**
+ * Sempre compra preparação avulsa (`prep_purchase`) — não existe mais
+ * assinatura pra vender. `qty` decide o SKU e viaja no POST.
+ */
 export function CheckoutButton({
-  kind,
+  qty,
   children,
   variant,
 }: {
-  kind: Kind;
+  qty: number;
   children: React.ReactNode;
   variant?: "primary" | "ghost";
 }) {
@@ -19,7 +21,7 @@ export function CheckoutButton({
       <button
         type="button"
         disabled={pending}
-        onClick={() => start(kind)}
+        onClick={() => start("prep_purchase", qty)}
         className={
           variant === "ghost"
             ? "rounded-pill border border-line bg-white px-4 py-2 text-sm font-semibold text-ink-2 hover:bg-bg disabled:opacity-60"
