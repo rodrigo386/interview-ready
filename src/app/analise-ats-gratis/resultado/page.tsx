@@ -6,6 +6,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Gauge } from "@/components/prep/Gauge";
 import { IssueRow } from "@/components/prep/IssueRow";
 import { LockedFix } from "@/components/anon-ats/LockedFix";
+import { DossiePitch } from "@/components/anon-ats/DossiePitch";
 import { AnonAtsCompletedTracker } from "@/components/anon-ats/AnonAtsCompletedTracker";
 import {
   ANON_COOKIE,
@@ -100,6 +101,11 @@ export default async function ResultadoPage() {
           )}
 
           <LockedFix remaining={escondidos.length} />
+
+          {/* O pitch do produto pago vem depois do gancho gratuito: quem só
+              queria o score já foi servido, e quem quer resolver a entrevista
+              inteira descobre aqui o preço e o que ele compra. */}
+          <DossiePitch />
         </div>
       </main>
       <LandingFooter />

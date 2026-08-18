@@ -1,3 +1,5 @@
+import { DOSSIE_INCLUI, precoCurto } from "@/lib/billing/dossie";
+
 /**
  * A ponte entre o produto grátis e o pago.
  *
@@ -15,14 +17,6 @@ const GRATIS = [
   "Sem cadastro, sem cartão, quantas vagas quiser",
 ];
 
-const PAGO = [
-  "Currículo reescrito para ATS, pronto para colar",
-  "A empresa pesquisada agora: notícias dos últimos 6 meses e contexto estratégico",
-  "15 perguntas prováveis com roteiro STAR montado sobre a sua história",
-  "As perguntas que você faz ao recrutador, calibradas pela vaga e pelo seu nível",
-  "Faixa salarial estimada para o cargo e a senioridade",
-];
-
 export function AfterScore() {
   return (
     <section
@@ -31,7 +25,7 @@ export function AfterScore() {
     >
       <div className="mx-auto max-w-6xl px-6">
         <h2 className="max-w-2xl text-3xl font-semibold tracking-tight text-text-primary md:text-4xl">
-          O score é grátis. O que você faz com ele custa R$10.
+          O score é grátis. O que você faz com ele custa {precoCurto()}.
         </h2>
 
         {/* items-start: sem isso os dois cards esticam para a mesma altura e o
@@ -62,10 +56,10 @@ export function AfterScore() {
               <p className="text-2xl font-semibold text-text-primary">
                 Dossiê completo
               </p>
-              <p className="text-2xl font-bold text-orange-700">R$10</p>
+              <p className="text-2xl font-bold text-orange-700">{precoCurto()}</p>
             </div>
             <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-              {PAGO.map((item) => (
+              {DOSSIE_INCLUI.map((item) => (
                 <li key={item} className="flex gap-3 text-sm text-text-primary">
                   <span
                     aria-hidden

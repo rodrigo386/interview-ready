@@ -18,4 +18,7 @@ export type PrepShellData = {
   estimatedMinutes: number | null;
   currentStep: StepNumber;
   completedSteps: StepNumber[];
+  /** Saldo de créditos de preparação do dono da prep. O CTA de gerar
+   * precisa dele para decidir entre "usa 1 das suas N" e mostrar o preço. */
+  prepCredits: number;
 };

@@ -8,6 +8,18 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 type NavLink = { href: string; label: string; route?: boolean };
 
+/**
+ * Destino do CTA principal. O padrão é a página da ferramenta, mas onde o
+ * formulário já está na tela (a home e a própria /analise-ats-gratis) a barra
+ * ancora nele em vez de navegar.
+ *
+ * Isso saiu de dado real: em 18/08/2026 a única sessão que entrou pela home
+ * viu o formulário na dobra e mesmo assim clicou neste botão para ir a uma
+ * página com o formulário idêntico. Dois lugares para a mesma coisa e o botão
+ * ganha do formulário sempre, o que anulava o hero.
+ */
+const CTA_PADRAO = "/analise-ats-gratis";
+
 const NAV_LINKS: NavLink[] = [
   { href: "#como-funciona", label: "Como funciona" },
   { href: "#para-quem", label: "Para quem" },
@@ -15,7 +27,11 @@ const NAV_LINKS: NavLink[] = [
   { href: "/artigos", label: "Artigos", route: true },
 ];
 
-export function LandingNavbar() {
+export function LandingNavbar({
+  ctaHref = CTA_PADRAO,
+}: {
+  ctaHref?: string;
+} = {}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -56,7 +72,7 @@ export function LandingNavbar() {
             Entrar
           </Link>
           <Link
-            href="/analise-ats-gratis"
+            href={ctaHref}
             data-analytics-cta="nav_primary"
             data-analytics-location="landing"
             className="rounded-full bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition hover:bg-brand-700"
@@ -115,7 +131,7 @@ export function LandingNavbar() {
                 Entrar
               </Link>
               <Link
-                href="/analise-ats-gratis"
+                href={ctaHref}
                 onClick={() => setOpen(false)}
                 data-analytics-cta="nav_primary_mobile"
                 data-analytics-location="landing"

@@ -26,7 +26,7 @@ export default function AnaliseAtsGratisPage() {
           }),
         }}
       />
-      <LandingNavbar />
+      <LandingNavbar ctaHref="#analisar" />
       <main className="bg-bg">
         <div className="mx-auto max-w-2xl px-6 py-14">
           <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-4xl">
@@ -36,7 +36,7 @@ export default function AnaliseAtsGratisPage() {
             A maioria dos currículos é cortada por software antes de qualquer
             pessoa ler. Descubra seu score em menos de um minuto — sem criar conta.
           </p>
-          <div className="mt-10">
+          <div id="analisar" className="mt-10 scroll-mt-20">
             <AnonAtsForm />
           </div>
         </div>

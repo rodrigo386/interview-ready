@@ -32,7 +32,7 @@ export default async function LandingPage() {
 
   return (
     <>
-      <LandingNavbar />
+      <LandingNavbar ctaHref="#analisar" />
       {/* Ordem = funil. O hero é a ferramenta grátis; AfterScore explica o que
           os R$10 destravam enquanto o interesse está no pico; a prova e a
           demonstração vêm em seguida; preço, objeções e CTA fecham.

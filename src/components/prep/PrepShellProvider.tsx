@@ -28,6 +28,7 @@ export function PrepShellProvider({
   role,
   estimatedMinutes,
   serverCompleted,
+  prepCredits,
   children,
 }: {
   sessionId: string;
@@ -35,6 +36,7 @@ export function PrepShellProvider({
   role: string;
   estimatedMinutes: number | null;
   serverCompleted: StepNumber[];
+  prepCredits: number;
   children: ReactNode;
 }) {
   const [completedSteps, setCompletedSteps] = useState<StepNumber[]>(serverCompleted);
@@ -75,6 +77,7 @@ export function PrepShellProvider({
         company,
         role,
         estimatedMinutes,
+        prepCredits,
         currentStep,
         completedSteps,
         markStepComplete,
@@ -83,6 +86,16 @@ export function PrepShellProvider({
       {children}
     </ShellContext.Provider>
   );
+}
+
+/**
+ * Versão que não explode fora do provider. Existe porque o CTA de gerar a
+ * preparação é renderizado também em testes de componente isolados, onde não
+ * há shell em volta — nesses casos o saldo é desconhecido e o componente cai
+ * no comportamento neutro em vez de derrubar a árvore.
+ */
+export function usePrepShellOptional(): ShellContextValue | null {
+  return useContext(ShellContext);
 }
 
 export function usePrepShell(): ShellContextValue {

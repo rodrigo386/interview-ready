@@ -7,6 +7,8 @@ import {
 } from "@/app/prep/[id]/full-prep-actions";
 import { UpgradeModal } from "@/components/billing/UpgradeModal";
 import { useCheckoutFlow } from "@/components/billing/useCheckoutFlow";
+import { usePrepShellOptional } from "./PrepShellProvider";
+import { precoCurto } from "@/lib/billing/dossie";
 import { PendingButton } from "./PendingButton";
 
 /**
@@ -17,6 +19,12 @@ import { PendingButton } from "./PendingButton";
  *
  * Trata `quota_exceeded` do mesmo jeito que o `NewPrepForm` do /prep/new,
  * porque é a mesma cota sendo cobrada.
+ *
+ * O preço aparece no botão quando o saldo é zero. Antes o rótulo dizia apenas
+ * "usa 1 preparação da sua conta" — uma frase sobre um recurso que a pessoa
+ * não tinha — e o custo só era descoberto ao clicar e receber o paywall. Com
+ * saldo zero o clique também vai direto pro checkout, em vez de disparar uma
+ * action que já se sabe que vai falhar com `quota_exceeded`.
  */
 export function GenerateFullPrepCta({
   sessionId,
@@ -32,6 +40,11 @@ export function GenerateFullPrepCta({
     {},
   );
   const checkout = useCheckoutFlow();
+  // null fora do shell (testes de componente): saldo desconhecido cai no
+  // caminho neutro, que é submeter e deixar a action decidir.
+  const shell = usePrepShellOptional();
+  const credits = shell?.prepCredits ?? null;
+  const semSaldo = credits === 0;
 
   return (
     <section className="rounded-xl border border-orange-500 bg-orange-soft/40 p-5 shadow-prep">
@@ -47,22 +60,44 @@ export function GenerateFullPrepCta({
             Sua análise de currículo já está aqui. A preparação completa
             acrescenta pesquisa recente da empresa, faixa salarial estimada,
             perguntas prováveis com roteiro de resposta e as perguntas que você
-            faz no fim. Reaproveita o mesmo currículo e a mesma vaga — você não
-            precisa colar nada de novo.
+            faz no fim. Reaproveita o mesmo currículo e a mesma vaga, sem precisar
+            colar nada de novo.
           </p>
           <p className="mt-2 text-xs text-ink-3">
-            Leva cerca de 60 segundos e usa 1 preparação da sua conta.
+            Leva cerca de 60 segundos.{" "}
+            {semSaldo
+              ? `Custa ${precoCurto()}, pagamento avulso: sem assinatura, o crédito não expira e você tem 7 dias para pedir reembolso.`
+              : credits !== null
+                ? `Usa 1 das suas ${credits} preparações disponíveis.`
+                : "Usa 1 preparação da sua conta."}
           </p>
         </>
       ) : null}
 
-      <form action={action} className={variant === "full" ? "mt-4" : undefined}>
-        <PendingButton
-          idleLabel="Gerar preparação completa →"
-          pendingLabel="Gerando… cerca de 60 segundos"
-          variant="primary"
-        />
-      </form>
+      {semSaldo ? (
+        <button
+          type="button"
+          onClick={() => checkout.start("prep_purchase", 1)}
+          disabled={checkout.pending}
+          data-analytics-cta="full_prep_checkout"
+          className={
+            "inline-flex items-center justify-center rounded-md bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70 " +
+            (variant === "full" ? "mt-4" : "")
+          }
+        >
+          {checkout.pending
+            ? "Abrindo pagamento…"
+            : `Gerar preparação completa · ${precoCurto()} →`}
+        </button>
+      ) : (
+        <form action={action} className={variant === "full" ? "mt-4" : undefined}>
+          <PendingButton
+            idleLabel="Gerar preparação completa →"
+            pendingLabel="Gerando… cerca de 60 segundos"
+            variant="primary"
+          />
+        </form>
+      )}
 
       {state.error && !pending && state.error !== "quota_exceeded" ? (
         <p
