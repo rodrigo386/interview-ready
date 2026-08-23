@@ -8,5 +8,11 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./lib/files/dom-polyfill");
+    // Grita no boot quando uma integração inteira está desligada por env var
+    // ausente. Duas vezes este repo rodou meses com um subsistema morto sem
+    // ninguém saber (rate limits, depois o funil inteiro) — a falha é
+    // silenciosa por natureza, então o alarme tem que ser explícito.
+    const { avisarIntegracoesInertes } = await import("./lib/env");
+    avisarIntegracoesInertes();
   }
 }

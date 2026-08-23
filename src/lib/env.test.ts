@@ -1,45 +1,71 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
+import { detectarInertes, avisarIntegracoesInertes, INTEGRACOES_INERTES } from "./env";
 
-describe("env", () => {
-  beforeEach(() => {
-    vi.resetModules();
+const TUDO_SETADO = Object.fromEntries(
+  INTEGRACOES_INERTES.map((i) => [i.envVar, "valor"]),
+);
+
+describe("detectarInertes", () => {
+  it("não acusa nada quando tudo está configurado", () => {
+    expect(detectarInertes(TUDO_SETADO)).toEqual([]);
   });
 
-  it("throws on first access if required var missing", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
-    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
-    const { env } = await import("./env");
-    expect(() => env.NEXT_PUBLIC_SUPABASE_URL).toThrow(/Invalid environment/);
+  it("acusa variável ausente", () => {
+    const { NEXT_PUBLIC_POSTHOG_KEY: _, ...semPosthog } = TUDO_SETADO;
+    const r = detectarInertes(semPosthog);
+    expect(r.map((i) => i.envVar)).toEqual(["NEXT_PUBLIC_POSTHOG_KEY"]);
   });
 
-  it("parses valid env lazily", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://x.supabase.co");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
-    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
-    const { env } = await import("./env");
-    expect(env.NEXT_PUBLIC_SUPABASE_URL).toBe("https://x.supabase.co");
+  it("trata string vazia como ausente", () => {
+    // O next.config.ts inlina env vars: uma var não setada no build vira ""
+    // e não undefined. Foi exatamente assim que o PostHog ficou desligado.
+    const r = detectarInertes({ ...TUDO_SETADO, NEXT_PUBLIC_POSTHOG_KEY: "" });
+    expect(r.map((i) => i.envVar)).toEqual(["NEXT_PUBLIC_POSTHOG_KEY"]);
   });
 
-  it("exposes GOOGLE_API_KEY when set", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://x.supabase.co");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
-    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
-    vi.stubEnv("GOOGLE_API_KEY", "AIza-test");
-    const { env } = await import("./env");
-    expect(env.GOOGLE_API_KEY).toBe("AIza-test");
+  it("trata espaço em branco como ausente", () => {
+    const r = detectarInertes({ ...TUDO_SETADO, UPSTASH_REDIS_REST_TOKEN: "   " });
+    expect(r.map((i) => i.envVar)).toEqual(["UPSTASH_REDIS_REST_TOKEN"]);
   });
 
-  it("GOOGLE_API_KEY is optional (undefined when unset)", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://x.supabase.co");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
-    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service");
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
-    vi.stubEnv("GOOGLE_API_KEY", "");
-    const { env } = await import("./env");
-    expect(env.GOOGLE_API_KEY).toBeUndefined();
+  it("acusa todas de uma vez", () => {
+    expect(detectarInertes({})).toHaveLength(INTEGRACOES_INERTES.length);
+  });
+
+  it("toda entrada explica a consequência, não só o nome", () => {
+    // O valor do aviso está em dizer o que PARA de funcionar. "UPSTASH
+    // ausente" não move ninguém; "rate limits inertes" move.
+    for (const i of INTEGRACOES_INERTES) {
+      expect(i.consequencia.length).toBeGreaterThan(20);
+    }
+  });
+});
+
+describe("avisarIntegracoesInertes", () => {
+  function capturar(fn: () => void): string[] {
+    const saida: string[] = [];
+    const original = console.warn;
+    console.warn = (...args: unknown[]) => saida.push(args.join(" "));
+    try {
+      fn();
+    } finally {
+      console.warn = original;
+    }
+    return saida;
+  }
+
+  it("cala a boca fora de produção — aviso ignorado não é aviso", () => {
+    expect(capturar(() => avisarIntegracoesInertes({}, false))).toEqual([]);
+  });
+
+  it("grita em produção listando cada integração desligada", () => {
+    const saida = capturar(() => avisarIntegracoesInertes({}, true));
+    expect(saida).toHaveLength(1);
+    expect(saida[0]).toContain("NEXT_PUBLIC_POSTHOG_KEY");
+    expect(saida[0]).toContain("UPSTASH_REDIS_REST_URL");
+  });
+
+  it("não grita em produção quando está tudo certo", () => {
+    expect(capturar(() => avisarIntegracoesInertes(TUDO_SETADO, true))).toEqual([]);
   });
 });

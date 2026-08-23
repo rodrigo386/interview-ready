@@ -79,6 +79,19 @@ Tarefas que são **só dashboard + env vars** (sem código) têm runbook própri
 
 **Helpers**: `requireAdmin()` em `src/lib/admin/auth.ts`, `getAdminOverview()` em `src/lib/admin/metrics.ts`, `getHistoricalSeries()` em `src/lib/admin/timeseries.ts`.
 
+### Integrações que falham em silêncio
+
+`src/lib/env.ts` exporta `INTEGRACOES_INERTES` + `avisarIntegracoesInertes()`, chamado uma vez no boot por `src/instrumentation.ts`. Em **produção**, uma env var ausente nessa lista imprime um aviso explícito dizendo o que parou de funcionar. Em dev/CI fica calado de propósito — aviso ignorado não é aviso.
+
+A lista existe porque este repo já perdeu meses com subsistema morto **duas vezes**, pelo mesmo motivo: erro de configuração que não faz barulho é indistinguível de "está tudo bem".
+
+| Quando | O que ficou inerte | Como apareceu |
+|---|---|---|
+| até 2026-08-17 | `UPSTASH_*` ausente → **todos** os rate limits falhando aberto, incluindo credential stuffing no login | só quando `LIMITS.anonAts` (única com `failClosed`) começou a recusar tudo |
+| até 2026-08-22 | `NEXT_PUBLIC_POSTHOG_KEY` ausente → os 15 eventos de funil, cliente **e** servidor | ao investigar um usuário que não converteu e não haver nenhum dado sobre o que ele viu |
+
+**Ao adicionar integração nova que degrada em silêncio, adicione à lista.** O custo de esquecer não é um bug — é descobrir meses depois que a decisão que você tomou foi tomada sem dado.
+
 ### Rate limiting
 
 Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyIntel, fetchJdFromUrl) passam por `rateLimit()` em `src/lib/ratelimit.ts` (Upstash Ratelimit + Redis, sliding window). Limites por usuário: createPrep 3/h, ATS/CV/intel 10/h, fetchJd 30/h. Sem `UPSTASH_REDIS_REST_URL`+`UPSTASH_REDIS_REST_TOKEN`, o helper falha aberto (não bloqueia) — evita travar a app se Upstash cair. **Cuidado com a leitura disso:** falhar aberto significa que, sem as env vars, nenhum desses limites existe de fato. `LIMITS.anonAts` é a única com `failClosed: true`, porque é endpoint anônimo que gasta IA e liberar geral ali seria pior do que ficar fora do ar.
@@ -94,6 +107,9 @@ Server actions caras (createPrep, runAtsAnalysis, runCvRewrite, rerunCompanyInte
 - `ASAAS_WEBHOOK_TOKEN` — token arbitrário (recomendo 32 chars). Tem que bater com o header `asaas-access-token` configurado no painel Asaas.
 - `ASAAS_BASE_URL` — `https://sandbox.asaas.com/api/v3` (sandbox) ou `https://api.asaas.com/v3` (prod). Tem default de sandbox no schema. **Não setar como string vazia** (Zod rejeita). **Em produção: usar `api.asaas.com/v3`.**
 - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` — **na prática, obrigatórias.** Estavam descritas como "opcionais" e isso era enganoso: sem elas TODOS os limites do app ficam inertes, silenciosamente — incluindo `authLogin` (proteção contra credential stuffing), `authSignup` e `passwordReset`, além dos limites de IA. A única exceção é `LIMITS.anonAts`, que tem `failClosed: true` e por isso RECUSA tudo quando o Redis falta, em vez de liberar. Descoberto em 2026-08-17, quando a ferramenta ATS anônima subiu e foi a primeira coisa a falhar ruidosamente.
+- `NEXT_PUBLIC_POSTHOG_KEY` — **na prática, obrigatória.** Sem ela, `initAnalytics()` (cliente) e `trackServer()` (servidor) viram no-op e os **15 eventos de funil deixam de existir** — `landing_view`, `cta_click`, `paywall_view`, `anon_ats_*`, `checkout_iniciado`, `checkout_confirmado`. Não há erro: o funil simplesmente fica cego. Descoberto em 2026-08-22, ao investigar por que não se sabia se um usuário tinha visto o paywall — a resposta é que o dado nunca foi coletado. **É `NEXT_PUBLIC_`, então é inlined no build: setar no Railway exige redeploy pra valer.**
+  - ⚠️ **NÃO rodar `npx @posthog/wizard` com as opções padrão neste repo.** A integração já existe, é customizada (`src/lib/analytics/{client,server,events}.ts` + `AnalyticsClient.tsx`, com mapa de eventos tipado) e tem postura de LGPD deliberada que o wizard desfaz: `persistence: "localStorage"` (o site promete zero cookies de analytics), `ip: false`, `respect_dnt: true`, `disable_session_recording: true`, `capture_pageview: false` (o `landing_view` é disparado à mão) e host **EU** por default — `/lgpd` e `/privacidade` prometem residência de dados na Europa. O wizard adiciona init próprio (duplicando captura) e liga autocapture/pageview/recording com default US. Só falta a chave; não falta código. Se precisar do wizard, `wizard audit` / `wizard doctor` são os subcomandos seguros (exigem projeto já criado).
+- `NEXT_PUBLIC_POSTHOG_HOST` — opcional, default `https://eu.i.posthog.com`. Manter na UE: é o que as páginas legais afirmam.
 - `IP_HASH_SALT` — opcional, usada para o `ip_hash` de auditoria da ferramenta ATS anônima. Sem ela, `hashIp()` devolve `null` e a coluna grava `null` (melhor do que gravar um hash com salt público, que seria reversível por força bruta no espaço de IPv4). O limite por IP continua funcionando com o IP cru como chave.
 - `ANON_ATS_DAILY_CAP` — opcional, padrão 200. Disjuntor de custo da ferramenta ATS anônima: teto global de análises por dia. Independe do Upstash.
 - `RESEND_API_KEY` — opcional, **scope "Sending Access" apenas** (NÃO confundir com SMTP key do Supabase Auth). Habilita emails transacionais de parceiro (aprovação/rejeição/payout). Sem ele, `sendEmail()` loga warn e segue.

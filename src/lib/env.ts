@@ -52,6 +52,23 @@ const schema = z.object({
     .union([z.string().min(1), z.literal("")])
     .optional()
     .transform((val) => (val === "" ? undefined : val)),
+  // PostHog. Sem a KEY, `initAnalytics()` e `trackServer()` viram no-op e o
+  // funil inteiro (15 eventos) para de existir — silenciosamente, sem erro.
+  // Declarada aqui mesmo sendo opcional porque variável que não está no
+  // schema não aparece em lugar nenhum: foi assim que ficou meses ausente
+  // sem ninguém notar. Ver `INTEGRACOES_INERTES` abaixo.
+  //
+  // HOST tem default EU de propósito: `/lgpd` e `/privacidade` prometem
+  // residência de dados na Europa e IP não armazenado. Apontar pra US aqui
+  // contradiz página pública.
+  NEXT_PUBLIC_POSTHOG_KEY: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
+  NEXT_PUBLIC_POSTHOG_HOST: z
+    .union([z.string().url(), z.literal("")])
+    .optional()
+    .transform((val) => (val === "" ? undefined : val)),
 });
 
 type Env = z.infer<typeof schema>;
@@ -73,6 +90,8 @@ function parseOrThrow(): Env {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     ANON_ATS_DAILY_CAP: process.env.ANON_ATS_DAILY_CAP,
     IP_HASH_SALT: process.env.IP_HASH_SALT,
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
   });
   if (!result.success) {
     console.error("Invalid environment variables:", result.error.flatten().fieldErrors);
@@ -87,3 +106,76 @@ export const env = new Proxy({} as Env, {
     return cached[prop as keyof Env];
   },
 });
+
+/**
+ * Subsistemas que, sem a env var, NÃO quebram — apenas deixam de existir.
+ *
+ * Este é o modo de falha mais caro que este repo já teve, duas vezes:
+ *  - `UPSTASH_*` ausente deixou TODOS os rate limits inertes, incluindo a
+ *    proteção contra credential stuffing no login. Descoberto só quando a
+ *    ferramenta ATS anônima (única com `failClosed`) começou a recusar tudo.
+ *  - `NEXT_PUBLIC_POSTHOG_KEY` ausente deixou os 15 eventos de funil
+ *    inertes. Descoberto ao investigar por que não se sabia se um usuário
+ *    tinha visto o paywall — a resposta era que o dado nunca existiu.
+ *
+ * Erro de configuração que não faz barulho é indistinguível de "está tudo
+ * bem". A lista existe pra que a próxima ausência grite no boot.
+ */
+export const INTEGRACOES_INERTES: ReadonlyArray<{
+  envVar: string;
+  consequencia: string;
+}> = [
+  {
+    envVar: "UPSTASH_REDIS_REST_URL",
+    consequencia:
+      "rate limits inertes (login, signup, reset de senha e todos os de IA falham ABERTO)",
+  },
+  {
+    envVar: "UPSTASH_REDIS_REST_TOKEN",
+    consequencia: "idem UPSTASH_REDIS_REST_URL — as duas são necessárias",
+  },
+  {
+    envVar: "NEXT_PUBLIC_POSTHOG_KEY",
+    consequencia:
+      "funil cego: os 15 eventos (cta_click, paywall_view, checkout_confirmado…) viram no-op no cliente E no servidor",
+  },
+  {
+    envVar: "GOOGLE_API_KEY",
+    consequencia: "toda geração de IA falha (este NÃO é silencioso, mas é fatal)",
+  },
+];
+
+/**
+ * Puro pra ser testável: recebe o ambiente e devolve o que está inerte.
+ * Não lê `process.env` nem loga — quem faz isso é `avisarIntegracoesInertes`.
+ */
+export function detectarInertes(
+  vars: Record<string, string | undefined>,
+): Array<{ envVar: string; consequencia: string }> {
+  return INTEGRACOES_INERTES.filter(({ envVar }) => {
+    const v = vars[envVar];
+    return v === undefined || v.trim() === "";
+  });
+}
+
+/**
+ * Chamado uma vez no boot do servidor (`src/instrumentation.ts`). Só grita em
+ * produção: em dev e em CI a ausência é esperada e o ruído seria ignorado —
+ * e aviso ignorado não é aviso.
+ */
+export function avisarIntegracoesInertes(
+  vars: Record<string, string | undefined> = process.env as Record<
+    string,
+    string | undefined
+  >,
+  isProd: boolean = process.env.NODE_ENV === "production",
+): void {
+  if (!isProd) return;
+  const inertes = detectarInertes(vars);
+  if (inertes.length === 0) return;
+  console.warn(
+    `\n[env] ${inertes.length} integração(ões) DESLIGADA(S) em produção — sem erro, sem efeito:\n` +
+      inertes.map((i) => `  · ${i.envVar} ausente → ${i.consequencia}`).join("\n") +
+      "\n",
+  );
+}
