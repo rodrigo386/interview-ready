@@ -58,8 +58,9 @@ export default function PrivacyPage() {
             ao número do seu cartão.
           </li>
           <li>
-            <strong className="text-text-primary">Cookies e técnicas similares:</strong> usamos
-            apenas cookies essenciais para autenticação e sessão. Não usamos cookies de
+            <strong className="text-text-primary">Cookies e técnicas similares:</strong> cookies
+            de autenticação e sessão, mais um identificador próprio de visita (<code>pv_vid</code>).
+            A análise de uso do produto (PostHog) não grava cookies. Não usamos cookies de
             rastreamento publicitário.
           </li>
         </ul>
@@ -123,6 +124,13 @@ export default function PrivacyPage() {
           <li>
             <strong className="text-text-primary">Railway</strong> (hospedagem da aplicação web).
             Servidores nos Estados Unidos.
+          </li>
+          <li>
+            <strong className="text-text-primary">PostHog</strong> (análise de uso do produto:
+            quais páginas e botões são usados, para entendermos onde as pessoas travam).
+            Configurado sem cookies, sem gravação de sessão e{" "}
+            <strong className="text-text-primary">sem armazenar seu endereço IP</strong>. Respeita
+            o sinal &ldquo;Do Not Track&rdquo; do navegador. Servidores nos Estados Unidos.
           </li>
           <li>
             <strong className="text-text-primary">Jina Reader</strong> (extração de texto quando
@@ -225,10 +233,19 @@ export default function PrivacyPage() {
         <ul className="ml-5 list-disc space-y-2">
           <li>Cookie de sessão (Supabase Auth) para manter você logado.</li>
           <li>Preferência de tema (claro/escuro) salva localmente no navegador.</li>
+          <li>
+            <code>pv_vid</code>: identificador aleatório próprio (1 ano) que conta visitas sem
+            saber quem você é. Não é compartilhado com terceiros.
+          </li>
         </ul>
         <p>
-          Não usamos cookies de rastreamento publicitário, third-party analytics invasivos, nem
-          pixels de remarketing.
+          Para entender o uso do produto usamos o PostHog, configurado para{" "}
+          <strong className="text-text-primary">não gravar cookies</strong> (os dados ficam no
+          armazenamento local do seu navegador), não registrar seu IP, não gravar sua tela e
+          respeitar o sinal &ldquo;Do Not Track&rdquo;.
+        </p>
+        <p>
+          Não usamos cookies de rastreamento publicitário nem pixels de remarketing.
         </p>
       </Section>
 

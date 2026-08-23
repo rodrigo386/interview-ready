@@ -58,9 +58,11 @@ const schema = z.object({
   // schema não aparece em lugar nenhum: foi assim que ficou meses ausente
   // sem ninguém notar. Ver `INTEGRACOES_INERTES` abaixo.
   //
-  // HOST tem default EU de propósito: `/lgpd` e `/privacidade` prometem
-  // residência de dados na Europa e IP não armazenado. Apontar pra US aqui
-  // contradiz página pública.
+  // HOST precisa casar com a REGIÃO DA CHAVE, senão toda requisição volta
+  // 401 sem o SDK reclamar. Default US porque o projeto é US. As páginas
+  // legais NÃO prometem Europa — `/privacidade` sempre declarou servidores
+  // nos EUA e transferência internacional pelo art. 33 da LGPD; o que ela
+  // exigiu foi listar o PostHog entre os fornecedores, o que foi feito.
   NEXT_PUBLIC_POSTHOG_KEY: z
     .union([z.string().min(1), z.literal("")])
     .optional()
