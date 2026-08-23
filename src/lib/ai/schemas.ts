@@ -67,6 +67,28 @@ export const atsAnalysisSchema = z.object({
   // Requiring min(1) discarded otherwise-valid analyses of strong CVs.
   top_fixes: z.array(atsFixSchema).max(7),
   overall_assessment: z.string().min(30),
+  /**
+   * Rótulos extraídos da VAGA, puramente descritivos — não entram em nenhuma
+   * conta de score.
+   *
+   * Deliberadamente separado de `title_match.jd_title`: aquele campo alimenta
+   * o `title_overlap_bonus` (até 10 pontos do score) e, quando a vaga não
+   * declara cargo, o modelo ecoa o TARGET ROLE recebido no prompt. Esse eco é
+   * inofensivo pro score e péssimo como rótulo — foi assim que preps
+   * reivindicadas da ferramenta anônima viraram "a empresa · esta vaga".
+   * Mexer na semântica de `jd_title` mudaria nota de análise existente; este
+   * campo novo não muda nada.
+   *
+   * Opcional no Zod de propósito: o schema do Gemini pede como obrigatório,
+   * mas uma resposta de fallback que venha sem ele deve continuar válida —
+   * perder o rótulo é aceitável, perder a análise inteira não.
+   */
+  jd_context: z
+    .object({
+      role: z.string().max(120),
+      company: z.string().max(120),
+    })
+    .optional(),
 });
 
 export type AtsAnalysis = z.infer<typeof atsAnalysisSchema>;

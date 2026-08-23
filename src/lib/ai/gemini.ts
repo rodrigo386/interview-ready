@@ -456,7 +456,14 @@ export async function generateCvRewrite(params: {
 
 const atsResponseSchema: Schema = {
   type: SchemaType.OBJECT,
-  required: ["score", "title_match", "keyword_analysis", "top_fixes", "overall_assessment"],
+  required: [
+    "score",
+    "title_match",
+    "keyword_analysis",
+    "top_fixes",
+    "overall_assessment",
+    "jd_context",
+  ],
   properties: {
     score: { type: SchemaType.INTEGER },
     title_match: {
@@ -507,6 +514,14 @@ const atsResponseSchema: Schema = {
       },
     },
     overall_assessment: { type: SchemaType.STRING },
+    jd_context: {
+      type: SchemaType.OBJECT,
+      required: ["role", "company"],
+      properties: {
+        role: { type: SchemaType.STRING },
+        company: { type: SchemaType.STRING },
+      },
+    },
   },
 };
 

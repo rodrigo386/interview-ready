@@ -58,6 +58,71 @@ export function normalizeAnonInput(input: {
   };
 }
 
+/**
+ * Rótulos neutros usados quando a vaga não diz cargo/empresa. São os mesmos
+ * strings que `normalizeAnonInput` injeta no prompt, e é justamente por isso
+ * que `resolveAnonLabels` precisa reconhecê-los: o modelo às vezes devolve o
+ * TARGET ROLE de volta, e aceitar esse eco como rótulo real foi o que gravou
+ * "a empresa · esta vaga" como nome permanente de prep reivindicada.
+ */
+export const ROTULO_VAGA_NEUTRO = "esta vaga";
+export const ROTULO_EMPRESA_NEUTRO = "a empresa";
+
+const MAX_ROTULO_CHARS = 120;
+
+/**
+ * Limpa um rótulo vindo da IA. Devolve "" pra tudo que não serve como nome.
+ *
+ * O corte por tamanho não é cosmético: `company_name` alimenta a pesquisa de
+ * empresa do `pipeline.ts` (Stage A, com Google grounding). Um parágrafo
+ * inteiro escapando pra esse campo vira uma busca lixo num entregável pago.
+ */
+function limparRotulo(bruto: string | null | undefined): string {
+  const t = (bruto ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^["'“”‘’\-–—•*\s]+|["'“”‘’\-–—•*\s]+$/g, "")
+    .trim();
+  if (!t) return "";
+  if (t.length > MAX_ROTULO_CHARS) return "";
+  // Frase, não rótulo. Nome de cargo/empresa não termina em pontuação final.
+  if (/[.!?]$/.test(t)) return "";
+  const neutro = t.toLowerCase();
+  if (neutro === ROTULO_VAGA_NEUTRO || neutro === ROTULO_EMPRESA_NEUTRO) return "";
+  // "não informado", "n/a", "-" e afins: o modelo às vezes prefere isso a "".
+  if (/^(n\/?a|nao informado|não informado|desconhecid[ao]|indefinid[ao]|sem informacao|sem informação)$/i.test(t)) {
+    return "";
+  }
+  return t;
+}
+
+/**
+ * Decide o cargo e a empresa que a prep reivindicada vai carregar pra sempre.
+ *
+ * Ordem: `jd_context` (extraído da vaga de propósito) e, só pra cargo,
+ * `title_match.jd_title` como rede — esse campo já existia e acerta o título
+ * quando a vaga declara um, mas ecoa o placeholder quando não declara, então
+ * só vale depois de passar por `limparRotulo`. Empresa não tem equivalente
+ * antigo; sem `jd_context` ela fica neutra mesmo.
+ *
+ * Pura de propósito: é decisão de dado permanente, e dado permanente errado
+ * é o que faz o Stage A pesquisar uma empresa chamada "a empresa".
+ */
+export function resolveAnonLabels(analysis: AtsAnalysis): {
+  jobTitle: string;
+  companyName: string;
+} {
+  const ctx = analysis.jd_context;
+  const cargo =
+    limparRotulo(ctx?.role) || limparRotulo(analysis.title_match?.jd_title);
+  const empresa = limparRotulo(ctx?.company);
+
+  return {
+    jobTitle: cargo || ROTULO_VAGA_NEUTRO,
+    companyName: empresa || ROTULO_EMPRESA_NEUTRO,
+  };
+}
+
 export function expiresAtFrom(created: Date): string {
   return new Date(created.getTime() + EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString();
 }

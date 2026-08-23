@@ -7,6 +7,7 @@ import { rateLimit, LIMITS } from "@/lib/ratelimit";
 import { parseCvFile, ParseError } from "@/lib/files/parse";
 import {
   normalizeAnonInput,
+  resolveAnonLabels,
   MAX_UPLOAD_BYTES,
   MAX_UPLOAD_LABEL,
 } from "@/lib/anon-ats/core";
@@ -86,13 +87,23 @@ export async function runAnonAtsAnalysis(
   const result = await analyzeAnonAts(normalized.value);
   if (!result.ok) return { error: result.error };
 
+  // Rótulos vêm da ANÁLISE, não da entrada. `normalized.value` carrega os
+  // neutros ("esta vaga"/"a empresa") porque o formulário anônimo não pede
+  // cargo nem empresa — e gravá-los aqui fazia a prep reivindicada nascer
+  // chamada "a empresa · esta vaga" pra sempre. Pior: `pipeline.ts` alimenta
+  // a pesquisa de empresa e o benchmark salarial com essas colunas, então
+  // quem pagasse por uma prep reivindicada receberia pesquisa sobre uma
+  // empresa literalmente chamada "a empresa". Os neutros seguem como
+  // fallback quando a vaga de fato não diz.
+  const rotulos = resolveAnonLabels(result.analysis);
+
   const token = newToken();
   const saved = await insertAnonAnalysis({
     token,
     cvText: normalized.value.cvText,
     jobDescription: normalized.value.jobDescription,
-    jobTitle: normalized.value.jobTitle,
-    companyName: normalized.value.companyName,
+    jobTitle: rotulos.jobTitle,
+    companyName: rotulos.companyName,
     analysis: result.analysis,
     // Sempre "gemini" agora — Cerebras removido em 2026-08-16. A coluna
     // model_used continua existindo (linhas antigas gravaram "cerebras")

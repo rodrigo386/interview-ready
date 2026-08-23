@@ -55,6 +55,17 @@ STEP 5 — top_fixes (0-7 items):
 
 STEP 6 — overall_assessment: 2-3 sentences in PT-BR describing where the CV stands vs the JD: how many critical keywords were found out of total, biggest gap area, and whether title alignment is strong/weak.
 
+STEP 7 — jd_context (descriptive only, NEVER used in any score):
+   - jd_context.role = the job title EXACTLY as written in the JOB DESCRIPTION text.
+   - jd_context.company = the hiring company name EXACTLY as written in the JOB DESCRIPTION text.
+   - If the JD does not state one of them, return an empty string "" for that field.
+   - NEVER copy TARGET ROLE or TARGET COMPANY into these fields. Those are caller-supplied
+     labels and may be neutral placeholders; echoing them here is always wrong.
+   - Never guess, never infer from the CV, never invent. An empty string is the correct
+     answer whenever the JD itself does not say it.
+   - Strip surrounding quotes, bullet markers and location suffixes: "ANALISTA DE LOGÍSTICA
+     ITAJAI -" becomes "ANALISTA DE LOGÍSTICA".
+
 RULES:
 - Keywords are EXACT PHRASES extracted from the JD verbatim. Never synonyms, never paraphrases.
 - The score MUST be derivable from the keyword counts using STEP 3's formula. If you can't reconstruct the score from the counts you returned, you got it wrong.

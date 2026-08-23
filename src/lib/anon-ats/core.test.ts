@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   normalizeAnonInput,
+  resolveAnonLabels,
   isExpired,
   expiresAtFrom,
   anonAnalysisToPrepSession,
@@ -92,5 +93,91 @@ describe("anonAnalysisToPrepSession", () => {
     const insert = anonAnalysisToPrepSession(row, "user-1");
     expect(insert.cv_text).toBe(cv);
     expect(insert.job_description).toBe(jd);
+  });
+});
+
+describe("resolveAnonLabels", () => {
+  // O schema completo é grande e irrelevante aqui: resolveAnonLabels só lê
+  // jd_context e title_match.jd_title.
+  const analise = (patch: Record<string, unknown>) =>
+    ({
+      score: 70,
+      title_match: { cv_title: "analista", jd_title: "", match_score: 50 },
+      keyword_analysis: { critical: [], high: [], medium: [] },
+      top_fixes: [],
+      overall_assessment: "x".repeat(40),
+      ...patch,
+    }) as never;
+
+  it("usa cargo e empresa extraídos da vaga", () => {
+    const r = resolveAnonLabels(
+      analise({ jd_context: { role: "Analista de Logística", company: "Molem Planten" } }),
+    );
+    expect(r).toEqual({
+      jobTitle: "Analista de Logística",
+      companyName: "Molem Planten",
+    });
+  });
+
+  it("ignora o eco do placeholder — o bug que gravou 'a empresa · esta vaga'", () => {
+    // Observado em produção: sem cargo declarado na vaga, o modelo devolvia
+    // o TARGET ROLE recebido no prompt.
+    const r = resolveAnonLabels(
+      analise({
+        jd_context: { role: "esta vaga", company: "a empresa" },
+        title_match: { cv_title: "x", jd_title: "esta vaga", match_score: 0 },
+      }),
+    );
+    expect(r).toEqual({ jobTitle: "esta vaga", companyName: "a empresa" });
+  });
+
+  it("cai no jd_title quando jd_context não veio (resposta de fallback)", () => {
+    const r = resolveAnonLabels(
+      analise({ title_match: { cv_title: "x", jd_title: "REGIONAL PROCUREMENT MANAGER", match_score: 40 } }),
+    );
+    expect(r.jobTitle).toBe("REGIONAL PROCUREMENT MANAGER");
+    expect(r.companyName).toBe("a empresa");
+  });
+
+  it("limpa aspas, marcadores e espaço duplicado", () => {
+    const r = resolveAnonLabels(
+      analise({ jd_context: { role: '  "ANALISTA   DE LOGÍSTICA" ', company: "- Amazon •" } }),
+    );
+    expect(r.jobTitle).toBe("ANALISTA DE LOGÍSTICA");
+    expect(r.companyName).toBe("Amazon");
+  });
+
+  it("recusa parágrafo no lugar de rótulo", () => {
+    // company_name alimenta a pesquisa de empresa do pipeline: um texto longo
+    // aqui vira busca lixo num entregável pago.
+    const r = resolveAnonLabels(
+      analise({ jd_context: { role: "x".repeat(200), company: "y".repeat(130) } }),
+    );
+    expect(r).toEqual({ jobTitle: "esta vaga", companyName: "a empresa" });
+  });
+
+  it("recusa frase — rótulo não termina em pontuação final", () => {
+    const r = resolveAnonLabels(
+      analise({
+        jd_context: { role: "A vaga não informa o cargo.", company: "Não foi possível identificar!" },
+      }),
+    );
+    expect(r).toEqual({ jobTitle: "esta vaga", companyName: "a empresa" });
+  });
+
+  it("trata 'n/a' e 'não informado' como ausência", () => {
+    const r = resolveAnonLabels(
+      analise({ jd_context: { role: "N/A", company: "não informado" } }),
+    );
+    expect(r).toEqual({ jobTitle: "esta vaga", companyName: "a empresa" });
+  });
+
+  it("aceita empresa mesmo quando o cargo falta, e vice-versa", () => {
+    expect(
+      resolveAnonLabels(analise({ jd_context: { role: "", company: "Amazon" } })),
+    ).toEqual({ jobTitle: "esta vaga", companyName: "Amazon" });
+    expect(
+      resolveAnonLabels(analise({ jd_context: { role: "Vendedor de Loja", company: "" } })),
+    ).toEqual({ jobTitle: "Vendedor de Loja", companyName: "a empresa" });
   });
 });
