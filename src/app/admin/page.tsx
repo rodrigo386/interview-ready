@@ -138,21 +138,25 @@ export default async function AdminPage() {
               label="Últimas 24h"
               total={pageViews.total_24h}
               unique={pageViews.unique_24h}
+              confirmed={pageViews.confirmed_24h}
             />
             <KPI
               label="Últimos 7 dias"
               total={pageViews.total_7d}
               unique={pageViews.unique_7d}
+              confirmed={pageViews.confirmed_7d}
             />
             <KPI
               label="Últimos 30 dias"
               total={pageViews.total_30d}
               unique={pageViews.unique_30d}
+              confirmed={pageViews.confirmed_30d}
             />
             <KPI
               label="All-time"
               total={pageViews.total_all_time}
               unique={pageViews.unique_all_time}
+              confirmed={pageViews.confirmed_all_time}
             />
           </div>
         ) : pageViewsError?.reason === "table_missing" ? (
@@ -404,14 +408,23 @@ export default async function AdminPage() {
   );
 }
 
+/**
+ * Mostra os DOIS números de propósito. `confirmed` (reapareceu com o mesmo
+ * `pv_vid`) é piso de gente real; `unique` é teto, e infla com rastreador que
+ * descarta cookie — foi assim que a semana de 17/08 marcou 153 "únicos"
+ * sendo ~25 pessoas. Exibir só um dos dois volta a mentir: `unique` sozinho
+ * infla, `confirmed` sozinho apaga quem leu um artigo e saiu.
+ */
 function KPI({
   label,
   total,
   unique,
+  confirmed,
 }: {
   label: string;
   total: number;
   unique: number;
+  confirmed: number;
 }) {
   return (
     <article className="rounded-xl border border-neutral-200 bg-bg p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-zinc-800">
@@ -422,7 +435,13 @@ function KPI({
         {total.toLocaleString("pt-BR")}
       </p>
       <p className="mt-1 text-xs text-text-tertiary">
-        {unique.toLocaleString("pt-BR")} únicos
+        <span className="font-semibold text-text-secondary">
+          {confirmed.toLocaleString("pt-BR")} confirmados
+        </span>{" "}
+        de {unique.toLocaleString("pt-BR")}
+      </p>
+      <p className="mt-0.5 text-[10px] leading-tight text-text-tertiary">
+        confirmado = voltou com o mesmo cookie
       </p>
     </article>
   );

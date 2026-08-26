@@ -1,6 +1,11 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { APP_PATH_PREFIXES } from "./path";
+import {
+  buildSightingIndex,
+  summarizeWindow,
+  type VisitorRow,
+} from "./visitors";
 
 /**
  * Page-view tracking helpers. Inserts happen via /api/track (Node runtime),
@@ -76,6 +81,15 @@ export type PageViewMetrics = {
   unique_30d: number;
   total_all_time: number;
   unique_all_time: number;
+  /**
+   * Visitantes que reapareceram com o mesmo `pv_vid` — prova de que o cookie
+   * sobreviveu, coisa que rastreador que descarta cookie não consegue fazer.
+   * Ver `./visitors.ts`: `unique_*` é TETO, `confirmed_*` é PISO.
+   */
+  confirmed_24h: number;
+  confirmed_7d: number;
+  confirmed_30d: number;
+  confirmed_all_time: number;
 };
 
 export type PageViewMetricsResult =
@@ -97,48 +111,50 @@ export async function getPageViewMetrics(): Promise<PageViewMetricsResult> {
     const sb = createAdminClient();
     const now = Date.now();
     const day = 24 * 60 * 60 * 1000;
-    const cutoff24h = new Date(now - day).toISOString();
-    const cutoff7d = new Date(now - 7 * day).toISOString();
-    const cutoff30d = new Date(now - 30 * day).toISOString();
 
-    const [r24h, r7d, r30d, rAll] = await Promise.all([
-      countWindow(sb, cutoff24h),
-      countWindow(sb, cutoff7d),
-      countWindow(sb, cutoff30d),
-      countWindow(sb, null),
-    ]);
-
-    // If any window failed, surface the first error so the admin page can
-    // show a real diagnostic instead of zero counts.
-    const firstErr = [r24h, r7d, r30d, rAll].find((r) => r.error);
-    if (firstErr?.error) {
-      const code = (firstErr.error as { code?: string }).code;
+    // UMA query em vez de quatro. A confirmação de visitante precisa do
+    // histórico completo (quem visitou ontem e voltou hoje provou o cookie,
+    // e uma janela de 24h sozinha não enxerga isso), então a busca all-time
+    // já era obrigatória — as outras três viraram recorte em memória.
+    const todas = await fetchVisitorRows(sb);
+    if (todas.error) {
+      const code = (todas.error as { code?: string }).code;
       // Postgres "relation does not exist" → migration not applied.
       if (code === "42P01") {
         return {
           ok: false,
           reason: "table_missing",
-          detail: firstErr.error.message ?? "page_views table not found",
+          detail: todas.error.message ?? "page_views table not found",
         };
       }
       return {
         ok: false,
         reason: "query_failed",
-        detail: firstErr.error.message ?? "unknown query error",
+        detail: todas.error.message ?? "unknown query error",
       };
     }
+
+    const index = buildSightingIndex(todas.rows);
+    const r24h = summarizeWindow(todas.rows, index, now - day);
+    const r7d = summarizeWindow(todas.rows, index, now - 7 * day);
+    const r30d = summarizeWindow(todas.rows, index, now - 30 * day);
+    const rAll = summarizeWindow(todas.rows, index, null);
 
     return {
       ok: true,
       metrics: {
-        total_24h: r24h.total,
-        unique_24h: r24h.unique,
-        total_7d: r7d.total,
-        unique_7d: r7d.unique,
-        total_30d: r30d.total,
-        unique_30d: r30d.unique,
-        total_all_time: rAll.total,
-        unique_all_time: rAll.unique,
+        total_24h: r24h.views,
+        unique_24h: r24h.visitors,
+        total_7d: r7d.views,
+        unique_7d: r7d.visitors,
+        total_30d: r30d.views,
+        unique_30d: r30d.visitors,
+        total_all_time: rAll.views,
+        unique_all_time: rAll.visitors,
+        confirmed_24h: r24h.confirmed,
+        confirmed_7d: r7d.confirmed,
+        confirmed_30d: r30d.confirmed,
+        confirmed_all_time: rAll.confirmed,
       },
     };
   } catch (err) {
@@ -150,12 +166,13 @@ export async function getPageViewMetrics(): Promise<PageViewMetricsResult> {
   }
 }
 
-async function countWindow(
+async function fetchVisitorRows(
   sb: ReturnType<typeof createAdminClient>,
-  cutoffIso: string | null,
-): Promise<{ total: number; unique: number; error: { code?: string; message?: string } | null }> {
-  let query = sb.from("page_views").select("visitor_id").eq("is_bot", false);
-  if (cutoffIso) query = query.gte("created_at", cutoffIso);
+): Promise<{ rows: VisitorRow[]; error: { code?: string; message?: string } | null }> {
+  let query = sb
+    .from("page_views")
+    .select("visitor_id, created_at")
+    .eq("is_bot", false);
   // Public-site traffic only. In-app navigation is recorded (it is how we see
   // where signups drop off) but belongs to a usage metric, not this one.
   for (const prefix of APP_PATH_PREFIXES) {
@@ -163,12 +180,8 @@ async function countWindow(
   }
 
   const { data, error } = await query;
-  if (error) return { total: 0, unique: 0, error };
-  if (!data) return { total: 0, unique: 0, error: null };
-
-  const total = data.length;
-  const set = new Set(data.map((r) => (r as { visitor_id: string }).visitor_id));
-  return { total, unique: set.size, error: null };
+  if (error) return { rows: [], error };
+  return { rows: (data ?? []) as VisitorRow[], error: null };
 }
 
 export type PageViewDiagnostic = {
