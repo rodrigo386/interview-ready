@@ -259,21 +259,24 @@ export default async function ArticlePage({
             <h2 className="text-lg font-bold text-ink">
               {ctaVariant === "ats"
                 ? "Será que o seu currículo passa no ATS?"
-                : "Quer aplicar isso na sua próxima entrevista?"}
+                : "Antes de se candidatar na próxima: seu CV passa no filtro?"}
             </h2>
             <p className="mt-2 text-sm text-ink-2">
               {ctaVariant === "ats"
                 ? "A PrepaVaga compara seu currículo com a vaga real que você quer e mostra na hora o score ATS e o ajuste que mais está te barrando. Sem cadastro e sem cartão."
-                : "A PrepaVaga gera um pitch personalizado de 90 segundos para uma vaga específica, junto com análise ATS do seu currículo, pesquisa atualizada da empresa e perguntas prováveis. A análise ATS é grátis; a preparação completa custa R$10."}
+                : "Boa parte das respostas que não vêm morre no ATS, antes de um humano ler. Cole a descrição de uma vaga e o seu CV: a PrepaVaga devolve o score e o ajuste que mais está te barrando, na hora e sem cadastro. A preparação completa, com pesquisa da empresa e perguntas prováveis, custa R$10."}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
               <Link
-                href={ctaVariant === "ats" ? "/analise-ats-gratis" : "/signup"}
+                // As duas variantes vão pra ferramenta anônima: cadastrar não
+                // concede mais nada desde o modelo de crédito, então /signup
+                // virou beco pra quem chega de artigo. Ver ArticleInlineCta.
+                href="/analise-ats-gratis"
                 className="inline-block rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
               >
                 {ctaVariant === "ats"
                   ? "Analisar meu currículo grátis →"
-                  : "Criar conta e analisar grátis →"}
+                  : "Testar meu currículo grátis →"}
               </Link>
               <Link
                 href="/exemplo"

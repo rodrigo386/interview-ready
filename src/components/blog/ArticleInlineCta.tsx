@@ -10,23 +10,41 @@ import Link from "next/link";
  * Styled to be visually distinct from article paragraphs (orange border +
  * soft fill) but not aggressive — looks like an editorial callout, not an ad.
  */
+/**
+ * As DUAS variantes levam pra ferramenta anônima. A `default` apontava pra
+ * `/signup` e isso ficou obsoleto com o modelo de crédito: cadastrar não
+ * concede mais nada — nem a preparação grátis vitalícia, que morreu em
+ * 2026-08-17 —, então o leitor de artigo era mandado pra um beco. O CTA era
+ * resquício do modelo antigo, quando a conta valia por si.
+ *
+ * Os dados confirmam: em 8 semanas, 74 pessoas leram o artigo mais lido do
+ * site e 3 fizeram qualquer outra coisa. `/analise-ats-gratis` converte 20 de
+ * 21 visitantes; `/signup`, 16 de 38.
+ *
+ * A diferença entre as variantes deixa de ser o DESTINO e passa a ser a
+ * PONTE: `ats` fala com quem já está mexendo no currículo e vai direto ao
+ * ponto; `default` fala com quem chegou por outro assunto (quanto tempo
+ * demora um processo, recrutador que não respondeu) e precisa de uma frase
+ * ligando o que leu ao motivo de testar o currículo agora.
+ */
 const COPY = {
   default: {
-    kicker: "Aplicar isso na sua próxima entrevista",
+    kicker: "Antes da próxima candidatura",
     heading: (
       <>
-        Em 60 segundos, um dossiê pronto pra <em>sua</em> vaga
+        Seu currículo passa no filtro antes de chegar em <em>alguém</em>?
       </>
     ),
     body: (
       <>
-        Cola o link da vaga + seu CV. A gente devolve análise ATS, pesquisa
-        recente da empresa e roteiros prontos pra cada pergunta.{" "}
-        <strong>Análise ATS grátis. Preparação completa por R$10.</strong>
+        Boa parte das respostas que não vêm morre no ATS, antes de um humano
+        ler. Cola a descrição de uma vaga + seu CV e veja o score e o ajuste
+        que mais está te barrando.{" "}
+        <strong>Na hora, sem cadastro e sem cartão.</strong>
       </>
     ),
-    cta: "Criar conta e analisar meu CV",
-    href: "/signup",
+    cta: "Testar meu currículo grátis",
+    href: "/analise-ats-gratis",
   },
   // A variante `ats` leva pra ferramenta anônima (/analise-ats-gratis), que
   // entrega score + o principal ajuste sem cadastro. Ela NÃO reescreve o CV —
