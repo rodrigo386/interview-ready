@@ -13,6 +13,23 @@ import { AnonAtsForm } from "@/components/anon-ats/AnonAtsForm";
  * Um CTA só (o submit do formulário). O "ver exemplo" fica como link
  * secundário, e o /signup sai da primeira tela inteiramente — quem quer conta
  * ainda tem o "Entrar" da navbar.
+ *
+ * REPOSICIONAMENTO (2026-08-26). A headline anterior — "Seu CV passa no filtro
+ * dessa vaga?" — é a promessa EXATA de pelo menos cinco concorrentes
+ * brasileiros diretos (AjustaCV, OtimizaCV, CV Audit, CvPorVaga, CV Lab), e
+ * dois deles entregam de graça mais do que nós (reescrita completa) ou cobram
+ * menos (R$7,80 contra R$10). Quem compara não tinha um motivo sequer pra
+ * escolher a PrepaVaga.
+ *
+ * Análise ATS grátis não é vantagem: é o pedágio de entrada desse mercado. O
+ * que nenhum deles faz é continuar DEPOIS do currículo — pesquisa recente da
+ * empresa, perguntas prováveis com roteiro, faixa salarial, o que perguntar no
+ * fim. Esse é o único produto defensável, e estava a uma seção de distância da
+ * dobra, invisível pra quem decide em 5 segundos.
+ *
+ * A ferramenta continua no hero: ela converte 20 de 21 visitantes e é o motor
+ * de aquisição. O que muda é a PROMESSA em volta dela — o score deixa de ser o
+ * destino e passa a ser o primeiro passo de algo que a concorrência não tem.
  */
 export function Hero() {
   return (
@@ -30,12 +47,14 @@ export function Hero() {
                 empurrava o primeiro campo do formulário pra fora da dobra no
                 celular. Headline longa demais é erro de escala, não de cópia. */}
             <h1 className="text-[2.125rem] font-bold leading-[1.08] tracking-tight text-text-primary sm:text-5xl lg:text-[3.5rem]">
-              Seu CV passa no filtro dessa vaga?
+              Do filtro do ATS à pergunta final da entrevista
             </h1>
 
             <p className="mt-5 max-w-md text-base leading-[1.6] text-text-secondary md:text-lg">
-              A maioria dos currículos é cortada por software antes de qualquer
-              pessoa ler. Veja seu score em 1 minuto.
+              Comece pelo score do seu currículo nesta vaga: grátis, em 1
+              minuto, sem cadastro. A preparação completa vai além do CV —
+              pesquisa da empresa, perguntas prováveis com roteiro e faixa
+              salarial.
             </p>
           </div>
 

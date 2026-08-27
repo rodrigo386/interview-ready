@@ -36,4 +36,36 @@ describe("<Hero />", () => {
     expect(links).toHaveLength(1);
     expect(links[0].getAttribute("href")).toBe("/exemplo");
   });
+
+  it("a manchete não promete apenas o que a concorrência já dá de graça", () => {
+    // Pelo menos 5 concorrentes brasileiros diretos (AjustaCV, OtimizaCV, CV
+    // Audit, CvPorVaga, CV Lab) vendem "seu currículo passa no ATS?" — e dois
+    // entregam mais de graça ou cobram menos. Manchete de commodity não dá a
+    // quem compara nenhum motivo pra escolher a PrepaVaga.
+    const { getByRole } = render(<Hero />);
+
+    expect(getByRole("heading", { level: 1 }).textContent).toMatch(/entrevista/i);
+  });
+
+  it("a dobra cita o que vem DEPOIS do currículo — o produto defensável", () => {
+    // Pesquisa da empresa, perguntas prováveis e faixa salarial são o que
+    // nenhum analisador de CV concorrente entrega. Estavam a uma seção de
+    // distância da dobra, invisíveis pra quem decide em 5 segundos.
+    const { container } = render(<Hero />);
+    const texto = container.textContent ?? "";
+
+    expect(texto).toMatch(/empresa/i);
+    expect(texto).toMatch(/pergunta/i);
+    expect(texto).toMatch(/salarial/i);
+  });
+
+  it("reposicionar não tira o grátis da dobra — ele é o motor de aquisição", () => {
+    // A ferramenta converte 20 de 21 visitantes. O que muda é a promessa em
+    // volta dela, não o que está na primeira tela.
+    const { container } = render(<Hero />);
+    const texto = container.textContent ?? "";
+
+    expect(texto).toMatch(/grátis/i);
+    expect(texto).toMatch(/sem cadastro/i);
+  });
 });
