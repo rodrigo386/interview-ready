@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AnonAtsForm } from "@/components/anon-ats/AnonAtsForm";
+import { precoCurto } from "@/lib/billing/dossie";
 
 /**
  * Hero "ferramenta na dobra".
@@ -30,6 +31,18 @@ import { AnonAtsForm } from "@/components/anon-ats/AnonAtsForm";
  * A ferramenta continua no hero: ela converte 20 de 21 visitantes e é o motor
  * de aquisição. O que muda é a PROMESSA em volta dela — o score deixa de ser o
  * destino e passa a ser o primeiro passo de algo que a concorrência não tem.
+ *
+ * A primeira tentativa de reposicionar errou a mão: "Do filtro do ATS à
+ * pergunta final da entrevista" descrevia um INTERVALO em vez de dizer o que o
+ * site faz, e abria com jargão. Quem procura emprego não pensa em "filtro de
+ * ATS" — pensa que o currículo "não passou". A headline tem que sobreviver a
+ * uma leitura de 5 segundos de quem nunca ouviu falar da categoria, e por isso
+ * agora nomeia o produto em português comum. O diferencial (empresa, perguntas,
+ * salário) desceu pro subtítulo, que é onde cabe explicar sem atrapalhar.
+ *
+ * `precoCurto()` em vez de "R$10" escrito à mão: o preço vive em
+ * `lib/billing/prices.ts` e já mudou uma vez. Cópia de venda com número
+ * chumbado é a que fica desatualizada primeiro.
  */
 export function Hero() {
   return (
@@ -47,14 +60,14 @@ export function Hero() {
                 empurrava o primeiro campo do formulário pra fora da dobra no
                 celular. Headline longa demais é erro de escala, não de cópia. */}
             <h1 className="text-[2.125rem] font-bold leading-[1.08] tracking-tight text-text-primary sm:text-5xl lg:text-[3.5rem]">
-              Do filtro do ATS à pergunta final da entrevista
+              Prepare-se para a entrevista dessa vaga
             </h1>
 
             <p className="mt-5 max-w-md text-base leading-[1.6] text-text-secondary md:text-lg">
-              Comece pelo score do seu currículo nesta vaga: grátis, em 1
-              minuto, sem cadastro. A preparação completa vai além do CV —
-              pesquisa da empresa, perguntas prováveis com roteiro e faixa
-              salarial.
+              Cole a vaga e seu currículo: em 1 minuto, grátis e sem cadastro,
+              você vê o que está barrando o seu CV. A preparação completa —
+              empresa pesquisada, perguntas prováveis e faixa salarial — custa{" "}
+              {precoCurto()}.
             </p>
           </div>
 
