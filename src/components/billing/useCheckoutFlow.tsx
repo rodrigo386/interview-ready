@@ -30,6 +30,15 @@ async function postCheckout(body: CheckoutBody): Promise<Response> {
  *  1. POST /api/billing/checkout
  *  2. Se 422 cpf_required → modal CPF/CNPJ → re-tenta
  *  3. Se 422 address_required → modal endereço (com CEP autocomplete) → re-tenta
+ *
+ * ATENÇÃO (2026-08-27): o servidor NÃO devolve mais `address_required`. O
+ * endereço fiscal saiu de dentro do checkout — ele serve pra NFSe, emitida
+ * DEPOIS do pagamento, e cobrar 6 campos no instante da decisão custava
+ * conversão por uma exigência que a API do Asaas não faz. A coleta agora é o
+ * `NfseAddressPrompt` no /dashboard, dispensável. O ramo abaixo fica de pé
+ * de propósito: é o caminho de volta caso a regra fiscal mude e o endereço
+ * precise ser pré-requisito de novo. `cpf_required` CONTINUA ativo — sem CPF
+ * o Asaas não cria o cliente.
  *  4. Sucesso: redireciona pro Asaas. Erro: expõe `error` pro caller.
  *
  * Retorna `{ start, pending, error, dialog }` — render `dialog` uma vez na árvore.

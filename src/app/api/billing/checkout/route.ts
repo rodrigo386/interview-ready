@@ -191,17 +191,37 @@ export async function POST(req: Request) {
         address_state: addressState,
       })
       .eq("id", p.id);
-  } else if (!hasFullAddress) {
-    return NextResponse.json({ error: "address_required" }, { status: 422 });
   }
 
-  const addressInput = {
-    postalCode: postalCode!,
-    address: addressStreet!,
-    addressNumber: addressNumber!,
-    complement: addressComplement ?? undefined,
-    province: addressDistrict!,
-  };
+  // O endereço deixou de BLOQUEAR o checkout (2026-08-27).
+  //
+  // Ele é necessário pra NFSe, que o Asaas emite DEPOIS do pagamento — mas
+  // era cobrado ANTES, num diálogo de 6 campos (CEP, rua, número, bairro,
+  // cidade, estado) no instante em que a pessoa já tinha decidido pagar R$10.
+  // Como o CPF e o endereço saíram do cadastro no experimento PRE-4, 100% dos
+  // usuários encontravam os dois diálogos aqui: em 22 perfis, 3 tinham CPF e
+  // 2 tinham endereço.
+  //
+  // A API do Asaas não exige nada disso pra criar a cobrança — `postalCode`,
+  // `address`, `addressNumber`, `complement` e `province` são opcionais em
+  // `CreateCustomerInput`. A exigência era nossa, e o MOMENTO da coleta é
+  // escolha, não imposição. Agora ela acontece no `/dashboard` depois que o
+  // dinheiro entra, sem bloquear ninguém.
+  //
+  // O CPF continua obrigatório: sem ele o Asaas não cria o cliente.
+  //
+  // O `parsed.address` do body segue aceito — quem já tem endereço salvo, ou
+  // preencher pelo prompt pós-pagamento, continua tendo o cliente do Asaas
+  // atualizado no próximo checkout.
+  const addressInput = hasFullAddress || parsed.address
+    ? {
+        postalCode: postalCode ?? undefined,
+        address: addressStreet ?? undefined,
+        addressNumber: addressNumber ?? undefined,
+        complement: addressComplement ?? undefined,
+        province: addressDistrict ?? undefined,
+      }
+    : {};
 
   // Ensure customer exists AND has cpfCnpj + endereço on Asaas side.
   // Customers created before this migration won't have address; PATCH

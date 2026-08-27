@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
 import { DeletePrepButton } from "@/components/prep/DeletePrepButton";
 import { FreeTierBanner } from "@/components/billing/FreeTierBanner";
+import { NfseAddressPrompt } from "@/components/billing/NfseAddressPrompt";
 
 type SessionRow = {
   id: string;
@@ -84,7 +85,9 @@ export default async function DashboardPage({
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("full_name, is_admin, prep_credits, welcome_email_sent_at")
+    .select(
+      "full_name, is_admin, prep_credits, welcome_email_sent_at, asaas_customer_id, postal_code, address_street, address_number, address_district, address_city, address_state",
+    )
     .eq("id", user.id)
     .single();
   const billing = (profileRow ?? {}) as {
@@ -92,7 +95,29 @@ export default async function DashboardPage({
     is_admin?: boolean;
     prep_credits?: number;
     welcome_email_sent_at?: string | null;
+    asaas_customer_id?: string | null;
+    postal_code?: string | null;
+    address_street?: string | null;
+    address_number?: string | null;
+    address_district?: string | null;
+    address_city?: string | null;
+    address_state?: string | null;
   };
+
+  // O endereço fiscal deixou de bloquear o checkout (2026-08-27) e passou a
+  // ser pedido aqui, depois do dinheiro entrar. Só aparece pra quem JÁ é
+  // cliente do Asaas — pedir endereço a quem nunca pagou seria trocar um
+  // formulário obrigatório por um formulário inútil.
+  const precisaEndereco =
+    !!billing.asaas_customer_id &&
+    !(
+      billing.postal_code &&
+      billing.address_street &&
+      billing.address_number &&
+      billing.address_district &&
+      billing.address_city &&
+      billing.address_state
+    );
 
   // Welcome email fallback for sessions that never pass /auth/confirm (Google
   // OAuth, legacy confirmation links). The claim inside the helper is atomic,
@@ -109,6 +134,7 @@ export default async function DashboardPage({
         {showFreeTierBanner && (
           <FreeTierBanner credits={billing.prep_credits ?? 0} />
         )}
+        {precisaEndereco && <NfseAddressPrompt />}
         <section className="mx-auto max-w-3xl py-10 md:py-16">
           <div className="text-center">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-700">
@@ -196,6 +222,11 @@ export default async function DashboardPage({
     <div>
       {showFreeTierBanner && (
         <FreeTierBanner credits={billing.prep_credits ?? 0} />
+      )}
+      {precisaEndereco && (
+        <div className="mb-6">
+          <NfseAddressPrompt />
+        </div>
       )}
       <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>

@@ -84,7 +84,9 @@ export async function signup(
     // CPF + endereço NÃO são mais coletados no signup (experimento PRE-4 de
     // redução de fricção). O profile row é criada pelo trigger de auth.users
     // com esses campos nulos; /api/billing/checkout os coleta sob demanda no
-    // primeiro checkout via os diálogos cpf_required / address_required.
+    // primeiro checkout (cpf_required) e, no caso do endereço, só DEPOIS do
+    // pagamento, pelo NfseAddressPrompt do /dashboard — ele serve pra NFSe e
+    // não pode ficar entre a pessoa e a compra.
     if (data.user) {
       const admin = createAdminClient();
 
