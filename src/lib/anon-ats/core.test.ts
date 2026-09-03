@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   normalizeAnonInput,
   resolveAnonLabels,
+  isEmpresaDesconhecida,
   isExpired,
   expiresAtFrom,
   anonAnalysisToPrepSession,
@@ -179,5 +180,27 @@ describe("resolveAnonLabels", () => {
     expect(
       resolveAnonLabels(analise({ jd_context: { role: "Vendedor de Loja", company: "" } })),
     ).toEqual({ jobTitle: "Vendedor de Loja", companyName: "a empresa" });
+  });
+});
+
+describe("isEmpresaDesconhecida", () => {
+  it("reconhece o rótulo neutro — é ele que faz o Stage A pesquisar nada", () => {
+    expect(isEmpresaDesconhecida("a empresa")).toBe(true);
+    expect(isEmpresaDesconhecida("A Empresa")).toBe(true);
+    expect(isEmpresaDesconhecida("  a empresa  ")).toBe(true);
+  });
+
+  it("trata ausência como desconhecida", () => {
+    expect(isEmpresaDesconhecida(null)).toBe(true);
+    expect(isEmpresaDesconhecida(undefined)).toBe(true);
+    expect(isEmpresaDesconhecida("")).toBe(true);
+    expect(isEmpresaDesconhecida("   ")).toBe(true);
+  });
+
+  it("empresa de verdade passa", () => {
+    expect(isEmpresaDesconhecida("Nubank")).toBe(false);
+    expect(isEmpresaDesconhecida("TechNova Solutions")).toBe(false);
+    // Não pode dar falso positivo por conter a palavra "empresa".
+    expect(isEmpresaDesconhecida("Empresa Brasileira de Correios")).toBe(false);
   });
 });

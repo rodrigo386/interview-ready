@@ -29,10 +29,19 @@ import { PendingButton } from "./PendingButton";
 export function GenerateFullPrepCta({
   sessionId,
   variant = "full",
+  needsCompany = false,
 }: {
   sessionId: string;
   /** "compact" para quando o painel ao redor já explicou o contexto. */
   variant?: "full" | "compact";
+  /**
+   * A vaga não disse qual é a empresa. Mostra o campo ANTES do clique em vez
+   * de recusar depois: a pessoa já decidiu pagar, e devolver um erro nesse
+   * ponto gastaria a intenção pra pedir uma informação que dava pra ter
+   * pedido junto. O servidor valida de novo — isto aqui é conveniência, não
+   * é o gate.
+   */
+  needsCompany?: boolean;
 }) {
   const bound = generateFullPrep.bind(null, sessionId);
   const [state, action, pending] = useActionState<GenerateFullPrepState, FormData>(
@@ -91,6 +100,29 @@ export function GenerateFullPrepCta({
         </button>
       ) : (
         <form action={action} className={variant === "full" ? "mt-4" : undefined}>
+          {needsCompany && (
+            <div className="mb-3">
+              <label
+                htmlFor="companyName"
+                className="block text-sm font-semibold text-ink"
+              >
+                Qual é a empresa dessa vaga?
+              </label>
+              <p className="mt-0.5 text-xs text-ink-3">
+                Não conseguimos identificar no texto que você colou. Sem isso
+                não dá pra pesquisar a empresa — que é parte do que você está
+                comprando.
+              </p>
+              <input
+                id="companyName"
+                name="companyName"
+                required
+                maxLength={120}
+                placeholder="Ex.: Nubank"
+                className="mt-2 w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink"
+              />
+            </div>
+          )}
           <PendingButton
             idleLabel="Gerar preparação completa →"
             pendingLabel="Gerando… cerca de 60 segundos"
@@ -99,7 +131,19 @@ export function GenerateFullPrepCta({
         </form>
       )}
 
-      {state.error && !pending && state.error !== "quota_exceeded" ? (
+      {state.error === "company_required" && !pending ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-xl border border-yellow-500/40 bg-yellow-soft px-4 py-3 text-sm text-yellow-700"
+        >
+          Informe o nome da empresa antes de gerar — nenhum crédito foi usado.
+        </p>
+      ) : null}
+
+      {state.error &&
+      !pending &&
+      state.error !== "quota_exceeded" &&
+      state.error !== "company_required" ? (
         <p
           role="alert"
           className="mt-4 rounded-xl border border-red-500/40 bg-red-soft px-4 py-3 text-sm text-red-700"

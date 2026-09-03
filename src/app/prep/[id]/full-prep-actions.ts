@@ -7,6 +7,7 @@ import { checkQuota } from "@/lib/billing/quota";
 import { consumePrepCredit, refundPrepCredit } from "@/lib/billing/consume";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { decideFullPrepGeneration } from "@/lib/prep/full-prep";
+import { isEmpresaDesconhecida } from "@/lib/anon-ats/core";
 
 export type GenerateFullPrepState = {
   /** "quota_exceeded" é sentinela de UI, não texto. */
@@ -28,7 +29,7 @@ export type GenerateFullPrepState = {
 export async function generateFullPrep(
   sessionId: string,
   _prev: GenerateFullPrepState,
-  _formData: FormData,
+  formData: FormData,
 ): Promise<GenerateFullPrepState> {
   const supabase = await createClient();
   const {
@@ -56,6 +57,30 @@ export async function generateFullPrep(
   // Todos os desfechos que não geram levam de volta pra prep: o layout já
   // sabe renderizar o estado certo (guia pronto, skeleton ou PrepFailed).
   if (decision.kind !== "generate") redirect(`/prep/${sessionId}`);
+
+  // A EMPRESA precisa ter nome antes de cobrar.
+  //
+  // O primeiro cliente pagante (03/09) colou uma vaga que era só o bloco de
+  // requisitos — sem cargo, sem empresa. Tudo funcionou como projetado: o
+  // `jd_context` devolveu vazio porque não havia o que extrair, e os rótulos
+  // neutros entraram. O resultado foi o `pipeline.ts` pesquisar uma empresa
+  // chamada "a empresa" e devolver um ensaio genérico sobre "panorama
+  // corporativo de 2026". A pessoa pagou por cinco entregáveis e recebeu
+  // quatro.
+  //
+  // O buraco não estava na extração e sim antes dela: NUNCA perguntamos.
+  // Aqui é o lugar certo pra perguntar — a pessoa já decidiu pagar, então é
+  // o ponto de maior intenção do funil, e é o último instante antes do
+  // crédito ser consumido. Um campo só: cargo é cosmético (as perguntas saem
+  // do texto da vaga e saíram boas), empresa é o que decide se o Stage A tem
+  // o que pesquisar.
+  const empresaDigitada = String(formData.get("companyName") ?? "").trim();
+  if (isEmpresaDesconhecida(session.company_name)) {
+    if (!empresaDigitada) return { error: "company_required" };
+    if (empresaDigitada.length > 120) {
+      return { error: "Nome de empresa longo demais." };
+    }
+  }
 
   // Mesmo limite do createPrep — é literalmente a mesma chamada de pipeline.
   const rl = await rateLimit(`user:${user.id}`, LIMITS.createPrep);
@@ -106,12 +131,18 @@ export async function generateFullPrep(
   const { data: claimed } = await admin
     .from("prep_sessions")
     .update({
+      // `company_name` entra na MESMA transição atômica da claim: se fosse um
+      // update separado antes, um segundo clique que perdesse a corrida da
+      // claim ainda teria renomeado a empresa da prep. Vai pelo admin client
+      // porque `company_name` não tem GRANT de UPDATE pra `authenticated`
+      // (migration 0024 só liberou as colunas de resultado da IA).
+      ...(empresaDigitada ? { company_name: empresaDigitada } : {}),
       generation_status: "pending",
       error_message: null,
       prep_guide: {
         meta: {
           role: session.job_title ?? "esta vaga",
-          company: session.company_name ?? "a empresa",
+          company: empresaDigitada || session.company_name || "a empresa",
           estimated_prep_time_minutes: 30,
         },
         sections: [],

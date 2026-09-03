@@ -10,6 +10,7 @@ import { PrepCompletedTracker } from "@/components/prep/PrepCompletedTracker";
 import { loadPrepSession } from "@/lib/prep/load-session";
 import { shouldOfferFullPrep } from "@/lib/prep/full-prep";
 import { GenerateFullPrepCta } from "@/components/prep/GenerateFullPrepCta";
+import { isEmpresaDesconhecida } from "@/lib/anon-ats/core";
 
 export const metadata: Metadata = {
   title: "Prep · PrepaVaga",
@@ -66,7 +67,10 @@ export default async function PrepHomePage({
       {isPartial && <PartialPrepBanner failedSections={failedSections} />}
       {offerFullPrep && (
         <div className="mb-6">
-          <GenerateFullPrepCta sessionId={id} />
+          <GenerateFullPrepCta
+            sessionId={id}
+            needsCompany={isEmpresaDesconhecida(data?.company_name)}
+          />
         </div>
       )}
       {data?.generation_status === "complete" && (

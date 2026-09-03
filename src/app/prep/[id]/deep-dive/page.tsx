@@ -4,6 +4,7 @@ import { prepGuideSchema } from "@/lib/ai/schemas";
 import { classifyPrepSections } from "@/lib/prep/section-classifier";
 import { QuestionPager, type PagerPage } from "@/components/prep/QuestionPager";
 import { StepNotGenerated } from "@/components/prep/StepNotGenerated";
+import { isEmpresaDesconhecida } from "@/lib/anon-ats/core";
 import { loadPrepSession } from "@/lib/prep/load-session";
 
 export default async function DeepDivePage({
@@ -20,7 +21,12 @@ export default async function DeepDivePage({
     // anônima, só com a etapa 2 pronta) — não é erro, é "ainda não gerado".
     // Guide presente mas corrompido continua sendo 404 de verdade.
     if (session.prep_guide === null) {
-      return <StepNotGenerated sessionId={id} />;
+      return (
+        <StepNotGenerated
+          sessionId={id}
+          needsCompany={isEmpresaDesconhecida(session.company_name)}
+        />
+      );
     }
     notFound();
   }

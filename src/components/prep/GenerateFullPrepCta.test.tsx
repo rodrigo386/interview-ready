@@ -1,57 +1,50 @@
-import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 import { GenerateFullPrepCta } from "./GenerateFullPrepCta";
-import { PrepShellProvider } from "./PrepShellProvider";
 
-function comSaldo(prepCredits: number) {
-  return render(
-    <PrepShellProvider
-      sessionId="s1"
-      company="TechCorp"
-      role="Gerente de Operações"
-      estimatedMinutes={null}
-      serverCompleted={[]}
-      prepCredits={prepCredits}
-    >
-      <GenerateFullPrepCta sessionId="s1" />
-    </PrepShellProvider>,
-  );
-}
+vi.mock("@/app/prep/[id]/full-prep-actions", () => ({
+  generateFullPrep: vi.fn(async () => ({})),
+}));
+vi.mock("@/lib/analytics/client", () => ({ track: vi.fn() }));
+vi.mock("@/components/billing/useCheckoutFlow", () => ({
+  useCheckoutFlow: () => ({
+    start: vi.fn(),
+    pending: false,
+    error: null,
+    dialog: null,
+  }),
+}));
 
-describe("<GenerateFullPrepCta />", () => {
-  it("mostra o preço no botão quando o saldo é zero", () => {
-    // Análise de funil de 18/08/2026: as duas pessoas que criaram conta pela
-    // ferramenta grátis pararam aqui. O rótulo antigo ("usa 1 preparação da
-    // sua conta") descrevia um recurso que elas tinham zero, e o custo só
-    // aparecia depois do clique, na forma de um paywall.
-    const { getByRole, getByText } = comSaldo(0);
-
-    expect(
-      getByRole("button", { name: /gerar preparação completa · R\$10/i }),
-    ).toBeDefined();
-    expect(getByText(/Custa R\$10/)).toBeDefined();
+describe("GenerateFullPrepCta", () => {
+  it("pede a empresa quando a vaga não disse qual é", () => {
+    // O primeiro cliente pagante colou uma vaga só com requisitos. Sem
+    // empresa, o Stage A pesquisa "a empresa" e devolve ensaio genérico —
+    // ele pagou por cinco entregáveis e recebeu quatro.
+    render(<GenerateFullPrepCta sessionId="s1" needsCompany />);
+    const campo = screen.getByLabelText(/qual é a empresa/i);
+    expect(campo).toBeRequired();
   });
 
-  it("não cobra de quem já tem crédito, e diz quantos sobram", () => {
-    const { getByRole, getByText, queryByText } = comSaldo(2);
-
-    expect(
-      getByRole("button", { name: /^Gerar preparação completa →$/ }),
-    ).toBeDefined();
-    expect(getByText(/Usa 1 das suas 2 preparações/)).toBeDefined();
-    expect(queryByText(/Custa R\$10/)).toBeNull();
+  it("não pede nada quando a empresa já é conhecida", () => {
+    render(<GenerateFullPrepCta sessionId="s1" />);
+    expect(screen.queryByLabelText(/qual é a empresa/i)).not.toBeInTheDocument();
   });
 
-  it("fora do shell, cai no comportamento neutro em vez de quebrar", () => {
-    // O saldo é desconhecido: submeter e deixar a action decidir é melhor do
-    // que anunciar um preço para quem talvez já tenha pago.
-    const { getByRole, queryByText } = render(
-      <GenerateFullPrepCta sessionId="s1" />,
+  it("explica POR QUE está perguntando, ligando ao que foi comprado", () => {
+    // Campo extra sem justificativa no instante do pagamento é fricção pura.
+    render(<GenerateFullPrepCta sessionId="s1" needsCompany />);
+    expect(
+      screen.getByText(/parte do que você está comprando/i),
+    ).toBeInTheDocument();
+  });
+
+  it("o campo vive DENTRO do form que dispara a geração", () => {
+    // Se ficasse fora, o valor não seria enviado e o servidor recusaria com
+    // company_required num loop sem saída.
+    const { container } = render(
+      <GenerateFullPrepCta sessionId="s1" needsCompany />,
     );
-
-    expect(
-      getByRole("button", { name: /gerar preparação completa/i }),
-    ).toBeDefined();
-    expect(queryByText(/Custa R\$10/)).toBeNull();
+    const form = container.querySelector("form");
+    expect(form?.querySelector('input[name="companyName"]')).toBeTruthy();
   });
 });

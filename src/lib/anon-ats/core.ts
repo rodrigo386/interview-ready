@@ -71,6 +71,20 @@ export const ROTULO_EMPRESA_NEUTRO = "a empresa";
 const MAX_ROTULO_CHARS = 120;
 
 /**
+ * A empresa desta prep é desconhecida?
+ *
+ * Vale pro rótulo neutro e pra ausência. Existe porque a decisão "dá pra
+ * pesquisar essa empresa?" aparece em três lugares (o CTA que oferece a
+ * preparação, a action que a gera e o teste dos dois), e comparar com a
+ * string literal em cada um é como a regra se perde: basta um lugar
+ * esquecido pra voltarmos a vender pesquisa sobre "a empresa".
+ */
+export function isEmpresaDesconhecida(nome: string | null | undefined): boolean {
+  const t = (nome ?? "").trim().toLowerCase();
+  return t === "" || t === ROTULO_EMPRESA_NEUTRO;
+}
+
+/**
  * Limpa um rótulo vindo da IA. Devolve "" pra tudo que não serve como nome.
  *
  * O corte por tamanho não é cosmético: `company_name` alimenta a pesquisa de

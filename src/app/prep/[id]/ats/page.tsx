@@ -13,6 +13,7 @@ import { CvRewriteCta } from "@/components/prep/CvRewriteCta";
 import { runAtsAnalysis } from "@/app/prep/[id]/ats-actions";
 import { PendingButton } from "@/components/prep/PendingButton";
 import { GenerateFullPrepCta } from "@/components/prep/GenerateFullPrepCta";
+import { isEmpresaDesconhecida } from "@/lib/anon-ats/core";
 import { shouldOfferFullPrep } from "@/lib/prep/full-prep";
 import { decideCvRewriteGeneration } from "@/lib/prep/cv-rewrite-gate";
 
@@ -93,7 +94,12 @@ export default async function AtsPage({
 
       <AtsHero analysis={analysis} role={role} />
 
-      {offerFullPrep && <GenerateFullPrepCta sessionId={session.id} />}
+      {offerFullPrep && (
+        <GenerateFullPrepCta
+          sessionId={session.id}
+          needsCompany={isEmpresaDesconhecida(session.company_name)}
+        />
+      )}
 
       {analysis.score < 71 && top3.length > 0 && (
         <div

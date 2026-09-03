@@ -12,7 +12,13 @@ import { GenerateFullPrepCta } from "./GenerateFullPrepCta";
  * preparação completa a partir da etapa 2" quando a etapa 2 não tinha botão
  * nenhum pra isso — instrução pra um botão inexistente.
  */
-export function StepNotGenerated({ sessionId }: { sessionId: string }) {
+export function StepNotGenerated({
+  sessionId,
+  needsCompany = false,
+}: {
+  sessionId: string;
+  needsCompany?: boolean;
+}) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-line bg-white p-8 text-center shadow-prep">
@@ -30,7 +36,7 @@ export function StepNotGenerated({ sessionId }: { sessionId: string }) {
           ← Voltar pra etapa 2 · sua análise ATS
         </Link>
       </div>
-      <GenerateFullPrepCta sessionId={sessionId} />
+      <GenerateFullPrepCta sessionId={sessionId} needsCompany={needsCompany} />
     </div>
   );
 }
