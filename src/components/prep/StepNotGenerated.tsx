@@ -15,9 +15,11 @@ import { GenerateFullPrepCta } from "./GenerateFullPrepCta";
 export function StepNotGenerated({
   sessionId,
   needsCompany = false,
+  needsRole = false,
 }: {
   sessionId: string;
   needsCompany?: boolean;
+  needsRole?: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -36,7 +38,11 @@ export function StepNotGenerated({
           ← Voltar pra etapa 2 · sua análise ATS
         </Link>
       </div>
-      <GenerateFullPrepCta sessionId={sessionId} needsCompany={needsCompany} />
+      <GenerateFullPrepCta
+        sessionId={sessionId}
+        needsCompany={needsCompany}
+        needsRole={needsRole}
+      />
     </div>
   );
 }

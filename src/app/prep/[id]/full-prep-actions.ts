@@ -7,7 +7,7 @@ import { checkQuota } from "@/lib/billing/quota";
 import { consumePrepCredit, refundPrepCredit } from "@/lib/billing/consume";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
 import { decideFullPrepGeneration } from "@/lib/prep/full-prep";
-import { isEmpresaDesconhecida } from "@/lib/anon-ats/core";
+import { isEmpresaDesconhecida, isCargoDesconhecido } from "@/lib/anon-ats/core";
 
 export type GenerateFullPrepState = {
   /** "quota_exceeded" é sentinela de UI, não texto. */
@@ -82,6 +82,18 @@ export async function generateFullPrep(
     }
   }
 
+  // O cargo é pedido pelo mesmo motivo, com custo diferente: ele vira o
+  // `meta.role` do prep_guide, que é o TÍTULO do relatório. O primeiro
+  // cliente recebeu um dossiê encabeçado por "esta vaga · a empresa" — a
+  // geração estava boa, o acabamento é que denunciava.
+  const cargoDigitado = String(formData.get("jobTitle") ?? "").trim();
+  if (isCargoDesconhecido(session.job_title)) {
+    if (!cargoDigitado) return { error: "role_required" };
+    if (cargoDigitado.length > 120) {
+      return { error: "Nome de cargo longo demais." };
+    }
+  }
+
   // Mesmo limite do createPrep — é literalmente a mesma chamada de pipeline.
   const rl = await rateLimit(`user:${user.id}`, LIMITS.createPrep);
   if (!rl.success) {
@@ -137,11 +149,12 @@ export async function generateFullPrep(
       // porque `company_name` não tem GRANT de UPDATE pra `authenticated`
       // (migration 0024 só liberou as colunas de resultado da IA).
       ...(empresaDigitada ? { company_name: empresaDigitada } : {}),
+      ...(cargoDigitado ? { job_title: cargoDigitado } : {}),
       generation_status: "pending",
       error_message: null,
       prep_guide: {
         meta: {
-          role: session.job_title ?? "esta vaga",
+          role: cargoDigitado || session.job_title || "esta vaga",
           company: empresaDigitada || session.company_name || "a empresa",
           estimated_prep_time_minutes: 30,
         },

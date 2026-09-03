@@ -47,4 +47,32 @@ describe("GenerateFullPrepCta", () => {
     const form = container.querySelector("form");
     expect(form?.querySelector('input[name="companyName"]')).toBeTruthy();
   });
+
+  it("pede o cargo quando a vaga não disse qual é", () => {
+    // O relatório do primeiro cliente saiu encabeçado por "esta vaga".
+    render(<GenerateFullPrepCta sessionId="s1" needsRole />);
+    expect(screen.getByLabelText(/qual é o cargo/i)).toBeRequired();
+  });
+
+  it("pede os dois quando faltam os dois, num aviso só", () => {
+    render(<GenerateFullPrepCta sessionId="s1" needsCompany needsRole />);
+    expect(screen.getByText(/o cargo nem a empresa/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/qual é o cargo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/qual é a empresa/i)).toBeInTheDocument();
+  });
+
+  it("não pede nada quando a vaga trouxe tudo", () => {
+    render(<GenerateFullPrepCta sessionId="s1" />);
+    expect(screen.queryByLabelText(/qual é o cargo/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/qual é a empresa/i)).not.toBeInTheDocument();
+  });
+
+  it("os dois campos vivem dentro do form que dispara a geração", () => {
+    const { container } = render(
+      <GenerateFullPrepCta sessionId="s1" needsCompany needsRole />,
+    );
+    const form = container.querySelector("form");
+    expect(form?.querySelector('input[name="companyName"]')).toBeTruthy();
+    expect(form?.querySelector('input[name="jobTitle"]')).toBeTruthy();
+  });
 });

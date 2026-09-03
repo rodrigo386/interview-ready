@@ -5,7 +5,7 @@ import { classifyPrepSections } from "@/lib/prep/section-classifier";
 import { QuestionPager, type PagerPage } from "@/components/prep/QuestionPager";
 import { SuccessBanner } from "@/components/prep/SuccessBanner";
 import { StepNotGenerated } from "@/components/prep/StepNotGenerated";
-import { isEmpresaDesconhecida } from "@/lib/anon-ats/core";
+import { isEmpresaDesconhecida, isCargoDesconhecido } from "@/lib/anon-ats/core";
 import { loadPrepSession } from "@/lib/prep/load-session";
 
 export default async function AskPage({
@@ -26,6 +26,7 @@ export default async function AskPage({
         <StepNotGenerated
           sessionId={id}
           needsCompany={isEmpresaDesconhecida(session.company_name)}
+          needsRole={isCargoDesconhecido(session.job_title)}
         />
       );
     }

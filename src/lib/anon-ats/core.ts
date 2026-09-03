@@ -85,6 +85,22 @@ export function isEmpresaDesconhecida(nome: string | null | undefined): boolean 
 }
 
 /**
+ * O cargo desta prep é desconhecido?
+ *
+ * Separado de `isEmpresaDesconhecida` porque as duas faltas têm custos
+ * DIFERENTES, e confundi-los foi um erro de leitura meu: sem empresa o Stage
+ * A pesquisa nada e o entregável fica vazio; sem cargo a geração continua boa
+ * (as perguntas saem do texto da vaga), mas o relatório é intitulado "esta
+ * vaga" no topo — o que lê como software quebrado, não como conteúdo
+ * genérico. Uma falha é de conteúdo, a outra é de acabamento, e as duas
+ * custam a mesma coisa: a confiança de quem pagou R$10.
+ */
+export function isCargoDesconhecido(nome: string | null | undefined): boolean {
+  const t = (nome ?? "").trim().toLowerCase();
+  return t === "" || t === ROTULO_VAGA_NEUTRO;
+}
+
+/**
  * Limpa um rótulo vindo da IA. Devolve "" pra tudo que não serve como nome.
  *
  * O corte por tamanho não é cosmético: `company_name` alimenta a pesquisa de

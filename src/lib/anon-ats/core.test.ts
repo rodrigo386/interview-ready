@@ -3,6 +3,7 @@ import {
   normalizeAnonInput,
   resolveAnonLabels,
   isEmpresaDesconhecida,
+  isCargoDesconhecido,
   isExpired,
   expiresAtFrom,
   anonAnalysisToPrepSession,
@@ -202,5 +203,19 @@ describe("isEmpresaDesconhecida", () => {
     expect(isEmpresaDesconhecida("TechNova Solutions")).toBe(false);
     // Não pode dar falso positivo por conter a palavra "empresa".
     expect(isEmpresaDesconhecida("Empresa Brasileira de Correios")).toBe(false);
+  });
+});
+
+describe("isCargoDesconhecido", () => {
+  it("reconhece o rótulo neutro — é ele que vira o título do relatório", () => {
+    expect(isCargoDesconhecido("esta vaga")).toBe(true);
+    expect(isCargoDesconhecido("  Esta Vaga ")).toBe(true);
+    expect(isCargoDesconhecido(null)).toBe(true);
+    expect(isCargoDesconhecido("")).toBe(true);
+  });
+
+  it("cargo de verdade passa, mesmo contendo a palavra vaga", () => {
+    expect(isCargoDesconhecido("Desenvolvedor Full Stack Pleno")).toBe(false);
+    expect(isCargoDesconhecido("Analista de Vagas")).toBe(false);
   });
 });

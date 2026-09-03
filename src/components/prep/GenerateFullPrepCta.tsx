@@ -30,6 +30,7 @@ export function GenerateFullPrepCta({
   sessionId,
   variant = "full",
   needsCompany = false,
+  needsRole = false,
 }: {
   sessionId: string;
   /** "compact" para quando o painel ao redor já explicou o contexto. */
@@ -42,6 +43,11 @@ export function GenerateFullPrepCta({
    * é o gate.
    */
   needsCompany?: boolean;
+  /**
+   * A vaga não disse qual é o cargo. Custo diferente do `needsCompany`: sem
+   * cargo a geração continua boa, mas o relatório sai intitulado "esta vaga".
+   */
+  needsRole?: boolean;
 }) {
   const bound = generateFullPrep.bind(null, sessionId);
   const [state, action, pending] = useActionState<GenerateFullPrepState, FormData>(
@@ -100,6 +106,37 @@ export function GenerateFullPrepCta({
         </button>
       ) : (
         <form action={action} className={variant === "full" ? "mt-4" : undefined}>
+          {(needsCompany || needsRole) && (
+            <p className="mb-3 text-xs text-ink-3">
+              O texto que você colou não trazia{" "}
+              {needsCompany && needsRole
+                ? "o cargo nem a empresa"
+                : needsCompany
+                  ? "o nome da empresa"
+                  : "o nome do cargo"}
+              . Complete abaixo para o dossiê sair com os dados certos.
+            </p>
+          )}
+
+          {needsRole && (
+            <div className="mb-3">
+              <label
+                htmlFor="jobTitle"
+                className="block text-sm font-semibold text-ink"
+              >
+                Qual é o cargo da vaga?
+              </label>
+              <input
+                id="jobTitle"
+                name="jobTitle"
+                required
+                maxLength={120}
+                placeholder="Ex.: Desenvolvedor Full Stack Pleno"
+                className="mt-2 w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink"
+              />
+            </div>
+          )}
+
           {needsCompany && (
             <div className="mb-3">
               <label
@@ -109,9 +146,8 @@ export function GenerateFullPrepCta({
                 Qual é a empresa dessa vaga?
               </label>
               <p className="mt-0.5 text-xs text-ink-3">
-                Não conseguimos identificar no texto que você colou. Sem isso
-                não dá pra pesquisar a empresa — que é parte do que você está
-                comprando.
+                Sem isso não dá pra pesquisar a empresa — que é parte do que
+                você está comprando.
               </p>
               <input
                 id="companyName"
@@ -131,19 +167,21 @@ export function GenerateFullPrepCta({
         </form>
       )}
 
-      {state.error === "company_required" && !pending ? (
+      {(state.error === "company_required" || state.error === "role_required") &&
+      !pending ? (
         <p
           role="alert"
           className="mt-4 rounded-xl border border-yellow-500/40 bg-yellow-soft px-4 py-3 text-sm text-yellow-700"
         >
-          Informe o nome da empresa antes de gerar — nenhum crédito foi usado.
+          Preencha os campos acima antes de gerar — nenhum crédito foi usado.
         </p>
       ) : null}
 
       {state.error &&
       !pending &&
       state.error !== "quota_exceeded" &&
-      state.error !== "company_required" ? (
+      state.error !== "company_required" &&
+      state.error !== "role_required" ? (
         <p
           role="alert"
           className="mt-4 rounded-xl border border-red-500/40 bg-red-soft px-4 py-3 text-sm text-red-700"
