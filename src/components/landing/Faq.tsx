@@ -6,10 +6,10 @@ const ITEMS: FaqItem[] = [
   {
     q: "O PrepaVaga é grátis?",
     aPlain:
-      "A análise ATS é sempre gratuita, com ou sem cadastro. A preparação completa (pesquisa da empresa, currículo reescrito e roteiros de pergunta) custa R$10 por vaga, ou em pacote: 3 por R$25 ou 5 por R$40. Sem mensalidade.",
+      "A análise ATS é gratuita e não pede cadastro. A preparação completa (pesquisa da empresa, currículo reescrito e roteiros de pergunta) custa R$10 por vaga, ou em pacote: 3 por R$25 ou 5 por R$40. Sem mensalidade.",
     a: (
       <>
-        A <strong>análise ATS é sempre gratuita</strong>, com ou sem cadastro. A preparação
+        A <strong>análise ATS é gratuita e não pede cadastro</strong>. A preparação
         completa (pesquisa da empresa, currículo reescrito e roteiros de pergunta) custa{" "}
         <strong>R$ 10</strong> por vaga, ou em pacote: 3 por R$ 25 ou 5 por R$ 40. Sem
         mensalidade, e o crédito comprado não expira.

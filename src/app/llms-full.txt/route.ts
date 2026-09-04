@@ -51,7 +51,7 @@ ${articles}
 
 A PrepaVaga é uma plataforma operada pela PROAICIRCLE Consultoria Empresarial Ltda (CNPJ 62.805.016/0001-29), com sede em São Paulo, SP. Não há plano gratuito nem assinatura. O modelo de preço é:
 
-- **Análise ATS**: sempre gratuita, com ou sem cadastro.
+- **Análise ATS**: gratuita em /analise-ats-gratis, sem precisar de conta. Dentro da conta, criar uma preparação consome 1 crédito e entrega a preparação completa.
 - **Preparação completa**: R$10 por vaga (pesquisa da empresa, currículo reescrito e roteiros de pergunta). Também em pacote: 3 por R$25 ou 5 por R$40. Crédito não expira.
 
 Todos os pagamentos são processados pelo Asaas (Pix, cartão de crédito ou boleto). Sem mensalidade. Garantia de 7 dias para reembolso. Operação em conformidade com a LGPD (Lei 13.709/2018).

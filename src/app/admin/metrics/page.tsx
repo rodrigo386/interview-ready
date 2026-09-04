@@ -61,8 +61,8 @@ export default async function MetricsAdminPage({
       </Card>
 
       <Card
-        title="Análises ATS por dia (grátis)"
-        subtitle={`${totals.preps.toLocaleString("pt-BR")} sessões criadas no período — a análise não custa crédito`}
+        title="Preparações criadas por dia"
+        subtitle={`${totals.preps.toLocaleString("pt-BR")} sessões criadas no período — inclui as reivindicadas da ferramenta anônima, que não consomem crédito`}
       >
         <LineChart data={series.preps} />
       </Card>

@@ -82,9 +82,14 @@ export default function TermsPage() {
 
       <Section number="4." title="Como o crédito funciona">
         <p>
-          Cada crédito vale por uma preparação completa. Ele é debitado no momento em que você
-          pede a geração — no botão &ldquo;Gerar preparação completa&rdquo; — e não antes: criar a
-          preparação, enviar o currículo e rodar a análise ATS não custam crédito.
+          Cada crédito vale por uma preparação completa. Ele é debitado quando você cria uma
+          preparação dentro da sua conta (botão &ldquo;+ Novo prep&rdquo;), e a preparação
+          completa é gerada na sequência: análise ATS, pesquisa da empresa, faixa salarial e os
+          roteiros de pergunta. Se a preparação veio da nossa{" "}
+          <strong className="text-text-primary">análise ATS gratuita</strong> (feita sem
+          cadastro), nada é debitado até você pedir a geração no botão &ldquo;Gerar preparação
+          completa&rdquo;. Enviar o currículo e rodar a análise ATS, sozinhos, nunca custam
+          crédito.
         </p>
         <p>
           <strong className="text-text-primary">O crédito volta pro seu saldo</strong> em duas
@@ -126,7 +131,8 @@ export default function TermsPage() {
         </p>
         <p>
           Após esse prazo, reembolsos são analisados caso a caso e não são garantidos. A análise
-          ATS não é uma compra — por ser sempre gratuita, não há valor a reembolsar por ela.
+          ATS feita sem cadastro não é uma compra — por ser gratuita, não há valor a reembolsar
+          por ela.
         </p>
       </Section>
 

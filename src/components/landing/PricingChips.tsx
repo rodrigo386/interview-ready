@@ -7,7 +7,7 @@ type Plan = {
 };
 
 const PLANS: Plan[] = [
-  { label: "Análise ATS", sub: "grátis, com ou sem cadastro", badge: "Sempre grátis" },
+  { label: "Análise ATS", sub: "grátis, sem criar conta", badge: "Grátis" },
   { label: "R$10", sub: "1 preparação completa" },
   { label: "R$25 · R$40", sub: "pacote de 3 ou 5 preps" },
 ];
@@ -24,7 +24,7 @@ export function PricingChips() {
           Sem mensalidade. Pague só pela preparação que usar.
         </h2>
         <p className="mt-3 text-base leading-[1.6] text-text-secondary">
-          A análise ATS é sempre grátis. A preparação completa custa R$10, ou menos por vaga
+          A análise ATS é grátis e não pede cadastro. A preparação completa custa R$10, ou menos por vaga
           em pacote.
         </p>
 

@@ -104,8 +104,8 @@ export default function SobrePage() {
 
             <h2>Modelo de preço</h2>
             <p>
-              A <strong>análise ATS é sempre gratuita</strong>, com ou sem
-              cadastro. A preparação completa (pesquisa da empresa, currículo
+              A <strong>análise ATS é gratuita e não pede cadastro</strong>. A preparação
+              completa (pesquisa da empresa, currículo
               reescrito e roteiros de pergunta) custa{" "}
               <strong>R$ 10 por vaga</strong>, ou em pacote: 3 por R$ 25 ou 5
               por R$ 40. Sem mensalidade, sem assinatura. Detalhes em{" "}

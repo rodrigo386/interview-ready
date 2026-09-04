@@ -203,6 +203,15 @@ export function NewPrepForm({ existingCvs }: { existingCvs: CvSummary[] }) {
               <p className="mt-0.5 text-xs text-text-muted">
                 Cerca de 60 segundos. Você pode ficar nesta página.
               </p>
+              {/* O custo tem que aparecer ANTES do clique. Desde 03/09 criar
+                  a preparação consome 1 crédito e entrega o dossiê inteiro;
+                  descobrir isso só no paywall, depois de colar vaga e subir
+                  currículo, é o tipo de surpresa que vira pedido de
+                  reembolso. */}
+              <p className="mt-1 text-xs font-medium text-text-secondary">
+                Usa 1 crédito e gera a preparação completa: análise ATS,
+                pesquisa da empresa, faixa salarial e os roteiros de pergunta.
+              </p>
             </div>
             <Button
               type="submit"

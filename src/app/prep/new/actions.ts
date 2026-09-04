@@ -102,6 +102,30 @@ export async function createPrep(
     cv_text = parsed.data.cvText!;
   }
 
+  // COTA (2026-09-03): criar prep pelo "+ Novo prep" do dashboard passou a
+  // consumir 1 crédito, e entrega a preparação COMPLETA — ATS mais pesquisa
+  // da empresa, faixa salarial e as 5 seções. Antes o crédito só saía no
+  // botão "Gerar preparação completa" e o /prep/new entregava só o ATS.
+  //
+  // Cobrar aqui e entregar só o ATS teria criado um incentivo perverso: a
+  // mesma análise está de graça em /analise-ats-gratis, sem conta nenhuma, e
+  // fazer login passaria a ser pior do que não fazer. Quem gasta o crédito
+  // recebe MAIS do que o anônimo, não a mesma coisa.
+  //
+  // O gate vem ANTES do insert de propósito: sem saldo, nem linha se cria.
+  // Linha órfã de quem não pagou é o que faz o dashboard encher de prep
+  // vazia e o `isPrepGenerating` prometer geração que nunca vem.
+  const { data: billingProfile } = await supabase
+    .from("profiles")
+    .select("prep_credits, is_admin")
+    .eq("id", user.id)
+    .single();
+  const bp = billingProfile as { prep_credits?: number; is_admin?: boolean } | null;
+  const isAdmin = bp?.is_admin === true;
+  if (!checkQuota({ prep_credits: bp?.prep_credits ?? 0 }, isAdmin).allowed) {
+    return { error: "quota_exceeded" };
+  }
+
   const { data: session, error: insertError } = await supabase
     .from("prep_sessions")
     .insert({
@@ -145,7 +169,37 @@ export async function createPrep(
   // normal (FocusCard apontando pra `/ats`); quem entra em `/ats` vê o
   // estado certo pro que `ats_status` for (skeleton, CTA, resultado ou
   // falha com retry grátis) — nunca o skeleton de página inteira.
+  // O RPC `consume_prep_credit` exige que a sessão JÁ exista (ele confere
+  // posse por `id` + `user_id`), então o consumo vem depois do insert. Se
+  // falhar — corrida entre duas abas gastando o último crédito —, a linha
+  // recém-criada é apagada: deixá-la seria entregar a preparação de graça,
+  // e mantê-la vazia encheria o dashboard de prep que nunca vai gerar.
+  const admin = createAdminClient();
+  const consumed = await consumePrepCredit(admin, user.id, session.id, isAdmin);
+  if (!consumed) {
+    const { error: cleanupError } = await admin
+      .from("prep_sessions")
+      .delete()
+      .eq("id", session.id)
+      .eq("user_id", user.id);
+    if (cleanupError) {
+      console.error(
+        "[createPrep] limpeza da sessão sem crédito falhou:",
+        cleanupError.message,
+      );
+    }
+    return { error: "quota_exceeded" };
+  }
+
+  // ATS e pipeline em paralelo: são independentes (o Stage B recebe o
+  // `intel` do Stage A, nunca a análise ATS), e serializar só faria a pessoa
+  // esperar mais pelo mesmo resultado.
+  //
+  // Só o pipeline carrega a devolução do crédito. O ATS tem retry grátis
+  // próprio na tela /ats, e uma falha só dele não justifica desfazer a
+  // cobrança de uma preparação que veio inteira.
   void runAtsForSession(session.id);
+  runGenerationInBackground(session.id, { userId: user.id, isAdmin });
 
   redirect(`/prep/${session.id}`);
 }

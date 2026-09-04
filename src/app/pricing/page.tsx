@@ -189,7 +189,7 @@ export default async function PricingPage() {
           </div>
 
           <p className="mt-8 text-center text-sm text-ink-3">
-            A análise ATS é sempre gratuita.{" "}
+            A análise ATS é gratuita e não pede cadastro.{" "}
             {isAuthed ? (
               <Link href="/dashboard" className="text-orange-700 underline">
                 Voltar pro dashboard

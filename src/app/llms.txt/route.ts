@@ -15,7 +15,7 @@ export async function GET() {
 
 Site: ${SITE_URL}
 Idioma: português brasileiro (PT-BR)
-Modelo: a análise ATS é sempre gratuita (com ou sem cadastro) · a preparação completa custa R$10 por vaga, ou em pacote: 3 por R$25 ou 5 por R$40 · sem mensalidade, sem assinatura.
+Modelo: a análise ATS é gratuita e não pede cadastro (em /analise-ats-gratis) · a preparação completa custa R$10 por vaga, ou em pacote: 3 por R$25 ou 5 por R$40 · sem mensalidade, sem assinatura.
 
 ## Páginas principais
 
@@ -40,7 +40,7 @@ ${posts
 
 ## FAQ resumida
 
-- **É grátis?** A análise ATS sim, sempre — com ou sem cadastro. A preparação completa custa R$10 por vaga, ou em pacote (3 por R$25, 5 por R$40). Sem mensalidade.
+- **É grátis?** A análise ATS sim, em /analise-ats-gratis, sem precisar criar conta. Dentro da conta, criar uma preparação consome 1 crédito e entrega a preparação completa. A preparação completa custa R$10 por vaga, ou em pacote (3 por R$25, 5 por R$40). Sem mensalidade.
 - **Funciona em qualquer área?** Sim — TI, marketing, finanças, saúde, jurídico, comercial. CV/JD em PT-BR ou inglês.
 - **Quanto tempo leva?** 1 a 3 minutos por prep.
 - **Os créditos expiram?** Não. Garantia de reembolso de 7 dias.
