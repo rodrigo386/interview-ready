@@ -1,14 +1,19 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { toBrazilDay, ultimosDiasBrasil } from "@/lib/analytics/brazil-day";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Buckets pelo dia BRASILEIRO, não pelo UTC.
+ *
+ * O `created_at` volta em UTC e o recorte anterior (`.slice(0, 10)`) usava a
+ * data UTC direto — o que empurrava toda a atividade brasileira entre 21h e
+ * meia-noite pra barra do dia seguinte. Ver `@/lib/analytics/brazil-day`.
+ */
 function dayBuckets(days: number): Map<string, number> {
   const m = new Map<string, number>();
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(Date.now() - i * DAY_MS).toISOString().slice(0, 10);
-    m.set(d, 0);
-  }
+  for (const d of ultimosDiasBrasil(days)) m.set(d, 0);
   return m;
 }
 
@@ -28,7 +33,7 @@ export async function getHistoricalSeries(days = 30) {
 
   const signups = dayBuckets(days);
   for (const r of (signupsRes.data ?? []) as { created_at: string }[]) {
-    const day = r.created_at.slice(0, 10);
+    const day = toBrazilDay(r.created_at);
     if (signups.has(day)) signups.set(day, (signups.get(day) ?? 0) + 1);
   }
 
@@ -45,7 +50,7 @@ export async function getHistoricalSeries(days = 30) {
     created_at: string;
     generation_status: string;
   }[]) {
-    const day = r.created_at.slice(0, 10);
+    const day = toBrazilDay(r.created_at);
     if (preps.has(day)) preps.set(day, (preps.get(day) ?? 0) + 1);
     if (r.generation_status === "complete" && prepsDelivered.has(day)) {
       prepsDelivered.set(day, (prepsDelivered.get(day) ?? 0) + 1);
@@ -60,7 +65,7 @@ export async function getHistoricalSeries(days = 30) {
     created_at: string;
     amount_cents: number;
   }[]) {
-    const day = r.created_at.slice(0, 10);
+    const day = toBrazilDay(r.created_at);
     if (revenue.has(day))
       revenue.set(day, (revenue.get(day) ?? 0) + (r.amount_cents ?? 0));
   }
