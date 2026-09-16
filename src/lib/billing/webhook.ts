@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import type { AsaasWebhookEvent } from "./types";
 import { parseExternalReference } from "./ids";
+import { sendCheckoutRecovery, supabaseRecoveryDeps } from "@/lib/email/checkout-recovery";
 import { recordCommission, recordClawback } from "@/lib/affiliate/commission";
 import { trackServer } from "@/lib/analytics/server";
 
@@ -273,6 +274,15 @@ async function handlePaymentOverdue(
     p_raw_payload: p as unknown,
   });
   if (error) return { handled: false, reason: "error", detail: error.message };
+
+  // Cobrança avulsa vencida = alguém abriu o checkout e não pagou. Manda o
+  // e-mail de recuperação (ver `@/lib/email/checkout-recovery`). Depois do
+  // registro no banco, e nunca lança: e-mail falhando não pode virar erro de
+  // webhook e fazer o Asaas reenviar o evento.
+  if (kind === "prep_purchase") {
+    const r = await sendCheckoutRecovery(userId, p.id, supabaseRecoveryDeps(supabase));
+    console.log(`[webhook] checkout-recovery user=${userId} payment=${p.id}`, r);
+  }
   return { handled: true, userId };
 }
 

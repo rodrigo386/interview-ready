@@ -2,6 +2,7 @@
 
 import { useProfileShell } from "@/components/profile/ProfileShellProvider";
 import { CheckoutButton } from "./CheckoutButton";
+import { PagamentoSeguro } from "./PagamentoSeguro";
 import { CancelSubscriptionDialog } from "./CancelSubscriptionDialog";
 import { PREP_SKUS, brlLabel } from "@/lib/billing/prices";
 
@@ -66,6 +67,7 @@ export function PlanCard() {
           </CheckoutButton>
         ))}
       </div>
+      <PagamentoSeguro className="mt-2" />
     </div>
   );
 }

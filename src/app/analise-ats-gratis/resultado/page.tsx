@@ -6,6 +6,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Gauge } from "@/components/prep/Gauge";
 import { IssueRow } from "@/components/prep/IssueRow";
 import { LockedFix } from "@/components/anon-ats/LockedFix";
+import { palavrasFaltando, projetarScore } from "@/lib/ai/ats-keywords";
 import { DossiePitch } from "@/components/anon-ats/DossiePitch";
 import { AnonAtsCompletedTracker } from "@/components/anon-ats/AnonAtsCompletedTracker";
 import {
@@ -105,7 +106,13 @@ export default async function ResultadoPage() {
           {/* O pitch do produto pago vem depois do gancho gratuito: quem só
               queria o score já foi servido, e quem quer resolver a entrevista
               inteira descobre aqui o preço e o que ele compra. */}
-          <DossiePitch />
+          <DossiePitch
+            score={analysis.score}
+            projected={projetarScore(analysis)}
+            faltando={palavrasFaltando(analysis)}
+            cargo={row.job_title}
+            empresa={row.company_name}
+          />
         </div>
       </main>
       <LandingFooter />

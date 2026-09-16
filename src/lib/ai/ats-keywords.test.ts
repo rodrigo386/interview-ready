@@ -6,6 +6,8 @@ import {
   calcularTitleMatch,
   normalizar,
   obterRegua,
+  palavrasFaltando,
+  projetarScore,
   sanitizeJdKeywords,
   type JdKeywords,
 } from "./ats-keywords";
@@ -205,5 +207,55 @@ describe("calcularTitleMatch", () => {
   it("a mesma dupla de títulos sempre dá a mesma nota", () => {
     const n = calcularTitleMatch("Desenvolvedor Full Stack Pleno", "Desenvolvedor .NET Pleno");
     expect(calcularTitleMatch("Desenvolvedor Full Stack Pleno", "Desenvolvedor .NET Pleno")).toBe(n);
+  });
+});
+
+describe("palavrasFaltando e projetarScore", () => {
+  const base = (patch: Partial<AtsAnalysis> = {}): AtsAnalysis => ({
+    score: 34,
+    title_match: { cv_title: "a", jd_title: "b", match_score: 30 },
+    keyword_analysis: {
+      critical: [
+        { keyword: "benefícios", found: false },
+        { keyword: "relatórios", found: true },
+        { keyword: "legislação", found: false },
+      ],
+      high: [{ keyword: "admissão", found: false }],
+      medium: [{ keyword: "excel", found: false }],
+    },
+    top_fixes: [],
+    overall_assessment: "Avaliação longa o bastante para o schema.",
+    ...patch,
+  });
+
+  it("lista as que faltam, críticas antes das importantes", () => {
+    expect(palavrasFaltando(base())).toEqual(["benefícios", "legislação", "admissão"]);
+  });
+
+  it("respeita o máximo", () => {
+    expect(palavrasFaltando(base(), 1)).toEqual(["benefícios"]);
+  });
+
+  it("projeta pela fórmula real: críticas e importantes presentes, título igual", () => {
+    // max = 3*3 + 1*2 + 1*1 = 12; ganho = 9 + 2 = 11 → round(11/12*90)=83; +3 de título
+    expect(projetarScore(base())).toBe(86);
+  });
+
+  it("nunca projeta abaixo da nota atual (análises antigas com nota da IA)", () => {
+    expect(projetarScore(base({ score: 95 }))).toBe(95);
+  });
+
+  it("CV que já tem tudo não ganha projeção", () => {
+    const completa = base({
+      // coerente com a fórmula: 3/3 → 90, + round(30/10)=3
+      score: 93,
+      keyword_analysis: {
+        critical: [{ keyword: "a", found: true }],
+        high: [],
+        medium: [],
+      },
+    });
+    expect(palavrasFaltando(completa)).toEqual([]);
+    expect(projetarScore(completa)).toBe(completa.score);
   });
 });

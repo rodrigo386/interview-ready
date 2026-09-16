@@ -10,6 +10,7 @@ import { useCheckoutFlow } from "@/components/billing/useCheckoutFlow";
 import { usePrepShellOptional } from "./PrepShellProvider";
 import { precoCurto } from "@/lib/billing/dossie";
 import { PendingButton } from "./PendingButton";
+import { PagamentoSeguro } from "@/components/billing/PagamentoSeguro";
 
 /**
  * Única saída de uma prep que veio da ferramenta ATS anônima: ela chega com a
@@ -31,6 +32,9 @@ export function GenerateFullPrepCta({
   variant = "full",
   needsCompany = false,
   needsRole = false,
+  score,
+  projected,
+  faltando = [],
 }: {
   sessionId: string;
   /** "compact" para quando o painel ao redor já explicou o contexto. */
@@ -48,6 +52,11 @@ export function GenerateFullPrepCta({
    * cargo a geração continua boa, mas o relatório sai intitulado "esta vaga".
    */
   needsRole?: boolean;
+  /** Nota atual e teto projetado — só a tela /ats tem a análise pra passar. */
+  score?: number;
+  projected?: number;
+  /** Palavras críticas/importantes que o CV não tem. */
+  faltando?: string[];
 }) {
   const bound = generateFullPrep.bind(null, sessionId);
   const [state, action, pending] = useActionState<GenerateFullPrepState, FormData>(
@@ -68,15 +77,41 @@ export function GenerateFullPrepCta({
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-700">
             Continue de onde parou
           </p>
+          {/* Lidera com o currículo, não com "preparação completa": quem acabou
+              de ver a própria nota quer resolver o currículo primeiro, e é a
+              parte que Gupy e SENAI — que dão perguntas de graça — não fazem.
+              Ver DossiePitch, que tem a mesma decisão pro visitante anônimo. */}
           <h2 className="mt-1 text-lg font-bold text-ink">
-            Gerar a preparação completa desta vaga
+            Seu currículo reescrito para esta vaga
           </h2>
+          {typeof score === "number" &&
+          typeof projected === "number" &&
+          projected > score ? (
+            <p className="mt-2 text-sm leading-6 text-ink">
+              Hoje ele tira <strong>{score}</strong>. Incorporando o que falta, pode
+              chegar a <strong className="text-orange-700">até {projected}</strong>.
+            </p>
+          ) : null}
           <p className="mt-2 text-sm leading-6 text-ink-2">
-            Sua análise de currículo já está aqui. A preparação completa
-            acrescenta pesquisa recente da empresa, faixa salarial estimada,
-            perguntas prováveis com roteiro de resposta e as perguntas que você
-            faz no fim. Reaproveita o mesmo currículo e a mesma vaga, sem precisar
-            colar nada de novo.
+            {faltando.length > 0 ? (
+              <>
+                Reescrevemos incluindo{" "}
+                {faltando.map((t, i) => (
+                  <span key={t}>
+                    {i > 0 && (i === faltando.length - 1 ? " e " : ", ")}
+                    <strong>{t}</strong>
+                  </span>
+                ))}
+                . E junto vêm a pesquisa recente da empresa, a faixa salarial
+                estimada e as perguntas prováveis com roteiro.
+              </>
+            ) : (
+              <>
+                Pronto para colar. E junto vêm a pesquisa recente da empresa, a
+                faixa salarial estimada e as perguntas prováveis com roteiro —
+                reaproveitando o mesmo currículo e a mesma vaga.
+              </>
+            )}
           </p>
           <p className="mt-2 text-xs text-ink-3">
             Leva cerca de 60 segundos.{" "}
@@ -102,9 +137,11 @@ export function GenerateFullPrepCta({
         >
           {checkout.pending
             ? "Abrindo pagamento…"
-            : `Gerar preparação completa · ${precoCurto()} →`}
+            : `Reescrever meu currículo · ${precoCurto()} →`}
         </button>
-      ) : (
+      ) : null}
+      {semSaldo ? <PagamentoSeguro className="mt-2" /> : null}
+      {semSaldo ? null : (
         <form action={action} className={variant === "full" ? "mt-4" : undefined}>
           {(needsCompany || needsRole) && (
             <p className="mb-3 text-xs text-ink-3">

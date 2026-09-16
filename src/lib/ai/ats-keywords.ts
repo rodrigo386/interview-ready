@@ -250,3 +250,41 @@ export async function obterRegua(jdText: string, deps: RulerDeps): Promise<JdKey
   }
   return sanitizeJdKeywords(await deps.extract(jdText));
 }
+
+/**
+ * Palavras críticas e importantes que o CV não tem, na ordem de peso.
+ *
+ * É o que o currículo reescrito vai incorporar — e por isso é o argumento de
+ * venda mais concreto que existe: não "melhore seu currículo", mas "seu
+ * currículo não diz benefícios, legislação e treinamento".
+ */
+export function palavrasFaltando(analysis: AtsAnalysis, max = 3): string[] {
+  const kw = analysis.keyword_analysis;
+  return [...kw.critical, ...kw.high]
+    .filter((k) => !k.found)
+    .map((k) => k.keyword)
+    .slice(0, max);
+}
+
+/**
+ * Nota que o CV teria se incorporasse as palavras críticas e importantes que
+ * faltam — mesma fórmula do score, com o título mantido como está.
+ *
+ * Substitui a projeção anterior do /ats ("+12 por ajuste"), que era um número
+ * inventado. Esta é a conta de verdade sobre a régua de verdade. Ainda é um
+ * TETO, não uma promessa: o currículo reescrito só inclui termos compatíveis
+ * com a experiência real da pessoa — por isso a UI sempre diz "até".
+ *
+ * `Math.max` com o score atual porque análises anteriores a 2026-09-16 têm a
+ * nota calculada pela IA, que nem sempre batia com a fórmula; sem isso, a
+ * projeção poderia sair MENOR que a nota exibida.
+ */
+export function projetarScore(analysis: AtsAnalysis): number {
+  const marcar = (lista: AtsKeyword[]) => lista.map((k) => ({ ...k, found: true }));
+  const kw = {
+    critical: marcar(analysis.keyword_analysis.critical),
+    high: marcar(analysis.keyword_analysis.high),
+    medium: analysis.keyword_analysis.medium,
+  };
+  return Math.max(analysis.score, calcularScore(kw, analysis.title_match.match_score));
+}

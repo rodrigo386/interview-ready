@@ -13,6 +13,7 @@ import { CvRewriteCta } from "@/components/prep/CvRewriteCta";
 import { runAtsAnalysis } from "@/app/prep/[id]/ats-actions";
 import { PendingButton } from "@/components/prep/PendingButton";
 import { GenerateFullPrepCta } from "@/components/prep/GenerateFullPrepCta";
+import { palavrasFaltando, projetarScore } from "@/lib/ai/ats-keywords";
 import { isEmpresaDesconhecida, isCargoDesconhecido } from "@/lib/anon-ats/core";
 import { shouldOfferFullPrep } from "@/lib/prep/full-prep";
 import { decideCvRewriteGeneration } from "@/lib/prep/cv-rewrite-gate";
@@ -45,8 +46,10 @@ export default async function AtsPage({
   const rerun = runAtsAnalysis.bind(null, session.id);
 
   const top3 = analysis.top_fixes.slice(0, 3);
-  const totalImpact = top3.length * 12;
-  const projected = Math.min(100, analysis.score + totalImpact);
+  // Projeção pela fórmula real sobre a régua da vaga (ver `projetarScore`).
+  // Antes era `score + 12 × ajustes`, um número inventado que não tinha
+  // relação com as palavras que de fato faltavam.
+  const projected = projetarScore(analysis);
 
   // Prep vinda da ferramenta ATS anônima: esta tela é onde a pessoa cai
   // depois de criar conta e é o único lugar com conteúdo. Sem este CTA ela
@@ -99,6 +102,9 @@ export default async function AtsPage({
           sessionId={session.id}
           needsCompany={isEmpresaDesconhecida(session.company_name)}
             needsRole={isCargoDesconhecido(session.job_title)}
+          score={analysis.score}
+          projected={projected}
+          faltando={palavrasFaltando(analysis)}
         />
       )}
 
@@ -108,10 +114,10 @@ export default async function AtsPage({
         >
           <p>
             <span className="mr-1">→</span>
-            Aplicando os {top3.length} ajustes abaixo, seu score sobe pra <strong>~{projected}</strong>.
+            Incorporando as palavras que faltam, seu score pode chegar a <strong>até {projected}</strong>.
           </p>
           <p className="mt-1 text-[13px] text-ink-2">
-            Estimativa baseada nos ajustes prioritários · pode levar 8 minutos
+            Calculado com a mesma fórmula da nota · só vale para termos que batem com a sua experiência real
           </p>
         </div>
       )}

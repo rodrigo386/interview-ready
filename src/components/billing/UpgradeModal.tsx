@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { PagamentoSeguro } from "@/components/billing/PagamentoSeguro";
 import { Button } from "@/components/ui/Button";
 import { useDialogFocus } from "@/components/ui/useDialogFocus";
 import { track } from "@/lib/analytics/client";
@@ -102,6 +103,7 @@ export function UpgradeModal({
             >
               {pendingKind === "prep_purchase" ? "Abrindo…" : "Comprar este prep"}
             </Button>
+            <PagamentoSeguro className="mt-2" />
           </div>
           <div className="rounded-lg border border-line bg-bg p-4">
             <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-ink-3">
