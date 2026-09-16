@@ -1,4 +1,5 @@
 import "server-only";
+import { trackServer } from "@/lib/analytics/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import type { AsaasPayment, AsaasSubscription } from "./types";
@@ -178,7 +179,30 @@ async function creditOneOffIfNew(
     console.warn(`[reconcile] handle_payment_received falhou pro pagamento ${p.id}: ${error.message}`);
     return 0;
   }
-  return typeof data === "number" ? data : 0;
+  const concedidos = typeof data === "number" ? data : 0;
+
+  // `checkout_confirmado` tem que sair de QUEM concedeu o crédito, não só do
+  // webhook. O cadeado (`credits_granted_at`) é compartilhado, então
+  // exatamente um dos dois caminhos recebe `concedidos > 0` por pagamento —
+  // emitir aqui não duplica.
+  //
+  // Descoberto no PostHog em 17/09: o primeiro cliente pagante (03/09) foi
+  // creditado às 03:11:07 por ESTE caminho — ele voltou do checkout pelo
+  // /dashboard?billing=ok antes do webhook — e o webhook, que só chegou às
+  // 03:11:34, recebeu 0 do RPC e não emitiu nada. Resultado: a única venda
+  // do modelo novo não existia no funil. Como o redirect do Asaas costuma
+  // ganhar do webhook, esse era o caso COMUM, não a exceção.
+  if (concedidos > 0 && qty?.kind === "prep_purchase") {
+    try {
+      void trackServer(userId, "checkout_confirmado", {
+        qty: qty.qty,
+        cents: Math.round(p.value * 100),
+      }).catch((err) => console.warn("[analytics] checkout_confirmado (reconcile) falhou:", err));
+    } catch (err) {
+      console.warn("[analytics] checkout_confirmado (reconcile) falhou:", err);
+    }
+  }
+  return concedidos;
 }
 
 async function fetchAsaas<T>(path: string): Promise<T> {

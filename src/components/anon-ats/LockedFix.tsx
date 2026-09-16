@@ -27,6 +27,11 @@ export function LockedFix({ remaining }: { remaining: number }) {
       </p>
       <Link
         href="/signup"
+        // Principal porta de cadastro da ferramenta anônima e estava sem
+        // rastreio: no PostHog (17/09), 5 pessoas iniciaram cadastro e só 2
+        // tinham clique registrado — as outras 3 vieram por aqui.
+        data-analytics-cta="anon_resultado_ver_mais"
+        data-analytics-location="anon_ats_resultado"
         className="mt-4 inline-flex rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
       >
         Ver mais {revealed} {plural}, sem pagar →
