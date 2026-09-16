@@ -1,10 +1,18 @@
 import { clampJobDescription } from "@/lib/ai/clamp-jd";
+import type { JdKeywords } from "@/lib/ai/ats-keywords";
 
 export function buildAtsAnalyzerPrompt(params: {
   cvText: string;
   jdText: string;
   jobTitle: string;
   companyName: string;
+  /**
+   * Régua já extraída só da vaga. Quando presente, a IA NÃO escolhe palavras:
+   * usa estas. O código ainda refaz a comparação e o score depois
+   * (`aplicarReguaFixa`), então isto serve pra IA escrever sugestões e
+   * avaliação coerentes com o conjunto que vai de fato valer.
+   */
+  fixedKeywords?: JdKeywords;
 }) {
   const system = `You are an ATS (Applicant Tracking System) and AI screening expert. Your job: analyze a CV against a specific JD and identify keyword gaps that would cause the CV to be filtered by automated screening.
 
@@ -79,7 +87,16 @@ ${clampJobDescription(params.jdText)}
 
 TARGET ROLE: ${params.jobTitle}
 TARGET COMPANY: ${params.companyName}
-
+${
+  params.fixedKeywords
+    ? `
+FIXED KEYWORDS (STEP 1 is already done — use EXACTLY these, in these tiers; do not add, remove, rename or move any):
+critical: ${JSON.stringify(params.fixedKeywords.critical)}
+high: ${JSON.stringify(params.fixedKeywords.high)}
+medium: ${JSON.stringify(params.fixedKeywords.medium)}
+`
+    : ""
+}
 Analyze now.`;
 
   return { system, user };

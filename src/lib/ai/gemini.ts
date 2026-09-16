@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
+import { z } from "zod";
 import { env } from "@/lib/env";
 import {
   prepSectionSchema,
@@ -13,6 +14,8 @@ import {
   type SalaryBenchmark,
 } from "@/lib/ai/schemas";
 import { type SectionKind } from "@/lib/ai/prompts/section-generator";
+import { buildJdKeywordsPrompt } from "@/lib/ai/prompts/jd-keywords";
+import type { JdKeywords } from "@/lib/ai/ats-keywords";
 
 // Primary model for structured-output tasks (sections, ATS, CV rewrite).
 // `gemini-3.1-flash-lite` went GA on 2026-05-07. Same pricing as the
@@ -626,6 +629,75 @@ export async function generateAtsAnalysis(params: {
   if (!parsed.success) {
     throw new GeminiResponseError(
       `Gemini ats failed schema validation: ${parsed.error.message}`,
+      text,
+    );
+  }
+  return parsed.data;
+}
+
+// ------------------------- JD Keywords (régua) --------------------------
+
+const jdKeywordsResponseSchema: Schema = {
+  type: SchemaType.OBJECT,
+  required: ["critical", "high", "medium"],
+  properties: {
+    critical: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    high: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    medium: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+  },
+};
+
+const jdKeywordsSchema = z.object({
+  critical: z.array(z.string()),
+  high: z.array(z.string()),
+  medium: z.array(z.string()),
+});
+
+/**
+ * Extrai as palavras-chave de uma vaga sem ver currículo nenhum. É a primeira
+ * metade do que `generateAtsAnalysis` fazia numa chamada só — separada porque
+ * o CV contaminava a escolha das palavras (ver `@/lib/ai/ats-keywords`).
+ */
+export async function generateJdKeywords(jdText: string): Promise<JdKeywords> {
+  if (process.env.MOCK_ANTHROPIC === "1") {
+    return { critical: [], high: [], medium: [] };
+  }
+  if (!env.GOOGLE_API_KEY) {
+    throw new Error("GOOGLE_API_KEY is not set");
+  }
+  const { system, user } = buildJdKeywordsPrompt(jdText);
+  const client = new GoogleGenerativeAI(env.GOOGLE_API_KEY);
+  const start = Date.now();
+  const result = await callGeminiWithRetry("jd-keywords", (modelId) => {
+    const model = client.getGenerativeModel({
+      model: modelId,
+      systemInstruction: system,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: jdKeywordsResponseSchema,
+        maxOutputTokens: 2048,
+        temperature: 0,
+        topK: 1,
+        topP: 0,
+      },
+    });
+    return model.generateContent(user);
+  });
+  const text = result.response.text();
+  console.log(`[gemini] jd-keywords completed in ${Date.now() - start}ms`);
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (err) {
+    throw new GeminiResponseError(
+      `Gemini jd-keywords returned non-JSON: ${err instanceof Error ? err.message : String(err)}`,
+      text,
+    );
+  }
+  const parsed = jdKeywordsSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new GeminiResponseError(
+      `Gemini jd-keywords failed schema validation: ${parsed.error.message}`,
       text,
     );
   }

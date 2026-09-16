@@ -49,4 +49,33 @@ describe("runAtsForSession", () => {
       }),
     ).resolves.toBeUndefined();
   });
+
+  it("com régua: grava a análise com a lista fixa e o hash da vaga", async () => {
+    const update = vi.fn(async (_id: string, _u: Record<string, unknown>) => ({ error: null }));
+    const regua = { critical: ["RH"], high: [], medium: [] };
+    await runAtsForSession("s1", {
+      loadSession: async () => sessao,
+      analyze: async () => analise as never,
+      updateSession: update,
+      ruler: { findCached: async () => regua, extract: async () => regua },
+    });
+    const gravada = (update.mock.calls.at(-1)?.[1] as { ats_analysis: Record<string, unknown> })
+      .ats_analysis;
+    expect(gravada.jd_keywords).toEqual(regua);
+    expect(typeof gravada.jd_hash).toBe("string");
+  });
+
+  it("extração da régua falhando NÃO falha a análise — cai no caminho antigo", async () => {
+    const update = vi.fn(async (_id: string, _u: Record<string, unknown>) => ({ error: null }));
+    await runAtsForSession("s1", {
+      loadSession: async () => sessao,
+      analyze: async () => analise as never,
+      updateSession: update,
+      ruler: {
+        findCached: async () => null,
+        extract: async () => { throw new Error("503"); },
+      },
+    });
+    expect(update.mock.calls.at(-1)?.[1]).toMatchObject({ ats_status: "complete" });
+  });
 });

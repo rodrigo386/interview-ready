@@ -89,6 +89,26 @@ export const atsAnalysisSchema = z.object({
       company: z.string().max(120),
     })
     .optional(),
+  /**
+   * A régua usada nesta análise: palavras-chave extraídas SÓ da vaga (ver
+   * `@/lib/ai/ats-keywords`). Gravada junto com a análise pra que a próxima
+   * análise da mesma vaga reaproveite exatamente o mesmo conjunto e as notas
+   * sejam comparáveis. Ausente em análises anteriores a 2026-09-16, que
+   * extraíam na mesma chamada da comparação e por isso não servem de régua.
+   */
+  /**
+   * Hash (sha256) do texto da vaga que gerou `jd_keywords`. É a chave de busca
+   * da régua: filtrar pelo texto inteiro não dá — a vaga tem até 20 mil
+   * caracteres e iria na URL da consulta ao PostgREST.
+   */
+  jd_hash: z.string().optional(),
+  jd_keywords: z
+    .object({
+      critical: z.array(z.string()),
+      high: z.array(z.string()),
+      medium: z.array(z.string()),
+    })
+    .optional(),
 });
 
 export type AtsAnalysis = z.infer<typeof atsAnalysisSchema>;

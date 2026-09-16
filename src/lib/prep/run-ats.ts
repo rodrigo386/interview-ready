@@ -1,7 +1,9 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildAtsAnalyzerPrompt } from "@/lib/ai/prompts/ats-analyzer";
-import { generateAtsAnalysis, GeminiResponseError } from "@/lib/ai/gemini";
+import { generateAtsAnalysis, generateJdKeywords, GeminiResponseError } from "@/lib/ai/gemini";
+import { aplicarReguaFixa, obterRegua, type JdKeywords, type RulerDeps } from "@/lib/ai/ats-keywords";
+import { findCachedJdKeywords, hashJd } from "@/lib/ai/jd-keywords-cache";
 import type { AtsAnalysis } from "@/lib/ai/schemas";
 
 export type RunAtsSessionData = {
@@ -19,6 +21,12 @@ export type RunAtsDeps = {
     sessionId: string,
     updates: Record<string, unknown>,
   ) => Promise<{ error: unknown }>;
+  /**
+   * Régua estável da vaga (ver `@/lib/ai/ats-keywords`). Opcional só pra que
+   * testes antigos que injetam apenas `analyze` continuem valendo; em
+   * produção vem sempre preenchida por `defaultDeps`.
+   */
+  ruler?: RulerDeps;
 };
 
 async function defaultLoadSession(sessionId: string): Promise<RunAtsSessionData | null> {
@@ -46,6 +54,7 @@ function defaultDeps(): RunAtsDeps {
     loadSession: defaultLoadSession,
     analyze: generateAtsAnalysis,
     updateSession: defaultUpdateSession,
+    ruler: { findCached: findCachedJdKeywords, extract: generateJdKeywords },
   };
 }
 
@@ -89,13 +98,21 @@ export async function runAtsForSession(
     });
 
     try {
+      const regua = await reguaOuNada(session.job_description, deps.ruler);
       const { system, user } = buildAtsAnalyzerPrompt({
         cvText: session.cv_text,
         jdText: session.job_description,
         jobTitle: session.job_title,
         companyName: session.company_name,
+        fixedKeywords: regua ?? undefined,
       });
-      const analysis = await deps.analyze({ system, user });
+      const bruta = await deps.analyze({ system, user });
+      const analysis = regua
+        ? {
+            ...aplicarReguaFixa(bruta, regua, session.cv_text),
+            jd_hash: hashJd(session.job_description),
+          }
+        : bruta;
       await deps.updateSession(sessionId, { ats_analysis: analysis, ats_status: "complete" });
     } catch (err) {
       console.error(`[runAtsForSession] falhou sessionId=${sessionId}`, err);
@@ -109,5 +126,25 @@ export async function runAtsForSession(
     // createAdminClient() lança se faltar env var). Nunca deixa escapar:
     // quem chama em background não tem quem trate a rejeição.
     console.error(`[runAtsForSession] erro inesperado sessionId=${sessionId}`, err);
+  }
+}
+
+/**
+ * Régua da vaga, ou `null` se não der pra obter.
+ *
+ * Falhar a extração NÃO falha a análise: a ATS é o produto grátis e a porta
+ * de entrada, e uma nota com régua instável ainda é melhor que nenhuma nota.
+ * Cai no caminho antigo (extração e comparação na mesma chamada) e loga.
+ */
+export async function reguaOuNada(
+  jdText: string,
+  ruler: RulerDeps | undefined,
+): Promise<JdKeywords | null> {
+  if (!ruler) return null;
+  try {
+    return await obterRegua(jdText, ruler);
+  } catch (err) {
+    console.warn("[ats] extração da régua falhou; usando caminho de chamada única:", err);
+    return null;
   }
 }
