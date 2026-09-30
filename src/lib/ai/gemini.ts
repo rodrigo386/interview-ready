@@ -1,3 +1,4 @@
+import { normalizeSeniority } from "./salary-seniority";
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
 import { z } from "zod";
 import { env } from "@/lib/env";
@@ -1144,6 +1145,8 @@ function sanitizeSalaryBenchmark(value: unknown): unknown {
 
   // Default currency
   if (!v.currency) v.currency = "BRL";
+
+  v.seniority = normalizeSeniority(v.seniority);
 
   // Trim long string fields to schema max so we don't reject on overflow
   for (const [field, max] of [
