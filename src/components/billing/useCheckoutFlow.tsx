@@ -13,6 +13,7 @@ type Kind = "pro_subscription" | "prep_purchase";
 type CheckoutBody = {
   kind: Kind;
   qty?: number;
+  returnPrepId?: string;
   cpfCnpj?: string;
   address?: AddressDialogValue;
 };
@@ -127,12 +128,13 @@ export function useCheckoutFlow() {
     }
   }
 
-  function start(kind: Kind, qty?: number) {
+  function start(kind: Kind, qty?: number, returnPrepId?: string) {
     setError(null);
     track("checkout_started", { kind });
     startTransition(async () => {
       try {
         let body: CheckoutBody = qty !== undefined ? { kind, qty } : { kind };
+        if (returnPrepId) body = { ...body, returnPrepId };
         let res = await doPost(body);
 
         // 2 possíveis 422s: cpf_required, address_required. Pode disparar

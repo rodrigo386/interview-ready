@@ -127,7 +127,7 @@ export function GenerateFullPrepCta({
       {semSaldo ? (
         <button
           type="button"
-          onClick={() => checkout.start("prep_purchase", 1)}
+          onClick={() => checkout.start("prep_purchase", 1, sessionId)}
           disabled={checkout.pending}
           data-analytics-cta="full_prep_checkout"
           className={
@@ -232,7 +232,7 @@ export function GenerateFullPrepCta({
         onClose={() => {
           window.location.reload();
         }}
-        onCheckout={(kind, qty) => checkout.start(kind, qty)}
+        onCheckout={(kind, qty) => checkout.start(kind, qty, sessionId)}
       />
       {checkout.error ? (
         <p

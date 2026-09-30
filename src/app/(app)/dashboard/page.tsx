@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { reconcileBillingFromAsaas } from "@/lib/billing/reconcile";
+import { prepReturnPath } from "@/lib/billing/return-path";
 import { claimAndSendWelcomeEmail } from "@/lib/email/welcome-email";
 import { Button } from "@/components/ui/Button";
 import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
@@ -69,7 +70,7 @@ export default async function DashboardPage({
     } catch (err) {
       console.warn("[dashboard] post-checkout reconcile failed:", err);
     }
-    redirect("/dashboard");
+    redirect(prepReturnPath(params.prep) ?? "/dashboard");
   }
 
   const { data: sessions } = await supabase
@@ -82,6 +83,9 @@ export default async function DashboardPage({
     .limit(20);
 
   const list: SessionRow[] = sessions ?? [];
+  // Prep mais recente que ainda espera a preparação paga: pra onde o crédito
+  // deve levar a pessoa.
+  const aguardando = list.find((s) => s.generation_status === "pending");
 
   const { data: profileRow } = await supabase
     .from("profiles")
@@ -132,7 +136,10 @@ export default async function DashboardPage({
     return (
       <div>
         {showFreeTierBanner && (
-          <FreeTierBanner credits={billing.prep_credits ?? 0} />
+          <FreeTierBanner
+          credits={billing.prep_credits ?? 0}
+          generateHref={aguardando ? `/prep/${aguardando.id}` : undefined}
+        />
         )}
         {precisaEndereco && <NfseAddressPrompt />}
         <section className="mx-auto max-w-3xl py-10 md:py-16">
@@ -221,7 +228,10 @@ export default async function DashboardPage({
   return (
     <div>
       {showFreeTierBanner && (
-        <FreeTierBanner credits={billing.prep_credits ?? 0} />
+        <FreeTierBanner
+          credits={billing.prep_credits ?? 0}
+          generateHref={aguardando ? `/prep/${aguardando.id}` : undefined}
+        />
       )}
       {precisaEndereco && (
         <div className="mb-6">

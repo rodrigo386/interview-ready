@@ -6,10 +6,13 @@ import { asaas } from "@/lib/billing/asaas";
 import { buildExternalReference } from "@/lib/billing/ids";
 import { findSku } from "@/lib/billing/prices";
 import { resolveOrigin } from "@/lib/http/host";
+import { isPrepId } from "@/lib/billing/return-path";
 
 const bodySchema = z.object({
   kind: z.enum(["pro_subscription", "prep_purchase"]),
   qty: z.number().int().optional(),
+  /** Prep de onde a compra saiu; o pós-pagamento volta pra ela. */
+  returnPrepId: z.string().optional(),
   cpfCnpj: z.string().trim().min(11).max(20).optional(),
   address: z
     .object({
@@ -249,7 +252,13 @@ export async function POST(req: Request) {
     }
   }
 
-  const oneOffSuccessUrl = `${resolveOrigin(req)}/dashboard?billing=ok`;
+  // Volta pra prep de onde a compra saiu (o dashboard reconcilia e redireciona).
+  // Antes todo pagamento caía no /dashboard, longe do botão de gerar, e a
+  // pessoa via "Ver preços" com crédito na conta e abria outro checkout.
+  const prepParam = isPrepId(parsed.returnPrepId)
+    ? `&prep=${parsed.returnPrepId}`
+    : "";
+  const oneOffSuccessUrl = `${resolveOrigin(req)}/dashboard?billing=ok${prepParam}`;
 
   const chosenSku = sku;
   const pay = await asaas.createPayment({
