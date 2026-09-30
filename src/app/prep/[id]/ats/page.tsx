@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { atsAnalysisSchema, prepGuideSchema, cvRewriteSchema } from "@/lib/ai/schemas";
 import { loadPrepSession } from "@/lib/prep/load-session";
+import { ShortJdNotice } from "@/components/prep/ShortJdNotice";
+import { isJdTooShort, jdWordCount } from "@/lib/ai/jd-length";
 import { AtsHero } from "@/components/prep/AtsHero";
 import { AtsFixesSection } from "@/components/prep/AtsFixesSection";
 import { AtsCtaCard } from "@/components/prep/AtsCtaCard";
@@ -94,6 +96,10 @@ export default async function AtsPage({
           <PendingButton idleLabel="↻ Rerodar análise" pendingLabel="Rerodando…" variant="secondary" />
         </form>
       </header>
+
+      {isJdTooShort(session.job_description) && (
+        <ShortJdNotice words={jdWordCount(session.job_description)} />
+      )}
 
       <AtsHero analysis={analysis} role={role} />
 
