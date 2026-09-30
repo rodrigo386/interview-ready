@@ -5,7 +5,7 @@ test.describe("Public pages render without auth", () => {
     await page.goto("/");
     await expect(
       page.getByRole("heading", { level: 1 }),
-    ).toContainText(/não passa do filtro/i, { timeout: 10_000 });
+    ).toContainText(/prepare-se para a entrevista/i, { timeout: 10_000 });
     // O CTA primário do hero é o próprio formulário da análise ATS grátis: a
     // landing deixou de mandar pro /signup antes de entregar qualquer valor.
     await expect(page.getByLabel(/cole a descrição da vaga/i)).toBeVisible();

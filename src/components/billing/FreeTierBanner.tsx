@@ -5,7 +5,15 @@ import Link from "next/link";
  * cota mensal nem plano Free — a análise ATS é sempre grátis e cada crédito
  * comprado libera 1 preparação completa (sem expirar).
  */
-export function FreeTierBanner({ credits }: { credits: number }) {
+export function FreeTierBanner({
+  credits,
+  generateHref,
+}: {
+  credits: number;
+  /** Prep aguardando preparação: com crédito, o botão leva pra ela. */
+  generateHref?: string;
+}) {
+  const gerar = credits > 0 && generateHref;
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-orange-soft px-4 py-3 text-sm">
       <p className="text-ink-2">
@@ -19,10 +27,10 @@ export function FreeTierBanner({ credits }: { credits: number }) {
         )}
       </p>
       <Link
-        href="/pricing"
+        href={gerar ? generateHref : "/pricing"}
         className="rounded-pill bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
       >
-        Ver preços
+        {gerar ? "Gerar minha preparação" : "Ver preços"}
       </Link>
     </div>
   );
