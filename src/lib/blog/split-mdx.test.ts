@@ -79,3 +79,49 @@ describe("splitMdxAtMidpoint", () => {
     expect(split!.after.startsWith("## Real three")).toBe(true);
   });
 });
+
+import { splitMdxForCta } from "./split-mdx";
+
+describe("splitMdxForCta", () => {
+  it("com 3+ H2 se comporta como o split por título", () => {
+    const content = "Intro.\n\n## A\na\n\n## B\nb\n\n## C\nc";
+    expect(splitMdxForCta(content)).toEqual(splitMdxAtMidpoint(content));
+  });
+
+  it("artigo curto (2 H2) ganha um ponto de inserção por blocos", () => {
+    const content = [
+      "Intro um.",
+      "Intro dois.",
+      "## A\nCorpo A.",
+      "Mais A.",
+      "## B\nCorpo B.",
+      "Mais B.",
+    ].join("\n\n");
+    const split = splitMdxForCta(content);
+    expect(split).not.toBeNull();
+    expect(split!.before).toBeTruthy();
+    expect(split!.after).toBeTruthy();
+    expect(`${split!.before}\n\n${split!.after}`).toBe(content);
+  });
+
+  it("não corta logo depois de um título", () => {
+    const content = ["a", "b", "## Título", "texto", "c", "d"].join("\n\n");
+    const split = splitMdxForCta(content);
+    expect(split).not.toBeNull();
+    expect(split!.before.trimEnd().endsWith("## Título")).toBe(false);
+  });
+
+  it("não corta dentro de bloco de código", () => {
+    const content = ["a", "b", "```\nx\n\ny\n```", "c", "d"].join("\n\n");
+    const split = splitMdxForCta(content);
+    if (split) {
+      const fences = (split.before.match(/^```/gm) ?? []).length;
+      expect(fences % 2).toBe(0);
+    }
+  });
+
+  it("texto minúsculo fica sem CTA no meio", () => {
+    expect(splitMdxForCta("Um.\n\nDois.\n\nTrês.")).toBeNull();
+    expect(splitMdxForCta("")).toBeNull();
+  });
+});

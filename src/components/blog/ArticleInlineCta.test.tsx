@@ -47,3 +47,13 @@ describe("ArticleInlineCta", () => {
     }
   });
 });
+
+describe("analytics", () => {
+  it("o clique é marcado pro funil (cta_click)", () => {
+    render(<ArticleInlineCta />);
+    expect(screen.getByRole("link")).toHaveAttribute(
+      "data-analytics-cta",
+      "article_inline",
+    );
+  });
+});

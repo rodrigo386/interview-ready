@@ -8,7 +8,8 @@ import {
   ArticleInlineCta,
   type ArticleCtaVariant,
 } from "@/components/blog/ArticleInlineCta";
-import { splitMdxAtMidpoint } from "@/lib/blog/split-mdx";
+import { splitMdxForCta } from "@/lib/blog/split-mdx";
+import { ArticleTopCta } from "@/components/blog/ArticleTopCta";
 import {
   getAllPosts,
   getPostBySlug,
@@ -230,6 +231,8 @@ export default async function ArticlePage({
             </p>
           </header>
 
+          <ArticleTopCta />
+
           <div className="prose prose-neutral mt-10 max-w-none prose-headings:tracking-tight prose-headings:text-ink prose-h2:mt-12 prose-h2:text-2xl prose-h2:font-extrabold prose-h3:mt-8 prose-h3:text-lg prose-h3:font-bold prose-p:text-ink-2 prose-p:leading-[1.7] prose-strong:text-ink prose-a:text-orange-700 prose-a:underline-offset-4 hover:prose-a:underline prose-blockquote:border-orange-500 prose-blockquote:text-ink-2 prose-blockquote:font-normal prose-li:text-ink-2 prose-li:my-1 prose-hr:border-line dark:prose-invert">
             <ArticleBodyWithCta content={post.content} ctaVariant={ctaVariant} />
           </div>
@@ -272,6 +275,7 @@ export default async function ArticlePage({
                 // concede mais nada desde o modelo de crédito, então /signup
                 // virou beco pra quem chega de artigo. Ver ArticleInlineCta.
                 href="/analise-ats-gratis"
+                data-analytics-cta="article_footer_primary"
                 className="inline-block rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
               >
                 {ctaVariant === "ats"
@@ -280,12 +284,14 @@ export default async function ArticlePage({
               </Link>
               <Link
                 href="/exemplo"
+                data-analytics-cta="article_footer_exemplo"
                 className="text-sm font-semibold text-orange-700 underline-offset-4 hover:underline"
               >
                 Ver um exemplo pronto
               </Link>
               <Link
                 href="/pricing"
+                data-analytics-cta="article_footer_pricing"
                 className="text-sm text-ink-2 underline-offset-4 hover:text-ink hover:underline"
               >
                 Planos e preços
@@ -332,7 +338,7 @@ export default async function ArticlePage({
 
 /**
  * Renders MDX content with the InlineCta injected at the midpoint heading.
- * Short articles (< 3 H2s) skip the inline CTA — too cramped to be useful.
+ * Short articles fall back to a paragraph-based split; only tiny ones skip it.
  */
 function ArticleBodyWithCta({
   content,
@@ -341,7 +347,7 @@ function ArticleBodyWithCta({
   content: string;
   ctaVariant: ArticleCtaVariant;
 }) {
-  const split = splitMdxAtMidpoint(content);
+  const split = splitMdxForCta(content);
   if (!split) {
     return <MDXRemote source={content} />;
   }

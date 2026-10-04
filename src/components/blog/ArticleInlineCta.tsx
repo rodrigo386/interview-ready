@@ -95,6 +95,7 @@ export function ArticleInlineCta({
       <div className="mt-4">
         <Link
           href={copy.href}
+          data-analytics-cta="article_inline"
           className="inline-flex items-center gap-2 rounded-pill bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700"
         >
           {copy.cta}

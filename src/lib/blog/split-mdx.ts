@@ -37,3 +37,37 @@ export function splitMdxAtMidpoint(content: string): MdxSplit | null {
   if (!before || !after) return null;
   return { before, after };
 }
+
+/**
+ * Ponto de inserção do CTA do meio, com fallback pra artigo curto.
+ *
+ * `splitMdxAtMidpoint` devolve null com menos de 3 H2 e o artigo ficava sem
+ * CTA no corpo (só o bloco do fim). Aqui, nesse caso, divide no meio por
+ * blocos separados por linha em branco — nunca logo depois de um título, nem
+ * dentro de um bloco de código — e exige 4 blocos pra não interromper um texto
+ * que cabe numa tela.
+ */
+export function splitMdxForCta(content: string): MdxSplit | null {
+  const byHeading = splitMdxAtMidpoint(content);
+  if (byHeading) return byHeading;
+  if (!content) return null;
+
+  const blocks = content.split(/\n{2,}/);
+  if (blocks.length < 4) return null;
+
+  let mid = Math.ceil(blocks.length / 2);
+  for (let i = mid; i < blocks.length - 1; i++) {
+    const before = blocks.slice(0, i).join("\n\n");
+    const fences = (before.match(/^```/gm) ?? []).length;
+    if (fences % 2 === 0 && !/^#/.test(blocks[i - 1])) {
+      mid = i;
+      break;
+    }
+    if (i === blocks.length - 2) return null;
+  }
+
+  const before = blocks.slice(0, mid).join("\n\n").trimEnd();
+  const after = blocks.slice(mid).join("\n\n").trimStart();
+  if (!before || !after) return null;
+  return { before, after };
+}
