@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Gauge } from "@/components/prep/Gauge";
+import { ShortJdNotice } from "@/components/prep/ShortJdNotice";
+import { isJdTooShort, jdWordCount } from "@/lib/ai/jd-length";
 import { IssueRow } from "@/components/prep/IssueRow";
 import { LockedFix } from "@/components/anon-ats/LockedFix";
 import { palavrasFaltando, projetarScore } from "@/lib/ai/ats-keywords";
@@ -54,6 +56,13 @@ export default async function ResultadoPage() {
       <LandingNavbar />
       <main className="bg-bg">
         <div className="mx-auto max-w-2xl space-y-6 px-6 py-14">
+          {isJdTooShort(row.job_description) && (
+            <ShortJdNotice
+              words={jdWordCount(row.job_description)}
+              href="/analise-ats-gratis"
+            />
+          )}
+
           <section className="rounded-lg bg-white p-6 shadow-prep">
             <div className="flex flex-col items-center gap-6 sm:flex-row">
               <Gauge value={analysis.score} />

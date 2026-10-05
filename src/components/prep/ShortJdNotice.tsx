@@ -5,7 +5,14 @@ import Link from "next/link";
  * pessoa lê "RISCO ALTO DE REJEIÇÃO" como um veredito sobre o currículo, quando
  * o problema é que a régua tinha uma ou duas palavras.
  */
-export function ShortJdNotice({ words }: { words: number }) {
+export function ShortJdNotice({
+  words,
+  href = "/prep/new",
+}: {
+  words: number;
+  /** Onde refazer a análise: /prep/new logado, /analise-ats-gratis sem conta. */
+  href?: string;
+}) {
   return (
     <div
       role="note"
@@ -19,7 +26,7 @@ export function ShortJdNotice({ words }: { words: number }) {
         pouco texto, ela não é confiável e pode ficar bem abaixo do que seria
         com a vaga completa. Para uma nota que valha, cole o anúncio inteiro
         (responsabilidades e requisitos) em uma{" "}
-        <Link href="/prep/new" className="font-semibold underline">
+        <Link href={href} className="font-semibold underline">
           nova análise
         </Link>
         .
