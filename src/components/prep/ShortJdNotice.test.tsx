@@ -15,4 +15,12 @@ describe("ShortJdNotice", () => {
     render(<ShortJdNotice words={1} />);
     expect(screen.getByRole("note")).toHaveTextContent("só 1 palavra");
   });
+
+  it("o destino do link é configurável (visitante sem conta)", () => {
+    render(<ShortJdNotice words={5} href="/analise-ats-gratis" />);
+    expect(screen.getByRole("link", { name: "nova análise" })).toHaveAttribute(
+      "href",
+      "/analise-ats-gratis",
+    );
+  });
 });
