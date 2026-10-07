@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { listSlugs } from "@/lib/blog/posts";
 import { submitToIndexNow } from "@/lib/seo/indexnow";
 import { sendReengagementEmail } from "@/lib/email/reengagement-email";
+import { EXEMPLOS } from "@/lib/exemplos/data";
 
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
 export type DeleteUserResult = AdminActionResult;
@@ -119,6 +120,7 @@ export async function submitIndexNowAction(): Promise<IndexNowSubmitResult> {
     `${SITE_URL_FOR_INDEXNOW}/pricing`,
     `${SITE_URL_FOR_INDEXNOW}/sobre`,
     `${SITE_URL_FOR_INDEXNOW}/exemplo`,
+    ...EXEMPLOS.map((e) => `${SITE_URL_FOR_INDEXNOW}/exemplo/${e.slug}`),
     `${SITE_URL_FOR_INDEXNOW}/artigos`,
     ...slugs.map((s) => `${SITE_URL_FOR_INDEXNOW}/artigos/${s}`),
   ];
