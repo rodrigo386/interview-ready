@@ -31,4 +31,12 @@ describe("<Gauge />", () => {
     expect(getByText("73")).toBeDefined();
     expect(getByText("DE 100")).toBeDefined();
   });
+
+  it("o número animado é decorativo; o score real fica legível pra leitor de tela", () => {
+    const { container } = render(<Gauge value={73} />);
+    const contador = container.querySelector(".gauge-count");
+    expect(contador?.getAttribute("aria-hidden")).toBe("true");
+    expect((contador as HTMLElement).style.getPropertyValue("--gauge-n")).toBe("73");
+    expect(container.querySelector(".sr-only")?.textContent).toBe("73");
+  });
 });
