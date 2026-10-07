@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { track } from "@/lib/analytics/client";
 
 const SRC = "/video/hero-v1.mp4";
+const MARCOS = [25, 50, 75, 100] as const;
 const POSTER = "/video/hero-poster-v1.jpg";
 
 /** `play()` devolve Promise nos navegadores atuais e `undefined` nos antigos. */
@@ -36,6 +38,10 @@ function tocar(v: HTMLVideoElement) {
 export function HeroVideo() {
   const ref = useRef<HTMLVideoElement>(null);
   const userPaused = useRef(false);
+  // Analytics: cada evento sai no máximo uma vez por visita à página.
+  const userStarted = useRef(false);
+  const playTracked = useRef(false);
+  const marcos = useRef(new Set<number>());
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
@@ -73,10 +79,34 @@ export function HeroVideo() {
     if (!v) return;
     if (v.paused) {
       userPaused.current = false;
+      userStarted.current = true;
       tocar(v);
     } else {
       userPaused.current = true;
+      track("hero_video_pause", { at_s: Math.round(v.currentTime) });
       v.pause();
+    }
+  }
+
+  function aoTocar() {
+    setPlaying(true);
+    if (playTracked.current) return;
+    playTracked.current = true;
+    track("hero_video_play", { trigger: userStarted.current ? "user" : "auto" });
+  }
+
+  // O vídeo é `loop`, então `ended` nunca dispara: o 100% é "chegou ao fim da
+  // primeira volta" (97% cobre a janela entre o último timeupdate e o loop).
+  function aoAvancar() {
+    const v = ref.current;
+    if (!v || !v.duration) return;
+    const pct = (v.currentTime / v.duration) * 100;
+    for (const m of MARCOS) {
+      const alvo = m === 100 ? 97 : m;
+      if (pct >= alvo && !marcos.current.has(m)) {
+        marcos.current.add(m);
+        track("hero_video_progress", { pct: m });
+      }
     }
   }
 
@@ -94,7 +124,8 @@ export function HeroVideo() {
           preload="none"
           disablePictureInPicture
           aria-describedby="hero-video-desc"
-          onPlay={() => setPlaying(true)}
+          onPlay={aoTocar}
+          onTimeUpdate={aoAvancar}
           onPause={() => setPlaying(false)}
         />
         <button

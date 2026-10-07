@@ -86,6 +86,19 @@ export type FunnelEventMap = {
   // seguem os SKUs de `PREP_SKUS` (1→1000, 3→2500, 5→4000 centavos).
   checkout_iniciado: { qty: number; cents: number };
   checkout_confirmado: { qty: number; cents: number };
+  // Vídeo do hero (landing). Existem pra responder uma pergunta só: o vídeo
+  // ajuda ou atrapalha a ferramenta que está na mesma dobra? Cruze com
+  // `anon_ats_started` (placement "hero") por visitante. Cada evento sai no
+  // máximo uma vez por visita à página, pra não contar volta de loop como
+  // engajamento novo. Sem dado pessoal.
+  //  - `hero_video_play`: começou a tocar. `trigger` separa o autoplay (a
+  //    pessoa não escolheu nada) do play por clique (escolheu assistir).
+  //  - `hero_video_progress`: marcos de 25/50/75/100% do vídeo (1x cada).
+  //  - `hero_video_pause`: a pessoa PAUSOU pelo botão (não conta a pausa
+  //    automática de quando o vídeo sai da tela). `at_s` é o segundo.
+  hero_video_play: { trigger: "auto" | "user" };
+  hero_video_progress: { pct: 25 | 50 | 75 | 100 };
+  hero_video_pause: { at_s: number };
 };
 
 export type FunnelEventName = keyof FunnelEventMap;
