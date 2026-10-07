@@ -33,13 +33,19 @@ export function Gauge({ value, max = 100 }: { value: number; max?: number }) {
           strokeWidth="14"
           strokeLinecap="round"
           strokeDasharray={`${dash} ${circumference}`}
-          style={{
-            transition: "stroke-dasharray 1.2s ease-out, stroke 0.4s ease",
-          }}
+          className="gauge-arc"
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[48px] font-extrabold leading-none text-ink">{clamped}</span>
+        {/* O número visível conta por CSS (--gauge-n), então não existe como
+            texto. O valor real fica num span sr-only: leitor de tela, SEO e
+            testes continuam lendo o score, e sem JS não há flash de hidratação. */}
+        <span
+          aria-hidden="true"
+          className="gauge-count text-[48px] font-extrabold leading-none text-ink"
+          style={{ "--gauge-n": clamped } as React.CSSProperties}
+        />
+        <span className="sr-only">{clamped}</span>
         <span className="mt-1 text-xs font-semibold text-ink-3">DE {max}</span>
       </div>
     </div>
