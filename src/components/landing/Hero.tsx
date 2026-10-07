@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AnonAtsForm } from "@/components/anon-ats/AnonAtsForm";
 import { precoCurto } from "@/lib/billing/dossie";
+import { HeroVideo } from "./HeroVideo";
 
 /**
  * Hero "ferramenta na dobra".
@@ -53,8 +54,18 @@ export function Hero() {
       <BackdropPattern />
 
       <div className="relative mx-auto max-w-6xl px-5 pt-10 pb-14 sm:px-6 md:pt-16 md:pb-20">
-        <div className="grid items-start gap-10 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-14">
-          <div>
+        {/* Três filhos, posicionados à mão no desktop: texto e vídeo na coluna
+            esquerda, formulário na direita ocupando as duas linhas. No celular
+            a ordem do DOM vale: texto, FORMULÁRIO, vídeo. O vídeo vem depois do
+            formulário de propósito — a nota acima sobre o primeiro campo fora
+            da dobra continua verdadeira, e 200px de vídeo empurrariam o campo
+            pra baixo.
+
+            O parágrafo fica: o vídeo conta a história, mas é o texto que cita
+            "empresa, perguntas e faixa salarial" pra quem não dá play (e o
+            teste do hero guarda exatamente isso). */}
+        <div className="grid items-start gap-10 lg:grid-cols-[1fr_1.05fr] lg:gap-x-14 lg:gap-y-8">
+          <div className="lg:col-start-1 lg:row-start-1 lg:self-end">
             {/* Duas linhas no desktop e no mobile. A versão anterior desta
                 headline tinha 9 palavras e quebrava em 4 linhas a 52px, o que
                 empurrava o primeiro campo do formulário pra fora da dobra no
@@ -71,8 +82,12 @@ export function Hero() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-neutral-200 bg-bg p-5 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.22)] sm:p-6 dark:border-zinc-800">
+          <div className="rounded-2xl border border-neutral-200 bg-bg p-5 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.22)] sm:p-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-center dark:border-zinc-800">
             <AnonAtsForm variant="hero" />
+          </div>
+
+          <div className="lg:col-start-1 lg:row-start-2">
+            <HeroVideo />
           </div>
         </div>
 

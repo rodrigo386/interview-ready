@@ -124,6 +124,16 @@ const nextConfig: NextConfig = {
     ].join("; ");
 
     return [
+      // O vídeo do hero tem o nome versionado (hero-v1.mp4): trocar o arquivo
+      // significa trocar o nome, então o cache pode ser longo e imutável. Sem
+      // isto o Next serve arquivos de public/ com cache curto e 4,6 MB voltam
+      // a ser validados a cada visita.
+      {
+        source: "/video/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [
