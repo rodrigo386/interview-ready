@@ -55,17 +55,32 @@ export function JobDescriptionPicker({
       <div
         role="tablist"
         aria-label="Como enviar a descrição da vaga"
-        className="grid grid-cols-2 gap-2 rounded-xl border border-line bg-surface p-1"
+        className="relative grid grid-cols-2 gap-2 rounded-xl border border-line bg-surface p-1"
       >
+        {/* Um elemento só desliza entre as opções, em vez de dois fundos que
+            trocam: o mesmo princípio de "uma forma que muda, sem corte" do
+            prompt-motion.com. A mola é a --ease-spring do Gauge. A largura é a
+            de uma célula (50% menos padding e metade do gap); o deslocamento
+            soma o gap. Com reduced-motion o bloco global colapsa pra troca
+            instantânea. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.5rem)] rounded-lg bg-orange-500 shadow-sm transition-transform duration-[450ms] ease-[var(--ease-spring)]"
+          style={{
+            transform:
+              mode === "paste" ? "translateX(0)" : "translateX(calc(100% + 0.5rem))",
+          }}
+        />
         <button
           type="button"
           role="tab"
           aria-selected={mode === "paste"}
           onClick={() => setMode("paste")}
           className={
-            mode === "paste"
-              ? "flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition"
-              : "flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-2 transition hover:bg-bg"
+            "relative z-10 flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm transition-colors duration-[450ms] ease-out " +
+            (mode === "paste"
+              ? "font-semibold text-white"
+              : "font-medium text-ink-2 hover:text-ink")
           }
         >
           <span aria-hidden>📋</span>
@@ -77,9 +92,10 @@ export function JobDescriptionPicker({
           aria-selected={mode === "url"}
           onClick={() => setMode("url")}
           className={
-            mode === "url"
-              ? "flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition"
-              : "flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-2 transition hover:bg-bg"
+            "relative z-10 flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm transition-colors duration-[450ms] ease-out " +
+            (mode === "url"
+              ? "font-semibold text-white"
+              : "font-medium text-ink-2 hover:text-ink")
           }
         >
           <span aria-hidden>🔗</span>
