@@ -1,0 +1,281 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>PrepaVaga hero</title>
+<style>
+@font-face{font-family:"InterV";src:url(fonts/inter-latin-wght-normal.woff2) format("woff2");font-weight:100 900;}
+*{box-sizing:border-box}
+html,body{margin:0;background:#000}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:#fff;font-family:"InterV",Inter,sans-serif;color:#1a1a1a;letter-spacing:-0.04em}
+.scene{position:absolute;inset:0;display:none}
+.cam{position:absolute;inset:0;transform-origin:50% 50%}
+.dark{background:#0f0f10;color:#fff}
+.mask{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .02em}
+.mask>span{display:inline-block;will-change:transform}
+.acc{color:#F15A24}
+img{display:block}
+.abs{position:absolute}
+/* s1 */
+#hook{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:118px;font-weight:800;line-height:1.1;gap:.3em;white-space:nowrap}
+/* s2 */
+#morph{position:absolute;overflow:hidden;background:#fff}
+#morph img{position:absolute;left:0;top:0;width:100%}
+#cursor{position:absolute;width:40px;height:40px;left:0;top:0;pointer-events:none}
+/* s3 */
+.tile{position:absolute;width:400px;height:250px;border-radius:12px;overflow:hidden;background:#fff}
+.tile img{width:100%;height:100%;object-fit:cover}
+#scan{position:absolute;top:0;bottom:0;width:3px;background:#F15A24}
+#scanband{position:absolute;top:0;bottom:0;width:120px;background:linear-gradient(to right,rgba(241,90,36,0),rgba(241,90,36,.14))}
+/* s4 */
+#big{position:absolute;left:0;right:0;top:455px;transform:translateY(-50%);text-align:center;font-weight:800;font-size:430px;line-height:1;letter-spacing:-0.07em}
+.chip{position:absolute;font-size:44px;font-weight:700;letter-spacing:-0.03em;padding:14px 30px;border-radius:999px;border:2px solid #F15A24;color:#fff;white-space:nowrap}
+/* s5 */
+.ring3d{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}
+.t3{position:absolute;width:560px;height:350px;left:-280px;top:-175px;border-radius:12px;overflow:hidden;background:#fff;backface-visibility:hidden}
+.t3 img{width:100%;height:100%;object-fit:cover}
+/* s6 */
+#phone{position:absolute;width:418px;height:872px;border-radius:64px;background:#0b0b0c;box-shadow:0 0 0 2px #2a2a2c,0 40px 90px -30px rgba(0,0,0,.8)}
+#screen{position:absolute;left:14px;top:14px;width:390px;height:844px;border-radius:50px;overflow:hidden;background:#fff}
+#screen img{position:absolute;left:0;top:0;width:390px}
+#island{position:absolute;left:50%;top:10px;width:112px;height:32px;margin-left:-56px;border-radius:20px;background:#000}
+.flip3d{position:absolute;transform-style:preserve-3d}
+.face{position:absolute;left:0;top:0;width:100%;backface-visibility:hidden;border-radius:18px;overflow:hidden}
+.face img{width:100%}
+/* s7 */
+.stat{position:absolute;left:0;right:0;top:50%;text-align:center;font-weight:800;letter-spacing:-0.06em;line-height:1}
+.statlbl{position:absolute;left:0;right:0;text-align:center;font-size:56px;font-weight:500;letter-spacing:-0.02em;color:rgba(255,255,255,.62)}
+/* s8 */
+#tickLabel{position:absolute;left:0;right:0;text-align:center;font-size:60px;font-weight:500;letter-spacing:-0.02em;color:rgba(255,255,255,.62)}
+#tickBox{position:absolute;left:0;right:0;overflow:hidden;height:340px}
+.tickw{position:absolute;left:0;right:0;text-align:center;font-weight:800;font-size:290px;line-height:340px;letter-spacing:-0.06em}
+/* s9 */
+#lockup{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:34px}
+#tag{position:absolute;left:0;right:0;text-align:center;font-size:62px;font-weight:500;letter-spacing:-0.03em;color:rgba(255,255,255,.78)}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:99}
+</style>
+<div id="stage">
+ <!-- S1+S2 -->
+ <div class="scene" id="s12"><div class="cam" id="cam12">
+  <div id="hook">
+   <span class="mask" id="w0"><span>Seu</span></span>
+   <span class="mask" id="w1"><span>CV</span></span>
+   <span class="mask" id="w2"><span>passa</span></span>
+   <span class="mask" id="w3"><span>no</span></span>
+   <span class="mask" id="w4"><span class="acc">filtro?</span></span>
+  </div>
+  <div id="morph"><span id="morphWord" style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-size:118px;font-weight:800;letter-spacing:-0.04em;line-height:1.1;color:#F15A24;white-space:nowrap">filtro?</span></div>
+  <svg id="cursor" viewBox="0 0 24 24"><path d="M3 2 L3 19 L8 14.5 L11.5 22 L14.5 20.7 L11.2 13.5 L18 13.5 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+ </div></div>
+ <!-- S3 wall (circle reveal) -->
+ <div class="scene dark" id="s3"><div class="cam" id="cam3"><div id="wall"></div><div id="scanband"></div><div id="scan"></div></div></div>
+ <!-- S4 -->
+ <div class="scene dark" id="s4"><div class="cam" id="cam4">
+  <svg class="abs" style="left:0;top:0" width="1920" height="1080" viewBox="0 0 1920 1080">
+   <circle id="arcBg" cx="960" cy="470" r="330" fill="none" stroke="#2a2a2c" stroke-width="28"/>
+   <circle id="arc" cx="960" cy="470" r="330" fill="none" stroke="#F15A24" stroke-width="28" stroke-linecap="round" transform="rotate(-90 960 470)"/>
+  </svg>
+  <div id="big"></div>
+  <div class="abs" id="de100" style="left:0;right:0;top:612px;text-align:center;font-size:36px;font-weight:600;letter-spacing:.12em;color:rgba(255,255,255,.55)">DE 100</div>
+  <div class="chip" id="chip1">gestão de perdas</div>
+  <div class="chip" id="chip2">DRE da loja</div>
+  <div class="abs" id="chipcap" style="left:0;right:0;top:850px;text-align:center;font-size:40px;font-weight:500;color:rgba(255,255,255,.7)">a vaga pede e o seu CV não tem</div>
+ </div></div>
+ <!-- S5 carousel -->
+ <div class="scene dark" id="s5"><div id="carwrap" class="abs" style="inset:0">
+   <div id="carMain" class="abs" style="inset:0;perspective:1800px"><div class="ring3d" id="ringA"></div></div>
+   <div id="carRefl" class="abs" style="inset:0;perspective:1800px;transform-origin:50% 700px;transform:scaleY(-1);-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 300px,rgba(0,0,0,.32) 690px,rgba(0,0,0,0) 701px);mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 300px,rgba(0,0,0,.32) 690px,rgba(0,0,0,0) 701px)"><div class="ring3d" id="ringB"></div></div>
+ </div></div>
+ <!-- S6 phone + panel -->
+ <div class="scene dark" id="s6"><div class="cam" id="cam6">
+   <div id="phoneW" class="abs"><div id="phone"><div id="screen"><img id="mob" src="shots/mobile-gerente.jpg"><div id="island"></div></div></div></div>
+   <div id="panelW" class="abs"><div class="flip3d" id="flip"><div class="face" id="fFront"><img src="shots/panel-ats.png"></div><div class="face" id="fBack" style="transform:rotateY(180deg)"><img src="shots/panel-perguntas.png"></div></div></div>
+ </div></div>
+ <!-- S7 stats -->
+ <div class="scene dark" id="s7"><div class="cam" id="cam7"></div></div>
+ <!-- S8 ticker -->
+ <div class="scene dark" id="s8"><div class="cam" id="cam8">
+   <div id="tickLabel">Sua preparação tem</div>
+   <div id="tickBox"><div id="tickTrack" style="position:absolute;left:0;right:0;top:0"></div></div>
+   <div class="abs" id="tickRule" style="height:8px;background:#F15A24;border-radius:4px;left:480px"></div>
+ </div></div>
+ <!-- S9 logo -->
+ <div class="scene dark" id="s9"><div class="cam" id="cam9">
+   <div id="lockup">
+    <svg id="sym" width="250" height="250" viewBox="8 8 64 64"><g transform="translate(40,40)"><path id="symArc" pathLength="1" d="M -24 20 Q -24 -20 0 -20 Q 24 -20 24 20" fill="none" stroke="#EA580C" stroke-width="6" stroke-linecap="round" stroke-dasharray="1" stroke-dashoffset="1"/><circle id="dotL" cx="-24" cy="20" r="4.5" fill="#fff"/><circle id="dotR" cx="24" cy="20" r="4.5" fill="#EA580C"/></g></svg>
+    <div class="mask" id="wm" style="font-size:210px;font-weight:800;line-height:1.05;letter-spacing:-0.05em"><span>Prepa<span style="color:#EA580C">Vaga</span></span></div>
+   </div>
+   <div id="tag"><span class="mask" id="tagm"><span>Seu currículo, pronto para a vaga</span></span></div>
+ </div></div>
+ <div id="fade"></div>
+</div>
+<script src="shots/data.js"></script>
+<script>
+const R=window.RECTS, PN=window.PANELS;
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const u=(t,a,b)=>clamp((t-a)/(b-a));
+const lerp=(a,b,x)=>a+(b-a)*x;
+const eOutExpo=x=>x>=1?1:1-Math.pow(2,-10*x);
+const eOutQuint=x=>1-Math.pow(1-x,5);
+const eInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+function sp(x){ if(x<=0)return 0; if(x>=1)return 1; const z=.85,w=9,wd=w*Math.sqrt(1-z*z); return 1-Math.exp(-z*w*x)*(Math.cos(wd*x)+(z*w/wd)*Math.sin(wd*x)); }
+const $=id=>document.getElementById(id);
+const show=(el,on)=>{ el.style.display=on?"block":"none"; };
+const BEAT=.5;
+
+// ---------- build ----------
+const SHOTS="shots/";
+const wallOrder=[ "home","a-guia","ats-gratis","ex-compras", "a-gerente","ex-gerente","a-contador","pricing", "sobre","a-reescrever","ex-contador","a-palavras", "artigos","a-o-que-e","exemplo","ex-designer" ];
+const winners={ "ex-gerente":4.5, "ex-contador":5.0, "ex-compras":5.5 };
+const tiles=[];
+wallOrder.forEach((n,i)=>{ const c=i%4, r=Math.floor(i/4); const d=document.createElement("div"); d.className="tile"; d.style.left=(124+c*424)+"px"; d.style.top=(4+r*274)+"px"; d.innerHTML='<img src="'+SHOTS+'wall/'+n+'.jpg">'; $("wall").appendChild(d); tiles.push({el:d,name:n,cx:124+200+c*424}); });
+
+const carNames=["ex-gerente","ex-contador","ex-designer","ex-compras","home","a-guia"];
+for (const ringId of ["ringA","ringB"]) { carNames.forEach((n,i)=>{ const d=document.createElement("div"); d.className="t3"; d.style.transform="rotateY("+(i*60)+"deg) translateZ(520px)"; d.innerHTML='<img src="'+SHOTS+'wall/'+n+'.jpg">'; $(ringId).appendChild(d); }); }
+
+// hook word positions measured at layout, with no transforms
+const hookW=[...Array(5)].map((_,i)=>$("w"+i));
+// form frames
+const typed=R.typedFrames;
+const CARD_S=1.6, CARD_W=R.card.w*CARD_S, CARD_H=R.card.h*CARD_S, CARD_L=960-CARD_W/2, CARD_T=189.6;
+const morph=$("morph");
+const formImgs={};
+function addImg(k,src){ const i=document.createElement("img"); i.src=src; i.style.opacity=0; morph.appendChild(i); formImgs[k]=i; return i; }
+for(let k=0;k<=typed;k++) addImg("t"+k, SHOTS+"form/t"+String(k).padStart(2,"0")+".png");
+addImg("file",SHOTS+"form/file.png"); addImg("hover",SHOTS+"form/hover.png"); addImg("press",SHOTS+"form/press.png");
+const P=(r,fx=.5,fy=.5)=>({x:CARD_L+(r.x+r.w*fx)*CARD_S, y:CARD_T+(r.y+r.h*fy)*CARD_S});
+const PJD=P(R.jd,.45,.35), PSUB=P(R.submitAfterFile,.5,.5);
+let wordRect=null;
+
+// stats
+const stats=[["grátis","análise ATS",430],["5 etapas","da vaga ao dossiê",360],["~15 perguntas","com roteiro de resposta",222],["R$10","preparação completa",520]];
+stats.forEach((s,i)=>{ const d=document.createElement("div"); d.className="stat"; d.id="st"+i; d.style.fontSize=s[2]+"px"; d.innerHTML='<span class="acc">'+s[0]+'</span>'; $("cam7").appendChild(d); const l=document.createElement("div"); l.className="statlbl"; l.id="sl"+i; l.textContent=s[1]; $("cam7").appendChild(l); });
+// ticker words
+["Empresa","Perguntas","Salário"].forEach((w,i)=>{ const d=document.createElement("div"); d.className="tickw"; d.textContent=w; d.style.top=(i*340)+"px"; $("tickTrack").appendChild(d); });
+
+// ---------- seek ----------
+window.seek = async function(t){
+  const S12=t<4.0, S3=t>=4&&t<6, S4=t>=6&&t<8, S5=t>=8&&t<10, S6=t>=10&&t<12, S7=t>=12&&t<14, S8=t>=14&&t<16, S9=t>=16;
+  show($("s12"),t<4.85); show($("s3"),t>=4&&t<6); show($("s4"),S4); show($("s5"),S5); show($("s6"),S6); show($("s7"),S7); show($("s8"),S8); show($("s9"),S9);
+
+  // ---- S1: hook ----
+  if(t<4.85){
+    const times=[0,BEAT,2*BEAT,3*BEAT,3*BEAT]; // Seu, CV, passa, no+filtro
+    const starts=[0.0,0.5,1.0,1.5,1.5];
+    hookW.forEach((m,i)=>{ const x=u(t,starts[i],starts[i]+.38); const exit=t>=2.0? clamp((t-2.0-i*.04)/.28):0; const inner=m.firstElementChild;
+      if(i<4){ inner.style.transform="translateY("+(((1-eOutExpo(x))*112)+(exit*-112))+"%)"; }
+      else { // "filtro?" : reveals, then becomes the morph source (hidden once morph box takes over)
+        inner.style.transform="translateY("+((1-eOutExpo(x))*112)+"%)"; m.style.visibility = t>=2.0?"hidden":"visible"; }
+    });
+    // camera push (hook only; morph shares the same wrapper so measurements stay consistent)
+    $("cam12").style.transform="scale("+lerp(1,1.025,u(t,0,2.5))+")";
+    if(!wordRect){ const m=hookW[4]; wordRect={x:m.offsetLeft+$("hook").offsetLeft,y:m.offsetTop,w:m.offsetWidth,h:m.offsetHeight}; const hr=$("hook").getBoundingClientRect(); const mr=m.getBoundingClientRect(); wordRect={x:mr.left,y:mr.top,w:mr.width,h:mr.height}; }
+  }
+  // ---- S2: morph + form ----
+  if(t>=2.0 && t<4.85){
+    const k=eInOut(u(t,2.0,2.55)); const r=lerp(0,CARD_S*16,k);
+    const L=lerp(wordRect.x,CARD_L,k), T=lerp(wordRect.y,CARD_T,k), W=lerp(wordRect.w,CARD_W,k), Hh=lerp(wordRect.h,CARD_H,k);
+    Object.assign(morph.style,{display:"block",left:L+"px",top:T+"px",width:W+"px",height:Hh+"px",borderRadius:r+"px",boxShadow:"0 30px 80px -30px rgba(0,0,0,"+(.28*k)+"), 0 0 0 1px rgba(0,0,0,"+(.08*k)+")",background:"#fff"});
+    // card content scales with width; the word is drawn inside until the card image takes over
+    const imgOn=u(t,2.3,2.55); $("morphWord").style.opacity=1-u(t,2.15,2.4);
+    // typing 2.5->3.0, file 3.0, hover 3.4, press 3.5
+    let key="t0";
+    if(t>=2.5&&t<3.0){ key="t"+Math.min(typed,Math.round(u(t,2.5,3.0)*typed)); }
+    else if(t>=3.0&&t<3.4) key="file"; else if(t>=3.4&&t<3.5) key="hover"; else if(t>=3.5) key="press";
+    for(const k2 in formImgs){ const on=(k2===key); formImgs[k2].style.opacity=on?imgOn:0; formImgs[k2].style.width=W+"px"; formImgs[k2].style.height=(W*R.card.h/R.card.w)+"px"; }
+    // word text inside the morph source, fades as card fades in
+    // cursor
+    const cur=$("cursor"); let cx,cy,co;
+    if(t<2.5){ const q=sp(u(t,2.1,2.5)); cx=lerp(1500,PJD.x,q); cy=lerp(900,PJD.y,q); co=u(t,2.3,2.45); }
+    else if(t<3.0){ cx=PJD.x; cy=PJD.y; co=1; }
+    else { const q=sp(u(t,3.0,3.4)); cx=lerp(PJD.x,PSUB.x,q); cy=lerp(PJD.y,PSUB.y,q); co=1; }
+    const press=(t>=3.5&&t<4.0)?1:0; const out=u(t,4.0,4.15);
+    cur.style.opacity=co*(1-out); cur.style.transform="translate("+(cx-6)+"px,"+(cy-4)+"px) scale("+(press?.88:1)+")";
+    cur.style.display = "block";
+  } else { morph.style.display="none"; $("cursor").style.display="none"; }
+  // the circle drop (S3 clip)
+  if(t>=4.0 && t<6){
+    const rr=eInOut(u(t,4.0,4.8))*1400;
+    $("s3").style.clipPath="circle("+rr+"px at "+PSUB.x+"px "+PSUB.y+"px)";
+  } else $("s3").style.clipPath="none";
+  // ---- S3: wall ----
+  if(t>=4 && t<6){
+    const sx=324+848*(t-4.0);
+    tiles.forEach(tl=>{ const passed=sx>tl.cx; const w=winners[tl.name]; let op=.62, sc=1, ring=0;
+      if(w!==undefined){ const a=u(t,w-.12,w+.2); const k=sp(a); op=lerp(.62,1,k); sc=lerp(1,1.08,k); ring=k; }
+      else if(passed){ op=lerp(.62,.2,u(sx-tl.cx,0,260)); }
+      tl.el.style.opacity=op; tl.el.style.transform="scale("+sc+")"; tl.el.style.zIndex=w!==undefined&&passed?5:1; tl.el.style.boxShadow=ring>0?"0 0 0 "+(5*ring)+"px #F15A24":"none"; });
+    $("scan").style.left=sx+"px"; $("scanband").style.left=(sx-120)+"px";
+    $("scan").style.opacity=sx<1900?1:0; $("scanband").style.opacity=sx<1900?1:0;
+    $("cam3").style.transform="scale("+lerp(1,1.045,u(t,4,6))+")";
+  }
+  // ---- S4: score ----
+  if(S4){
+    const a=u(t,6.0,7.0); const arc=sp(a); const n=Math.round(54*eOutQuint(a));
+    const C=2*Math.PI*330; $("arc").setAttribute("stroke-dasharray",(arc*0.54*C)+" "+C);
+    $("big").textContent=n; $("big").style.opacity=1;
+    $("de100").style.opacity=u(t,6.5,6.75);
+    const c1=u(t,7.0,7.3), c2=u(t,7.5,7.8);
+    const cp=(el,k,x,y)=>{ el.style.opacity=k; el.style.left=x+"px"; el.style.top=(y+(1-eOutExpo(k))*30)+"px"; };
+    cp($("chip1"),c1,500,925); cp($("chip2"),c2,1040,925);
+    $("chipcap").style.opacity=u(t,7.0,7.3);
+    $("cam4").style.transform="scale("+lerp(1,1.04,u(t,6,8))+")";
+  }
+  // ---- S5: carousel ----
+  if(S5){
+    let th;
+    if(t<9.0) th=lerp(210,270,u(t,8.0,9.0)); else th=lerp(270,720,eOutExpo(u(t,9.0,9.55)));
+    const push=eInOut(u(t,9.55,10.0))*820; const enter=u(t,8.0,8.3);
+    const camY=-8;
+    for(const [id,flip] of [["ringA",false],["ringB",true]]){
+      const el=$(id); el.style.transform="translateY(-40px) translateZ("+push+"px) rotateX("+camY+"deg) rotateY("+(-th)+"deg)"; }
+    $("carMain").style.opacity=enter; $("carRefl").style.opacity=enter*(1-u(t,9.55,9.8));
+  }
+  // ---- S6: phone + panel ----
+  if(S6){
+    const e=sp(u(t,10.0,10.5)); const ph=$("phoneW"); ph.style.left=(520-209)+"px"; ph.style.top=(1080-872)/2+"px";
+    ph.style.opacity=u(t,10.0,10.25); ph.style.transform="translateY("+((1-e)*120)+"px)";
+    const img=$("mob"); const nat=img.naturalHeight/2; const maxS=Math.max(0,nat-844);
+    $("mob").style.transform="translateY("+(-Math.min(maxS,1500)*eInOut(u(t,10.0,12.0)))+"px)";
+    // panel
+    const pw=PN.perguntas.w*1.14, ph2=PN.perguntas.h*1.14; const pL=1330-pw/2, pT=(1080-ph2)/2;
+    const P2=$("panelW"); P2.style.left=pL+"px"; P2.style.top=pT+"px"; P2.style.width=pw+"px"; P2.style.height=ph2+"px";
+    const e2=sp(u(t,10.25,10.75)); P2.style.opacity=u(t,10.25,10.5); P2.style.transform="translateX("+((1-e2)*90)+"px)";
+    const fl=$("flip"); fl.style.left="0"; fl.style.top="0"; fl.style.width=pw+"px"; fl.style.height=ph2+"px";
+    const f=sp(u(t,11.0,11.5)); fl.style.transform="perspective(2200px) rotateY("+(180*f)+"deg)";
+    const fF=$("fFront"), fB=$("fBack"); fF.style.width=pw+"px"; fB.style.width=pw+"px"; fF.style.top=((ph2-PN.ats.h*1.14)/2)+"px"; fB.style.top="0px";
+    $("cam6").style.transform="scale("+lerp(1,1.03,u(t,10,12))+")";
+  }
+  // ---- S7: stats ----
+  if(S7){
+    stats.forEach((s,i)=>{ const a=12+i*BEAT, on=t>=a&&t<a+BEAT; const el=$("st"+i), lb=$("sl"+i);
+      el.style.display=on?"block":"none"; lb.style.display=on?"block":"none"; if(!on) return;
+      const x=u(t,a,a+BEAT); const pushS=lerp(.94,1.07,eOutQuint(x)); const rev=eOutExpo(u(t,a,a+.14));
+      el.style.transform="translateY(-54%) scale("+pushS+")"; el.style.opacity=rev;
+      lb.style.top=(540+190+s[2]*.18)+"px"; lb.style.opacity=u(t,a+.05,a+.2); });
+  }
+  // ---- S8: ticker ----
+  if(S8){
+    const lab=$("tickLabel"); lab.style.top="250px"; lab.style.opacity=u(t,14.0,14.2);
+    const box=$("tickBox"); box.style.top="340px";
+    let idx;
+    if(t<14.5) idx=0; else if(t<15.0) idx=sp(u(t,14.5,14.9)); else idx=1+sp(u(t,15.0,15.4));
+    if(t>=14.5&&t<15.0) idx=sp(u(t,14.5,14.9)); if(t>=15.0) idx=1+sp(u(t,15.0,15.4));
+    const first=eOutExpo(u(t,14.0,14.4));
+    $("tickTrack").style.transform="translateY("+(-idx*340+(1-first)*340)+"px)";
+    const rule=$("tickRule"); const rk=eOutExpo(u(t,15.5,15.9)); rule.style.top="700px"; rule.style.width=(960*rk)+"px"; rule.style.left=(960-480*rk)+"px"; rule.style.opacity=rk>0?1:0;
+    $("cam8").style.transform="scale("+lerp(1,1.03,u(t,14,16))+")";
+  }
+  // ---- S9: logo ----
+  if(S9){
+    const arc=eOutExpo(u(t,16.0,16.5)); $("symArc").setAttribute("stroke-dashoffset",1-arc);
+    $("dotL").style.opacity=u(t,16.0,16.1); $("dotR").setAttribute("r",4.5*sp(u(t,16.45,16.9)));
+    $("wm").firstElementChild.style.transform="translateY("+((1-eOutExpo(u(t,16.5,16.95)))*112)+"%)";
+    $("tagm").firstElementChild.style.transform="translateY("+((1-eOutExpo(u(t,17.0,17.45)))*112)+"%)";
+    const lk=$("lockup"); lk.style.top="330px"; $("tag").style.top="640px";
+    $("cam9").style.transform="scale("+lerp(1,1.03,u(t,16,20))+")";
+  }
+  $("fade").style.opacity=u(t,19.0,20.0);
+  await window.__ready;
+  await document.fonts.ready;
+};
+window.__ready = Promise.all([...document.images].map(i=>i.decode().catch(()=>{}))).then(()=>true);
+</script>
