@@ -9,6 +9,18 @@ vi.mock("@/app/analise-ats-gratis/actions", () => ({
 }));
 vi.mock("@/lib/analytics/client", () => ({ track: vi.fn() }));
 
+// O jsdom não implementa play()/pause() e reclama no stderr a cada montagem do
+// HeroVideo. Este arquivo testa o que o hero põe na dobra, não o vídeo (isso
+// está em HeroVideo.test.tsx).
+Object.defineProperty(HTMLMediaElement.prototype, "play", {
+  configurable: true,
+  value: () => Promise.resolve(),
+});
+Object.defineProperty(HTMLMediaElement.prototype, "pause", {
+  configurable: true,
+  value: () => {},
+});
+
 describe("<Hero />", () => {
   it("coloca a ferramenta grátis na dobra, não um convite a criar conta", () => {
     const { getByLabelText, getByRole } = render(<Hero />);

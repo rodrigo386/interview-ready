@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { HeroVideo } from "./HeroVideo";
+import { track } from "@/lib/analytics/client";
+
+vi.mock("@/lib/analytics/client", () => ({ track: vi.fn() }));
 
 let play: ReturnType<typeof vi.fn>;
 let pause: ReturnType<typeof vi.fn>;
@@ -32,7 +35,10 @@ function preparar({ reduzir = false } = {}) {
   }));
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.mocked(track).mockClear();
+});
 
 describe("<HeroVideo />", () => {
   beforeEach(() => preparar());
@@ -98,5 +104,76 @@ describe("<HeroVideo /> com prefers-reduced-motion", () => {
     expect(observerCriado).toBe(false);
     expect(play).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Reproduzir vídeo" })).toBeInTheDocument();
+  });
+});
+
+describe("<HeroVideo /> analytics", () => {
+  beforeEach(() => preparar());
+
+  const eventos = () => vi.mocked(track).mock.calls.map(([nome, props]) => [nome, props]);
+
+  function comDuracao(v: HTMLVideoElement, duracao: number) {
+    Object.defineProperty(v, "duration", { configurable: true, value: duracao });
+  }
+  function irPara(v: HTMLVideoElement, segundo: number) {
+    Object.defineProperty(v, "currentTime", { configurable: true, writable: true, value: segundo });
+    act(() => { fireEvent.timeUpdate(v); });
+  }
+
+  it("play automático sai como trigger auto, uma vez só", () => {
+    const { container } = render(<HeroVideo />);
+    const v = container.querySelector("video")!;
+    act(() => { fireEvent.play(v); });
+    act(() => { fireEvent.pause(v); });
+    act(() => { fireEvent.play(v); });
+    expect(eventos().filter(([n]) => n === "hero_video_play")).toEqual([
+      ["hero_video_play", { trigger: "auto" }],
+    ]);
+  });
+
+  it("play por clique no botão sai como trigger user", () => {
+    const { container } = render(<HeroVideo />);
+    const v = container.querySelector("video")!;
+    fireEvent.click(screen.getByRole("button", { name: "Reproduzir vídeo" }));
+    act(() => { fireEvent.play(v); });
+    expect(eventos()).toContainEqual(["hero_video_play", { trigger: "user" }]);
+  });
+
+  it("marcos de 25, 50, 75 e 100% saem uma vez cada, mesmo com loop", () => {
+    const { container } = render(<HeroVideo />);
+    const v = container.querySelector("video")!;
+    comDuracao(v, 20);
+    irPara(v, 2);   // 10%: nada
+    expect(eventos().filter(([n]) => n === "hero_video_progress")).toHaveLength(0);
+    irPara(v, 5);   // 25%
+    irPara(v, 10);  // 50%
+    irPara(v, 15.5); // 77%: cruza o 75
+    irPara(v, 19.5); // 97,5%: fim da volta
+    irPara(v, 1);   // loop recomeçou
+    irPara(v, 5.5); // passou de novo pelo 25%: não repete
+    const marcos = eventos().filter(([n]) => n === "hero_video_progress").map(([, p]) => (p as { pct: number }).pct);
+    expect(marcos).toEqual([25, 50, 75, 100]);
+  });
+
+  it("pausa pelo botão sai com o segundo; a pausa automática ao sair da tela não conta", () => {
+    const { container } = render(<HeroVideo />);
+    const v = container.querySelector("video")!;
+    act(() => { fireEvent.play(v); });
+    Object.defineProperty(v, "paused", { configurable: true, value: false });
+    Object.defineProperty(v, "currentTime", { configurable: true, writable: true, value: 7.4 });
+    fireEvent.click(screen.getByRole("button", { name: "Pausar vídeo" }));
+    expect(eventos()).toContainEqual(["hero_video_pause", { at_s: 7 }]);
+
+    vi.mocked(track).mockClear();
+    act(() => observeCb!([{ isIntersecting: false }])); // pausa automática
+    expect(eventos().filter(([n]) => n === "hero_video_pause")).toHaveLength(0);
+  });
+
+  it("sem duração conhecida (vídeo ainda não carregou) não emite marco", () => {
+    const { container } = render(<HeroVideo />);
+    const v = container.querySelector("video")!;
+    comDuracao(v, NaN);
+    irPara(v, 5);
+    expect(eventos().filter(([n]) => n === "hero_video_progress")).toHaveLength(0);
   });
 });
