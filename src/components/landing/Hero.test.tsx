@@ -68,4 +68,14 @@ describe("<Hero />", () => {
     expect(texto).toMatch(/grátis/i);
     expect(texto).toMatch(/sem cadastro/i);
   });
+
+  it("o vídeo vem depois do formulário no DOM (no celular, o campo vem antes)", () => {
+    // O comentário do Hero registra que headline longa já empurrou o primeiro
+    // campo pra fora da dobra no celular. O vídeo não pode repetir isso.
+    const { container } = render(<Hero />);
+    const form = container.querySelector("form")!;
+    const video = container.querySelector("video")!;
+    expect(video).toBeTruthy();
+    expect(form.compareDocumentPosition(video) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });
