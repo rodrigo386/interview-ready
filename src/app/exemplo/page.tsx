@@ -6,7 +6,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 export const metadata: Metadata = {
   title: "Veja um exemplo de preparação pronta",
   description:
-    "Um exemplo real do que a PrepaVaga entrega: análise ATS com score, pesquisa da empresa, faixa salarial e perguntas prováveis com roteiro de resposta. Antes de criar sua conta, veja o que você recebe.",
+    "Um exemplo ilustrativo do que a PrepaVaga entrega: análise ATS com score, pesquisa da empresa, faixa salarial e perguntas prováveis com roteiro de resposta. Veja o que você recebe antes de começar.",
   alternates: { canonical: "/exemplo" },
 };
 
@@ -204,7 +204,7 @@ export default function ExemploPage() {
             </p>
             <div className="mt-5 flex justify-center">
               <Link
-                href="/signup"
+                href="/analise-ats-gratis"
                 data-analytics-cta="exemplo_primary"
                 data-analytics-location="exemplo"
                 className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-base font-semibold text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:bg-brand-700"
