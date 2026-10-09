@@ -3,6 +3,9 @@ import { AnonAtsForm } from "@/components/anon-ats/AnonAtsForm";
 import { PREP_SKUS } from "@/lib/billing/prices";
 import { precoCurto } from "@/lib/billing/dossie";
 import { AutoVideo } from "./AutoVideo";
+import { HandNote } from "./HandNote";
+import { SourceStrip } from "./SourceStrip";
+import { TrustRow } from "./TrustRow";
 
 /**
  * Hero em duas partes (2026-10-07):
@@ -100,6 +103,8 @@ export function Hero() {
         </div>
       </section>
 
+      <SourceStrip />
+
       <section
         id="analisar"
         aria-labelledby="analisar-titulo"
@@ -119,7 +124,10 @@ export function Hero() {
               <AnonAtsForm variant="hero" />
             </div>
 
-            <div className="lg:order-1">
+            <div className="relative lg:order-1">
+              <HandNote className="absolute -top-14 left-4 z-10 hidden sm:block">
+                veja em 24 segundos
+              </HandNote>
               <AutoVideo
                 variant="framed"
                 name="howto"
@@ -129,6 +137,8 @@ export function Hero() {
               />
             </div>
           </div>
+
+          <TrustRow />
 
           <p className="mt-8 text-sm">
             <Link

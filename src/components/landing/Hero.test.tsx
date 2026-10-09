@@ -41,13 +41,17 @@ describe("<Hero />", () => {
     expect(container.querySelector('a[href="/signup"]')).toBeNull();
   });
 
-  it("só dois links: o CTA do vídeo pra ferramenta e o exemplo pronto", () => {
+  it("só dois CTAs: o botão pra ferramenta e o exemplo pronto", () => {
     // O vídeo em tela cheia empurra o formulário pra baixo da dobra no desktop;
     // o CTA sobre ele leva direto ao formulário. O exemplo continua sendo o
     // único outro caminho — e nenhum dos dois vai pro cadastro.
     const { container } = render(<Hero />);
 
-    const hrefs = Array.from(container.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+    // Os links da política de privacidade e da LGPD (linha de confiança) não são
+    // CTAs: o que importa é que nenhum CTA leve ao cadastro.
+    const hrefs = Array.from(container.querySelectorAll("a"))
+      .map((a) => a.getAttribute("href"))
+      .filter((h) => h !== "/privacidade" && h !== "/lgpd");
     expect(hrefs.sort()).toEqual(["#analisar", "/exemplo"]);
   });
 
@@ -127,5 +131,18 @@ describe("<Hero />", () => {
   it("a seção da ferramenta mantém o id que a navbar e o CTA fixo do celular usam", () => {
     const { container } = render(<Hero />);
     expect(container.querySelector("section#analisar")).toBeTruthy();
+  });
+
+  it("a faixa de fontes vem entre o vídeo e a ferramenta, e a linha de confiança depois do formulário", () => {
+    const { container } = render(<Hero />);
+    const depois = (a: Node, b: Node) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const promo = container.querySelector("video")!;
+    const faixa = container.querySelector('section[aria-label="De onde copiar a vaga"]')!;
+    const form = container.querySelector("form")!;
+    const confianca = container.querySelector('ul[aria-label="Como tratamos o seu currículo"]')!;
+
+    expect(depois(promo, faixa)).toBe(true);
+    expect(depois(faixa, form)).toBe(true);
+    expect(depois(form, confianca)).toBe(true);
   });
 });
