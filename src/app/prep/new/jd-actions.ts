@@ -1,9 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { cleanJobDescription } from "@/lib/ai/gemini";
 import { createClient } from "@/lib/supabase/server";
 import { rateLimit, LIMITS, formatResetPhrase } from "@/lib/ratelimit";
+import { extractJdFromUrl } from "@/lib/jd/extract-from-url";
 
 const urlSchema = z
   .string()
@@ -16,15 +16,12 @@ export type FetchJdState = {
   jd?: { text: string; url: string };
 };
 
-const MAX_TEXT_CHARS = 50_000;
-const MIN_TEXT_CHARS = 200;
-const FETCH_TIMEOUT_MS = 20_000;
-
 /**
- * Fetch a job description page and return clean text. Uses Jina Reader
- * (https://r.jina.ai) — a free service that handles JS-rendered pages and
- * returns markdown. No API key required. Falls back to user-friendly errors
- * for paywalls / login walls / unsupported sites; user can always paste text.
+ * Busca a página de uma vaga e devolve texto limpo (usuário LOGADO).
+ *
+ * A extração em si (Jina Reader + limpeza com Gemini) vive em
+ * `lib/jd/extract-from-url`, compartilhada com a busca do visitante anônimo
+ * (`analise-ats-gratis/jd-actions`), que tem limites próprios e mais estritos.
  */
 export async function fetchJdFromUrl(
   _prev: FetchJdState,
@@ -39,8 +36,9 @@ export async function fetchJdFromUrl(
   }
   const url = parsed.data;
 
-  // Require auth — this server action proxies arbitrary URLs through Jina
-  // and burns Gemini quota on cleanup. Anonymous use was an open abuse vector.
+  // Aqui exige login e rate limit por usuário. A versão anônima existe, mas
+  // com limite por IP falhando fechado e disjuntor global: ela proxia URLs
+  // arbitrárias pelo Jina e gasta cota do Gemini na limpeza.
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) {
@@ -53,57 +51,7 @@ export async function fetchJdFromUrl(
     };
   }
 
-  let res: Response;
-  try {
-    res = await fetch(`https://r.jina.ai/${url}`, {
-      headers: {
-        Accept: "text/plain",
-        "User-Agent": "PrepaVaga/1.0",
-      },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (err) {
-    console.error("[fetchJdFromUrl] network error:", err);
-    return {
-      error:
-        "Não consegui acessar essa página (timeout ou rede). Cole o texto da vaga em vez disso.",
-    };
-  }
-
-  if (!res.ok) {
-    return {
-      error: `Não consegui ler essa página (HTTP ${res.status}). Pode ser uma página com login. Cole o texto da vaga em vez disso.`,
-    };
-  }
-
-  const raw = (await res.text()).trim();
-  // Jina Reader returns markdown with a small header; strip front matter.
-  const stripped = raw
-    .replace(/^Title:.*\nURL Source:.*\n(Markdown Content:.*?\n)?/im, "")
-    .trim();
-
-  if (stripped.length < MIN_TEXT_CHARS) {
-    return {
-      error:
-        "A página não tem texto suficiente para gerar um prep. Cole o texto da vaga em vez disso.",
-    };
-  }
-
-  // Best-effort AI cleanup: strip cookie banners, navigation, legal footer.
-  // Failures fall back to the raw text inside cleanJobDescription itself.
-  const cleaned = await cleanJobDescription(stripped);
-
-  if (cleaned.length < MIN_TEXT_CHARS) {
-    return {
-      error:
-        "Depois de limpar a página, sobrou pouco conteúdo. Cole o texto da vaga em vez disso.",
-    };
-  }
-
-  return {
-    jd: {
-      text: cleaned.slice(0, MAX_TEXT_CHARS),
-      url,
-    },
-  };
+  const r = await extractJdFromUrl(url);
+  if (!r.ok) return { error: r.error };
+  return { jd: { text: r.text, url } };
 }

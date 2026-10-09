@@ -50,7 +50,7 @@ const DESCRICAO_PROMO =
 
 const DESCRICAO_COMO_FUNCIONA =
   "Vídeo de 24 segundos, sem áudio, com as instruções. Análise grátis, sem " +
-  "cadastro e sem cartão: 1) cole a descrição completa da vaga; 2) envie o " +
+  "cadastro e sem cartão: 1) cole o link ou a descrição completa da vaga; 2) envie o " +
   "currículo em PDF, DOCX ou TXT, até 5 MB, ou cole o texto; 3) clique em " +
   "analisar. Você vê o score ATS na hora e o ajuste que mais barra o seu " +
   "currículo; criar uma conta grátis revela mais 2 ajustes. Preparação " +
