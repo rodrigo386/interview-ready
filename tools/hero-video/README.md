@@ -1,4 +1,4 @@
-# Vídeo do hero
+# Vídeo do hero (promocional, tela cheia)
 
 Gera `public/video/hero-v1.mp4` e o poster. O vídeo tem **"R$10" fixo** e mostra a
 interface real: se o preço ou a interface mudarem, regere.
@@ -25,7 +25,7 @@ bash tools/hero-video/encode.sh $WORK "$(which ffmpeg)"
 ```
 
 Depois copie `out/hero.mp4` e `out/poster.jpg` para `public/video/` com o **nome
-versionado novo** (`hero-v2.mp4`...) e atualize `HeroVideo.tsx`. O nome muda
+versionado novo** (`hero-v2.mp4`...) e atualize `Hero.tsx`. O nome muda
 porque `/video/*` tem cache de 1 ano e `immutable` (ver `next.config.ts`).
 
 ## Regras de direção
@@ -40,3 +40,6 @@ porque `/video/*` tem cache de 1 ano e `immutable` (ver `next.config.ts`).
   porque o componente real só existe com sessão e dados.
 - O vídeo não tem áudio. Se for usar música, só faixa cuja licença permita uso
   comercial e que você tenha lido.
+
+O vídeo de instruções (24s) tem README próprio em `tools/howto-video/` e usa os mesmos
+scripts (`DUR`, `FRAMES`, `POSTER_FRAME` e `OUT` ajustam duração, quadros, poster e saída).

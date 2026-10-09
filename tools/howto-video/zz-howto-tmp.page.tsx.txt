@@ -1,0 +1,41 @@
+// TEMPORÁRIO — copie para src/app/zz-howto-tmp/page.tsx só para filmar, e apague depois.
+// Renderiza as componentes REAIS da tela de resultado da análise anônima
+// (src/app/analise-ats-gratis/resultado/page.tsx) com dados fictícios.
+import { Gauge } from "@/components/prep/Gauge";
+import { IssueRow } from "@/components/prep/IssueRow";
+import { LockedFix } from "@/components/anon-ats/LockedFix";
+import { DossiePitch } from "@/components/anon-ats/DossiePitch";
+
+export default function Tmp() {
+  return (
+    <main className="bg-bg">
+      <div className="mx-auto max-w-2xl space-y-6 px-6 py-14" id="howto-root">
+        <section id="howto-score" className="rounded-lg bg-white p-6 shadow-prep">
+          <div className="flex flex-col items-center gap-6 sm:flex-row">
+            <Gauge value={54} />
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-ink">Seu score ATS é 54</h1>
+              <p className="mt-2 text-[15px] leading-6 text-ink-2">
+                Seu currículo cobre parte dos termos da vaga: faltam gestão de perdas e DRE da loja, que aparecem como requisitos críticos.
+              </p>
+              <p className="mt-2 text-sm text-ink-3">3 termos importantes da vaga já aparecem no seu currículo.</p>
+            </div>
+          </div>
+        </section>
+        <section id="howto-fix" className="rounded-lg border border-line bg-white p-5 shadow-prep">
+          <h2 className="mb-3 text-sm font-bold text-ink">O ajuste que mais te barra</h2>
+          <ul className="space-y-2">
+            <IssueRow severity="critical" number={1} title="gestão de perdas" description="Responsável pela gestão de perdas e quebra de perecíveis" impact="Crítico" />
+          </ul>
+          <p className="mt-3 rounded-md bg-green-soft px-4 py-3 text-sm text-ink">
+            <strong>Como escrever:</strong> Reduzi a quebra de perecíveis revisando a rotina de rodízio e o pedido de reposição na loja
+          </p>
+        </section>
+        <div id="howto-locked"><LockedFix remaining={4} /></div>
+        <div id="howto-pitch">
+          <DossiePitch score={54} projected={78} faltando={["gestão de perdas", "DRE da loja"]} cargo="Gerente de Loja de Supermercado" empresa="Rede Horizonte" />
+        </div>
+      </div>
+    </main>
+  );
+}
