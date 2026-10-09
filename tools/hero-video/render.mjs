@@ -2,13 +2,14 @@
 // Uso:
 //   sondagem:  node render.mjs <WORK> probe '[0.7,4.3,9.2]'   -> WORK/frames/probe/p_<t>.jpg
 //   faixa:     node render.mjs <WORK> range <de> <ate>        -> quadros [de, ate) a 60fps
-// Para 1200 quadros, rode 4 faixas em paralelo (0-300, 300-600, ...).
+// Para 1200 quadros (20s), rode 4 faixas em paralelo (0-300, 300-600, ...).
+// Para outro vídeo: DUR=24 node render.mjs <WORK> range 0 360 (1440 quadros em 4 faixas de 360).
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 
 const [WORK, mode, a, b] = process.argv.slice(2);
 if (!WORK || !mode) throw new Error("uso: render.mjs <WORK> probe '[t...]' | range <de> <ate>");
-const FPS = 60, DUR = 20;
+const FPS = 60, DUR = Number(process.env.DUR ?? 20); // segundos: 20 (promo), 24 (como funciona)
 const br = await chromium.launch();
 const p = await br.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
 p.on("pageerror", (e) => console.log("PAGEERROR", e.message));

@@ -1,0 +1,242 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>PrepaVaga como funciona</title>
+<style>
+@font-face{font-family:"InterV";src:url(fonts/inter-latin-wght-normal.woff2) format("woff2");font-weight:100 900;}
+*{box-sizing:border-box}
+html,body{margin:0;background:#fff}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:#fff;font-family:"InterV",Inter,sans-serif;color:#1a1a1a;letter-spacing:-0.04em}
+.abs{position:absolute}
+.acc{color:#F15A24}
+.mask{display:block;overflow:hidden;padding-bottom:.12em;margin-bottom:-.12em}
+.mask>span{display:block;will-change:transform}
+img{display:block}
+.shadow{box-shadow:0 30px 80px -30px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.06);border-radius:26px;overflow:hidden;background:#fff}
+.pill{position:absolute;left:120px;top:120px;font-size:34px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;border-radius:999px;border:3px solid #F15A24;color:#F15A24;white-space:nowrap}
+.pill.solid{background:#F15A24;color:#fff}
+.num{position:absolute;left:112px;top:210px;font-size:360px;font-weight:800;line-height:1;color:#F15A24;letter-spacing:-0.06em}
+.cap{position:absolute;left:120px;font-size:88px;font-weight:800;line-height:1.04;letter-spacing:-0.045em;width:720px}
+.sub{position:absolute;left:120px;font-size:44px;font-weight:500;line-height:1.2;letter-spacing:-0.02em;color:#6b6b6b;width:720px}
+.hl{position:absolute;border:5px solid #F15A24;border-radius:14px;pointer-events:none}
+#cursor{position:absolute;width:40px;height:40px;left:0;top:0;pointer-events:none}
+.center{position:absolute;left:0;right:0;text-align:center}
+#fade{position:absolute;inset:0;background:#fff;opacity:0;z-index:99;pointer-events:none}
+</style>
+<div id="stage">
+ <!-- S1 título -->
+ <div id="s1" class="abs" style="inset:0;display:none">
+  <div class="center" style="top:330px;font-size:200px;font-weight:800;line-height:1.05">
+   <span class="mask" style="display:inline-block" id="t0"><span>Como</span></span>
+   <span class="mask acc" style="display:inline-block;margin-left:.22em" id="t1"><span>funciona</span></span>
+  </div>
+  <div class="abs" id="p1" style="left:50%;top:640px;margin-left:-470px;font-size:46px;font-weight:700;letter-spacing:-0.01em;padding:16px 34px;border-radius:999px;border:3px solid #F15A24;color:#F15A24;white-space:nowrap">análise grátis</div>
+  <div class="abs" id="p2" style="left:50%;top:640px;margin-left:30px;font-size:46px;font-weight:700;letter-spacing:-0.01em;padding:16px 34px;border-radius:999px;background:#F15A24;color:#fff;white-space:nowrap">preparação completa</div>
+ </div>
+ <!-- passos 1-3: card do formulário -->
+ <div id="s2" class="abs" style="inset:0;display:none">
+  <div class="pill" id="pillA">análise grátis</div>
+  <div class="num" id="num"></div>
+  <div class="cap" id="cap" style="top:620px"></div>
+  <div class="sub" id="sub" style="top:880px"></div>
+  <div id="card" class="abs shadow"></div>
+  <div class="hl" id="hlA"></div>
+  <svg id="cursor" viewBox="0 0 24 24"><path d="M3 2 L3 19 L8 14.5 L11.5 22 L14.5 20.7 L11.2 13.5 L18 13.5 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+ </div>
+ <!-- resultado grátis -->
+ <div id="s3" class="abs" style="inset:0;display:none">
+  <div class="pill">análise grátis</div>
+  <div class="cap" id="cap3" style="top:300px;font-size:104px"></div>
+  <div class="abs shadow" id="rScore" style="border-radius:20px"><img src="shots/res-score.png"></div>
+  <div class="abs shadow" id="rFix" style="border-radius:20px"><img src="shots/res-fix.png"></div>
+  <div class="abs shadow" id="rLocked" style="border-radius:20px"><img src="shots/res-locked.png"></div>
+ </div>
+ <!-- preço -->
+ <div id="s4" class="abs" style="inset:0;display:none">
+  <div class="center" style="top:270px;font-size:150px;font-weight:800;line-height:1.05;white-space:nowrap">
+   <span class="mask" style="display:inline-block" id="u0"><span>Preparação</span></span>
+   <span class="mask acc" style="display:inline-block;margin-left:.2em" id="u1"><span>completa</span></span>
+  </div>
+  <div class="center acc" id="u2" style="top:520px;font-size:420px;font-weight:800;line-height:1;letter-spacing:-0.07em"><span class="mask" style="display:inline-block"><span id="u2i">R$10</span></span></div>
+  <div class="center" id="u3" style="top:900px;font-size:58px;font-weight:600;color:#6b6b6b;letter-spacing:-0.02em"><span class="mask" style="display:inline-block"><span id="u3i">por vaga e sem assinatura</span></span></div>
+ </div>
+ <!-- o que vem -->
+ <div id="s5" class="abs" style="inset:0;display:none">
+  <div class="pill solid">preparação completa</div>
+  <div class="cap" id="cap5" style="top:330px;font-size:100px"></div>
+  <div class="abs shadow" id="pitch" style="border-radius:20px"><img src="shots/res-pitch.png"></div>
+  <div class="hl" id="hlP"></div>
+ </div>
+ <!-- pesquisa + salário -->
+ <div id="s6" class="abs" style="inset:0;display:none">
+  <div class="pill solid">preparação completa</div>
+  <div class="cap" id="cap6" style="top:330px;font-size:100px"></div>
+  <div class="abs shadow" id="vaga" style="border-radius:20px"><img src="shots/ex-vaga.png"></div>
+  <div class="hl" id="hlV"></div>
+ </div>
+ <!-- perguntas -->
+ <div id="s7" class="abs" style="inset:0;display:none">
+  <div class="pill solid">preparação completa</div>
+  <div class="cap" id="cap7" style="top:330px;font-size:100px"></div>
+  <div class="abs shadow" id="perg" style="border-radius:20px"><img src="shots/panel-perguntas.png"></div>
+ </div>
+ <!-- pacotes -->
+ <div id="s8" class="abs" style="inset:0;display:none">
+  <div class="center" id="k0" style="top:170px;font-size:230px;font-weight:800;line-height:1.05"><span class="mask" style="display:inline-block"><span>1 por <span class="acc">R$10</span></span></span></div>
+  <div class="center" id="k1" style="top:410px;font-size:230px;font-weight:800;line-height:1.05"><span class="mask" style="display:inline-block"><span>3 por <span class="acc">R$25</span></span></span></div>
+  <div class="center" id="k2" style="top:650px;font-size:230px;font-weight:800;line-height:1.05"><span class="mask" style="display:inline-block"><span>5 por <span class="acc">R$40</span></span></span></div>
+  <div class="center" id="k3" style="top:930px;font-size:52px;font-weight:600;color:#6b6b6b;letter-spacing:-0.02em"><span class="mask" style="display:inline-block"><span>o crédito não expira</span></span></div>
+ </div>
+ <!-- fim -->
+ <div id="s9" class="abs" style="inset:0;display:none">
+  <div class="center" style="top:250px;font-size:170px;font-weight:800;line-height:1.04">
+   <span class="mask" id="e0" style="display:block"><span>Comece pela</span></span>
+   <span class="mask acc" id="e1" style="display:block"><span>análise grátis</span></span>
+  </div>
+  <div class="abs" id="ebtn" style="left:50%;top:720px;margin-left:-450px;width:900px;height:120px;border-radius:24px;background:#EA580C;color:#fff;font-size:50px;font-weight:600;letter-spacing:-0.02em;white-space:nowrap;display:flex;align-items:center;justify-content:center">Analisar meu currículo grátis →</div>
+ </div>
+ <div id="fade"></div>
+</div>
+<script src="shots/data.js"></script>
+<script>
+const R=window.RECTS, X=window.EXTRA, PN=window.PANELS;
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const u=(t,a,b)=>clamp((t-a)/(b-a));
+const lerp=(a,b,x)=>a+(b-a)*x;
+const eOutExpo=x=>x>=1?1:1-Math.pow(2,-10*x);
+const eInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+function sp(x){ if(x<=0)return 0; if(x>=1)return 1; const z=.85,w=9,wd=w*Math.sqrt(1-z*z); return 1-Math.exp(-z*w*x)*(Math.cos(wd*x)+(z*w/wd)*Math.sin(wd*x)); }
+const $=id=>document.getElementById(id);
+const show=(el,on)=>{ el.style.display=on?"block":"none"; };
+const mk=(txt,cls)=>{ const m=document.createElement("span"); m.className="mask"; const i=document.createElement("span"); i.innerHTML=txt; m.appendChild(i); return m; };
+
+// ---- card do formulário ----
+const S=1.7, CW=R.card.w*S, CH=R.card.h*S, CL=1830-CW, CT=(1080-CH)/2;
+const card=$("card"); Object.assign(card.style,{left:CL+"px",top:CT+"px",width:CW+"px",height:CH+"px"});
+const fimgs={};
+function addImg(k,src){ const i=document.createElement("img"); i.src=src; i.style.cssText="position:absolute;left:0;top:0;width:100%;opacity:0"; card.appendChild(i); fimgs[k]=i; }
+for(let k=0;k<=R.typedFrames;k++) addImg("t"+k,"shots/form/t"+String(k).padStart(2,"0")+".png");
+addImg("file","shots/form/file.png"); addImg("hover","shots/form/hover.png"); addImg("press","shots/form/press.png");
+const rc=(r,pad=8)=>({x:CL+r.x*S-pad,y:CT+r.y*S-pad,w:r.w*S+pad*2,h:r.h*S+pad*2});
+const hlRect={ jd:rc(R.jd), file:rc(R.file), colar:rc({x:X.colar.x-4,y:X.colar.y-4,w:210,h:X.colar.h+8},4), submit:rc(R.submitAfterFile) };
+const P=(r,fx=.5,fy=.5)=>({x:CL+(r.x+r.w*fx)*S,y:CT+(r.y+r.h*fy)*S});
+const PJD=P(R.jd,.45,.35), PFILE=P(R.file,.5,.5), PCOL=P(X.colar,.18,.5), PSUB=P(R.submitAfterFile,.5,.5);
+
+// ---- legendas com troca em máscara ----
+function setCap(id,items,t,top){ // items: [[t0,html]...] mostra a última com t>=t0
+  const el=$(id); let cur=null; for(const it of items) if(t>=it[0]) cur=it; if(!cur){ el.innerHTML=""; el.dataset.k=""; return; }
+  if(el.dataset.k!==String(cur[0])){ el.innerHTML=""; el.appendChild(mk(cur[1])); el.dataset.k=String(cur[0]); }
+  const k=eOutExpo(u(t,cur[0],cur[0]+.4)); el.firstElementChild.firstElementChild.style.transform="translateY("+((1-k)*115)+"%)";
+}
+function rev(el,t,t0){ el.firstElementChild.style.transform="translateY("+((1-eOutExpo(u(t,t0,t0+.4)))*115)+"%)"; }
+
+window.seek=async function(t){
+  const A=t<2, B=t>=2&&t<8, C=t>=8&&t<12, D=t>=12&&t<14, E=t>=14&&t<16, F=t>=16&&t<18, G=t>=18&&t<20, H=t>=20&&t<22, I=t>=22;
+  show($("s1"),A); show($("s2"),B); show($("s3"),C); show($("s4"),D); show($("s5"),E); show($("s6"),F); show($("s7"),G); show($("s8"),H); show($("s9"),I);
+
+  // S1
+  if(A){ rev($("t0"),t,0.0); rev($("t1"),t,0.5);
+    const a=sp(u(t,1.0,1.4)), b=sp(u(t,1.5,1.9));
+    $("p1").style.opacity=u(t,1.0,1.2); $("p1").style.transform="translateY("+((1-a)*40)+"px)";
+    $("p2").style.opacity=u(t,1.5,1.7); $("p2").style.transform="translateY("+((1-b)*40)+"px)";
+    $("s1").style.transform="scale("+lerp(1,1.03,u(t,0,2))+")"; }
+
+  // passos 1-3
+  if(B){
+    const e=sp(u(t,2.0,2.5)); card.style.opacity=u(t,2.0,2.3); card.style.transform="translateX("+((1-e)*140)+"px)";
+    const step = t<4?1: t<6?2:3;
+    $("num").textContent=step; $("num").style.opacity=1;
+    const t0=step===1?2:step===2?4:6; $("num").style.transform="translateY("+((1-eOutExpo(u(t,t0,t0+.4)))*60)+"px)"; $("num").style.opacity=u(t,t0,t0+.2);
+    setCap("cap",[[2,"Cole a vaga<br>completa"],[4,"Envie o<br>currículo"],[6,"Clique em<br>analisar"]],t);
+    // sub: texto de apoio
+    const sub=$("sub"); let st="";
+    if(t>=4.5&&t<5) st="PDF, DOCX ou TXT, até 5 MB"; else if(t>=5&&t<6) st="ou cole o texto, se preferir"; else if(t>=7&&t<8) st="sem cadastro e sem cartão"; else if(t>=3.0&&t<4) st="o texto inteiro, com os requisitos";
+    if(sub.dataset.k!==st){ sub.dataset.k=st; sub.textContent=st; }
+    sub.style.opacity=st?1:0;
+    // estados do card
+    let key="t0";
+    if(t>=2.5&&t<3.5) key="t"+Math.min(R.typedFrames,Math.round(u(t,2.5,3.5)*R.typedFrames));
+    else if(t>=3.5&&t<4.5) key="t"+R.typedFrames; else if(t>=4.5&&t<6.4) key="file"; else if(t>=6.4&&t<6.5) key="hover"; else if(t>=6.5) key="press";
+    for(const k in fimgs) fimgs[k].style.opacity=(k===key)?1:0;
+    // destaque
+    const hl=$("hlA"); let r= t<4?hlRect.jd : t<5?hlRect.file : t<6?hlRect.colar : hlRect.submit;
+    const hstart= t<4?2.0: t<5?4.0: t<6?5.0:6.0; const hk=sp(u(t,hstart,hstart+.35));
+    Object.assign(hl.style,{left:r.x+"px",top:r.y+"px",width:r.w+"px",height:r.h+"px",opacity:hk,transform:"scale("+lerp(1.06,1,hk)+")"});
+    // cursor
+    const cur=$("cursor"); let cx,cy,co=1;
+    if(t<2.5){ const q=sp(u(t,2.1,2.5)); cx=lerp(1700,PJD.x,q); cy=lerp(900,PJD.y,q); co=u(t,2.3,2.45); }
+    else if(t<4.0){ cx=PJD.x; cy=PJD.y; }
+    else if(t<4.5){ const q=sp(u(t,4.0,4.4)); cx=lerp(PJD.x,PFILE.x,q); cy=lerp(PJD.y,PFILE.y,q); }
+    else if(t<5.0){ cx=PFILE.x; cy=PFILE.y; }
+    else if(t<5.4){ const q=sp(u(t,5.0,5.35)); cx=lerp(PFILE.x,PCOL.x,q); cy=lerp(PFILE.y,PCOL.y,q); }
+    else if(t<6.0){ cx=PCOL.x; cy=PCOL.y; }
+    else { const q=sp(u(t,6.0,6.4)); cx=lerp(PCOL.x,PSUB.x,q); cy=lerp(PCOL.y,PSUB.y,q); }
+    const press=(t>=6.5&&t<8.0)?1:0;
+    cur.style.opacity=co*(1-u(t,7.8,8.0)); cur.style.transform="translate("+(cx-6)+"px,"+(cy-4)+"px) scale("+(press?.88:1)+")";
+    $("s2").style.opacity=1;
+  }
+
+  // resultado grátis (8-12)
+  if(C){
+    const W=905, sh=W/624;
+    const hs=sh*248, hf=sh*231.5, hl=sh*164;
+    const gap=24, L=950;
+    const sc=$("rScore"), fx=$("rFix"), lk=$("rLocked");
+    [sc,fx].forEach(el=>{el.style.left=L+"px";el.style.width=W+"px";});
+    sc.firstElementChild.style.width=W+"px"; fx.firstElementChild.style.width=W+"px";
+    // o bloco da conta tem texto miúdo: ocupa mais largura que os outros dois
+    const WL=1000, hlk=(WL/624)*164; lk.style.left=(1830-WL)+"px"; lk.style.width=WL+"px"; lk.firstElementChild.style.width=WL+"px";
+    // fase 1 (8-10): score + ajuste; fase 2 (10-12): so o bloco travado
+    const e1=sp(u(t,8.0,8.5)), e2=sp(u(t,9.0,9.5)), e3=sp(u(t,10.0,10.5));
+    const topStack=(1080-(hs+gap+hf))/2;
+    sc.style.top=topStack+"px"; sc.style.opacity=(t<10?u(t,8.0,8.25):0); sc.style.transform="translateY("+((1-e1)*80)+"px)";
+    fx.style.top=(topStack+hs+gap)+"px"; fx.style.opacity=(t<10?u(t,9.0,9.25):0); fx.style.transform="translateY("+((1-e2)*80)+"px)";
+    lk.style.top=((1080-hlk)/2)+"px"; lk.style.opacity=(t>=10?u(t,10.0,10.25):0); lk.style.transform="translateY("+((1-e3)*80)+"px)";
+    setCap("cap3",[[8,"Você vê o<br>score na hora"],[9,"e o ajuste<br>que mais<br>te barra"],[10,"Mais 2<br>ajustes com<br>conta grátis"]],t);
+    $("cap3").style.top = t>=9&&t<10 ? "250px":"300px";
+    if(t>=10) $("cap3").style.top="300px";
+  }
+
+  // preço (12-14)
+  if(D){ rev($("u0").parentElement.firstElementChild?$("u0"):$("u0"),t,12.0); rev($("u1"),t,12.5);
+    $("u2i").style.transform="translateY("+((1-eOutExpo(u(t,13.0,13.45)))*115)+"%)";
+    $("u3i").style.transform="translateY("+((1-eOutExpo(u(t,13.5,13.9)))*115)+"%)"; }
+
+  // o que vem (14-16)
+  if(E){
+    const W=936, s=W/624, e=sp(u(t,14.0,14.45));
+    const pt=(1080-418.5*s)/2, pl=1830-W;
+    const el=$("pitch"); Object.assign(el.style,{left:pl+"px",top:pt+"px",width:W+"px",opacity:u(t,14.0,14.2),transform:"translateX("+((1-e)*100)+"px)"}); el.firstElementChild.style.width=W+"px";
+    const rows=[[20,122,600,28],[20,152,600,48],[20,206,600,28],[20,238,600,28]]; // css, dentro do capture
+    const idx=t<14.5?0:t<15?1:t<15.5?2:3; const r=rows[idx]; const hk=sp(u(t,14.0+idx*.5,14.0+idx*.5+.3));
+    Object.assign($("hlP").style,{left:(pl+r[0]*s)+"px",top:(pt+r[1]*s)+"px",width:(r[2]*s)+"px",height:(r[3]*s)+"px",opacity:hk,transform:"scale("+lerp(1.04,1,hk)+")"});
+    setCap("cap5",[[14,"Currículo<br>reescrito"],[14.5,"Pesquisa<br>da empresa"],[15,"Faixa<br>salarial"],[15.5,"Perguntas<br>com roteiro"]],t);
+  }
+
+  // pesquisa + salário (16-18)
+  if(F){
+    const W=936, s=W/720, e=sp(u(t,16.0,16.45)); const pt=(1080-327.3*s)/2, pl=1830-W;
+    const el=$("vaga"); Object.assign(el.style,{left:pl+"px",top:pt+"px",width:W+"px",opacity:u(t,16.0,16.2),transform:"translateX("+((1-e)*100)+"px)"}); el.firstElementChild.style.width=W+"px";
+    const r= t<17? [25,114,329,189] : [366,114,329,189]; const st= t<17?16.0:17.0; const hk=sp(u(t,st,st+.3));
+    Object.assign($("hlV").style,{left:(pl+r[0]*s)+"px",top:(pt+r[1]*s)+"px",width:(r[2]*s)+"px",height:(r[3]*s)+"px",opacity:hk,transform:"scale("+lerp(1.04,1,hk)+")"});
+    setCap("cap6",[[16,"Pesquisa<br>da empresa"],[17,"Faixa<br>salarial<br>estimada"]],t);
+  }
+
+  // perguntas (18-20)
+  if(G){
+    const W=900, s=W/720, e=sp(u(t,18.0,18.45)); const pt=(1080-PN.perguntas.h*s)/2, pl=1830-W;
+    const el=$("perg"); Object.assign(el.style,{left:pl+"px",top:pt+"px",width:W+"px",opacity:u(t,18.0,18.2),transform:"translateX("+((1-e)*100)+"px)"}); el.firstElementChild.style.width=W+"px";
+    setCap("cap7",[[18,"~15 perguntas"],[19,"com roteiro<br>de resposta"]],t);
+  }
+
+  // pacotes (20-22)
+  if(H){ rev($("k0").firstElementChild,t,20.0); rev($("k1").firstElementChild,t,20.5); rev($("k2").firstElementChild,t,21.0); rev($("k3").firstElementChild,t,21.5); }
+
+  // fim (22-24)
+  if(I){ rev($("e0"),t,22.0); rev($("e1"),t,22.5);
+    const k=sp(u(t,23.0,23.4)); $("ebtn").style.opacity=u(t,23.0,23.2); $("ebtn").style.transform="translateY("+((1-k)*50)+"px)"; }
+
+  $("fade").style.opacity=u(t,23.5,24.0);
+  await window.__ready; await document.fonts.ready;
+};
+window.__ready=Promise.all([...document.images].map(i=>i.decode().catch(()=>{}))).then(()=>true);
+</script>
