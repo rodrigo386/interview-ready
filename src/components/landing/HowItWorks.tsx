@@ -1,8 +1,8 @@
 const STEPS = [
   {
     number: "01",
-    title: "Você manda CV + link da vaga",
-    body: "Upload do PDF, ou cole o texto. Link de Gupy, LinkedIn, Catho: extraímos a descrição completa.",
+    title: "Você manda o CV + a vaga",
+    body: "Envie o PDF, DOCX ou TXT (ou cole o texto) e cole a descrição da vaga. Com conta criada, você também pode colar o link da vaga.",
   },
   {
     number: "02",

@@ -9,6 +9,7 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Features } from "@/components/landing/Features";
 import { PricingChips } from "@/components/landing/PricingChips";
 import { Faq } from "@/components/landing/Faq";
+import { LandingDemo } from "@/components/landing/LandingDemo";
 import { FeaturedArticles } from "@/components/landing/FeaturedArticles";
 import { FinalCta } from "@/components/landing/FinalCta";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -34,14 +35,16 @@ export default async function LandingPage() {
     <>
       <LandingNavbar ctaHref="#analisar" />
       {/* Ordem = funil. O hero é a ferramenta grátis; AfterScore explica o que
-          os R$10 destravam enquanto o interesse está no pico; a prova e a
-          demonstração vêm em seguida; preço, objeções e CTA fecham.
+          os R$10 destravam enquanto o interesse está no pico; a demo interativa
+          mostra o resultado de verdade logo depois; a prova e a explicação
+          vêm em seguida; preço, objeções e CTA fecham.
           FeaturedArticles desceu para depois do CTA final: entre o preço e a
           decisão, um link para o blog manda embora exatamente quem estava
           decidindo. Depois do CTA, ele vira retenção de quem não converteu. */}
       <main className="bg-bg">
         <Hero />
         <AfterScore />
+        <LandingDemo />
         <SocialProof />
         <HowItWorks />
         <Features />
