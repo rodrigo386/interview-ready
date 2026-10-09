@@ -105,6 +105,13 @@ export const LIMITS = {
   fetchJd: { key: "fetchJd", limit: 30, windowSeconds: 3600 },
   // Ferramenta ATS anônima: 3/hora por IP e falha fechada.
   anonAts: { key: "anonAts", limit: 3, windowSeconds: 3600, failClosed: true },
+  // Busca de vaga por LINK, visitante anônimo (analise-ats-gratis/jd-actions).
+  // Cada chamada proxia uma URL pelo Jina e gasta uma limpeza do Gemini, e já foi
+  // um vetor de abuso quando era anônima (por isso exigiu login até 2026-10-09).
+  // Por IP, falhando FECHADO: sem Redis, recusa em vez de liberar. 6/h basta pra
+  // quem testa um portal e tenta outro; o global abaixo é o disjuntor de custo.
+  anonFetchJd: { key: "anonFetchJd", limit: 6, windowSeconds: 3600, failClosed: true },
+  anonFetchJdGlobal: { key: "anonFetchJdGlobal", limit: 400, windowSeconds: 86400, failClosed: true },
   // Auth limits — generous enough for legitimate "I mistyped" but kills
   // credential stuffing / password spraying. Bucket per ip+email so an
   // attacker rotating IPs still hits per-account limits, and an attacker

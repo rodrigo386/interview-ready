@@ -61,6 +61,17 @@ export type FunnelEventMap = {
      * chega direto na ferramenta. Opcional: eventos anteriores a
      * 2026-08-17 não têm a propriedade. */
     placement?: "hero" | "page";
+    /** De onde veio o texto da vaga: colado, ou importado de um link. */
+    jd_source?: "paste" | "link";
+  };
+  // Busca de vaga por link no formulário anônimo. Existe pra responder QUAIS
+  // portais funcionam: o Jina é irregular (Catho e Vagas.com ok, Gupy parcial,
+  // LinkedIn não), e `host` + `motivo` mostram onde falha sem precisar adivinhar.
+  // `host` é só o domínio (sem caminho nem parâmetros).
+  jd_link_fetch: {
+    ok: boolean;
+    host?: string;
+    motivo?: "url_invalida" | "limite" | "rede" | "http" | "pouco_texto" | "nao_parece_vaga" | "erro";
   };
   anon_ats_completed: {
     score: number;

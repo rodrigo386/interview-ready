@@ -1,8 +1,8 @@
 const STEPS = [
   {
     number: "01",
-    title: "Você manda o CV + a vaga",
-    body: "Envie o PDF, DOCX ou TXT (ou cole o texto) e cole a descrição da vaga. Com conta criada, você também pode colar o link da vaga.",
+    title: "Você manda o CV + o link da vaga",
+    body: "Envie o PDF, DOCX ou TXT (ou cole o texto) e cole o link da vaga, do site da empresa ou de um portal, ou o texto dela. Páginas com login, como o LinkedIn, podem não abrir: aí é só copiar o texto.",
   },
   {
     number: "02",

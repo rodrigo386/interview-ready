@@ -13,7 +13,7 @@ export function WhatIs() {
           PrepaVaga é uma plataforma de preparação para entrevista de emprego com IA.
         </h2>
         <p className="mt-4 text-base leading-[1.65] text-text-secondary md:text-lg">
-          Você cola o texto da vaga e seu currículo. Em 1 a 3 minutos, a PrepaVaga entrega
+          Você cola o link da vaga (ou o texto) e seu currículo. Em 1 a 3 minutos, a PrepaVaga entrega
           um dossiê personalizado: <strong className="text-text-primary">análise ATS</strong> do CV
           contra a vaga, <strong className="text-text-primary">pesquisa da empresa</strong> com
           notícias dos últimos 6 meses, <strong className="text-text-primary">currículo reescrito</strong>{" "}

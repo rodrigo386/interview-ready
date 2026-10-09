@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { runAnonAtsAnalysis } from "@/app/analise-ats-gratis/actions";
+import { fetchJdFromUrlAnon } from "@/app/analise-ats-gratis/jd-actions";
 import { PendingButton } from "@/components/prep/PendingButton";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/anon-ats/core";
 import { track } from "@/lib/analytics/client";
@@ -32,6 +33,42 @@ export function AnonAtsForm({ variant = "page" }: { variant?: Variant } = {}) {
   // input fica visualmente escondido (mas presente e associado ao label, pra
   // teclado e leitor de tela) e o nome do arquivo é renderizado por nós.
   const [fileName, setFileName] = useState<string | null>(null);
+
+  // A vaga pode entrar por texto colado OU por link. O texto do link NÃO vai
+  // direto pra análise: volta pro mesmo campo, onde a pessoa confere antes de
+  // enviar (o Jina Reader é irregular — Catho e Vagas.com ok, Gupy parcial,
+  // LinkedIn não — e uma vaga errada gasta a única análise grátis da pessoa).
+  const [vaga, setVaga] = useState("");
+  const [modo, setModo] = useState<"texto" | "link">("texto");
+  const [link, setLink] = useState("");
+  const [erroLink, setErroLink] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [importado, setImportado] = useState(false);
+  const [buscando, iniciarBusca] = useTransition();
+
+  function buscar() {
+    if (!link.trim() || buscando) return;
+    setErroLink(null);
+    setAviso(null);
+    const hostTentado = hostDe(link);
+    iniciarBusca(async () => {
+      const r = await fetchJdFromUrlAnon(link);
+      track(
+        "jd_link_fetch",
+        r.ok
+          ? { ok: true, host: r.host }
+          : { ok: false, motivo: r.motivo, ...(hostTentado ? { host: hostTentado } : {}) },
+      );
+      if (!r.ok) {
+        setErroLink(r.error);
+        return;
+      }
+      setVaga(r.text);
+      setImportado(true);
+      setModo("texto");
+      setAviso(`Importamos o texto de ${r.host}. Confira se é a vaga certa antes de analisar.`);
+    });
+  }
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -66,11 +103,20 @@ export function AnonAtsForm({ variant = "page" }: { variant?: Variant } = {}) {
   return (
     <form
       action={(fd) => {
+        // No modo link o campo de texto fica escondido (e sem `required`):
+        // quem aperta "Analisar" sem ter buscado a vaga recebe o aviso aqui,
+        // em vez de um erro genérico do servidor.
+        if (!vaga.trim()) {
+          setModo("link");
+          setErroLink("Busque a vaga pelo link ou cole o texto dela.");
+          return;
+        }
         const arquivo = fd.get("cvFile");
         track("anon_ats_started", {
           cv_source:
             arquivo instanceof File && arquivo.size > 0 ? "file" : "paste",
           placement: variant,
+          jd_source: importado ? "link" : "paste",
         });
         action(fd);
       }}
@@ -80,14 +126,103 @@ export function AnonAtsForm({ variant = "page" }: { variant?: Variant } = {}) {
         <label htmlFor={id("jobDescription")} className="text-sm font-bold text-ink">
           1. Cole a descrição da vaga
         </label>
+
+        {/* Um indicador só desliza entre as duas opções (mesma mola do Gauge e
+            do seletor do /prep/new). */}
+        <div
+          role="tablist"
+          aria-label="Como enviar a vaga"
+          className="relative mt-2 grid grid-cols-2 gap-2 rounded-xl border border-line bg-surface p-1"
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.5rem)] rounded-lg bg-orange-500 shadow-sm transition-transform duration-[450ms] ease-[var(--ease-spring)]"
+            style={{
+              transform:
+                modo === "texto" ? "translateX(0)" : "translateX(calc(100% + 0.5rem))",
+            }}
+          />
+          {(
+            [
+              ["texto", "Colar texto"],
+              ["link", "Colar link da vaga"],
+            ] as const
+          ).map(([m, rotulo]) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={modo === m}
+              onClick={() => setModo(m)}
+              className={
+                "relative z-10 rounded-lg px-3 py-2 text-sm transition-colors duration-[450ms] ease-out " +
+                (modo === m ? "font-semibold text-white" : "font-medium text-ink-2 hover:text-ink")
+              }
+            >
+              {rotulo}
+            </button>
+          ))}
+        </div>
+
+        {modo === "link" ? (
+          <div className="mt-3 space-y-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="url"
+                inputMode="url"
+                aria-label="Link da vaga"
+                value={link}
+                disabled={buscando}
+                onChange={(e) => setLink(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter aqui NÃO pode enviar o formulário (seria disparar a
+                  // análise com o campo da vaga vazio): ele busca a vaga.
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    buscar();
+                  }
+                }}
+                placeholder="https://empresa.com/vagas/analista"
+                className="min-w-0 flex-1 rounded-lg border border-line p-3 text-[15px] text-ink disabled:opacity-60"
+              />
+              <button
+                type="button"
+                onClick={buscar}
+                disabled={buscando || !link.trim()}
+                className="shrink-0 rounded-lg border border-border-strong bg-bg px-4 py-3 text-sm font-semibold text-ink transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {buscando ? "Buscando…" : "Buscar vaga"}
+              </button>
+            </div>
+            <p className="text-xs text-ink-3">
+              Cole o link da vaga no site da empresa ou de um portal (Gupy, Catho,
+              Vagas.com…). Páginas com login, como o LinkedIn, costumam não abrir:
+              nesse caso copie o texto da vaga.
+            </p>
+            {erroLink ? (
+              <p role="alert" className="rounded-lg bg-red-soft px-4 py-3 text-sm text-red-500">
+                {erroLink}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <textarea
           id={id("jobDescription")}
           name="jobDescription"
           rows={hero ? 4 : 8}
-          required
+          required={modo === "texto"}
+          hidden={modo === "link"}
+          value={vaga}
+          onChange={(e) => setVaga(e.target.value)}
           placeholder="Cole aqui o texto completo da vaga que você quer disputar."
-          className="mt-2 w-full rounded-lg border border-line p-3 text-[15px] text-ink"
+          className="mt-3 w-full rounded-lg border border-line p-3 text-[15px] text-ink"
         />
+        {aviso && modo === "texto" ? (
+          <p role="status" className="mt-2 text-xs text-green-700">
+            {aviso}
+          </p>
+        ) : null}
       </div>
 
       <div>
@@ -166,4 +301,13 @@ export function AnonAtsForm({ variant = "page" }: { variant?: Variant } = {}) {
       </p>
     </form>
   );
+}
+
+/** Só o domínio (sem caminho nem parâmetros) pro evento de analytics. */
+function hostDe(raw: string): string | undefined {
+  try {
+    return new URL(raw.trim()).hostname.replace(/^www\./, "");
+  } catch {
+    return undefined;
+  }
 }

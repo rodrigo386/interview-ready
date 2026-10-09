@@ -19,10 +19,10 @@ const ITEMS: FaqItem[] = [
   {
     q: "Como funciona a preparação para entrevista com IA?",
     aPlain:
-      "Você cola o texto da vaga (ou o link, depois de criar a conta) e seu currículo. Em alguns minutos a IA analisa o ATS do seu CV contra a vaga, pesquisa a empresa em tempo real (notícias dos últimos meses) e gera um roteiro com perguntas prováveis, perguntas de aprofundamento e perguntas estratégicas pra você fazer ao recrutador.",
+      "Você cola o link da vaga (ou o texto) e seu currículo. Em alguns minutos a IA analisa o ATS do seu CV contra a vaga, pesquisa a empresa em tempo real (notícias dos últimos meses) e gera um roteiro com perguntas prováveis, perguntas de aprofundamento e perguntas estratégicas pra você fazer ao recrutador.",
     a: (
       <>
-        Você cola o texto da vaga (ou o link, depois de criar a conta) e seu currículo. Em alguns minutos a IA{" "}
+        Você cola o link da vaga (ou o texto) e seu currículo. Em alguns minutos a IA{" "}
         <strong>analisa o ATS</strong> do seu CV contra a vaga, <strong>pesquisa a empresa</strong>{" "}
         em tempo real (notícias dos últimos meses) e gera um <strong>roteiro</strong> com perguntas
         prováveis, perguntas de aprofundamento e perguntas estratégicas pra você fazer ao
