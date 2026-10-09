@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { track } from "@/lib/analytics/client";
 
-const SRC = "/video/hero-v1.mp4";
 const MARCOS = [25, 50, 75, 100] as const;
-const POSTER = "/video/hero-poster-v1.jpg";
 
 /** `play()` devolve Promise nos navegadores atuais e `undefined` nos antigos. */
 function tocar(v: HTMLVideoElement) {
@@ -17,26 +15,42 @@ function tocar(v: HTMLVideoElement) {
 }
 
 /**
- * Vídeo de 20s do hero: o produto em uso, do formulário ao dossiê.
- *
- * O formulário real continua na dobra (ver Hero). O vídeo é o que explica o que
- * vem DEPOIS do score — a pesquisa da empresa, as perguntas e a faixa salarial —
- * sem competir com o campo que converte.
+ * Vídeo mudo, em loop, que toca sozinho quando aparece. Serve aos dois vídeos
+ * da landing: o promocional (tela cheia) e o de instruções (ao lado do
+ * formulário).
  *
  * Decisões que não são óbvias:
- *  - `preload="none"` + poster: o LCP é um JPG de 21 KB, não 4,6 MB de vídeo. O
+ *  - `preload="none"` + poster: o LCP é um JPG, não vários MB de vídeo. O
  *    arquivo só começa a baixar quando o `play()` roda.
  *  - Só toca visível (IntersectionObserver). Vídeo rodando fora da tela gasta
- *    bateria e banda à toa.
+ *    bateria e banda à toa — e é o que impede o vídeo de instruções, que fica
+ *    abaixo do promocional, de baixar antes de a pessoa chegar nele.
  *  - Não toca sozinho com `prefers-reduced-motion` nem com `saveData`: nesses
  *    casos fica o poster e a pessoa decide dar play.
  *  - O botão de pausar existe por acessibilidade (WCAG 2.2.2: movimento
  *    automático com mais de 5s precisa de um jeito de parar), não por enfeite.
  *  - Sem trilha de áudio: não há o que silenciar e o autoplay nunca é bloqueado
  *    por política de som.
+ *  - `description` é a transcrição em texto do vídeo (sr-only): é o que leitor
+ *    de tela lê no lugar das imagens.
  */
-export function HeroVideo() {
+export function AutoVideo({
+  src,
+  poster,
+  name,
+  description,
+  variant = "framed",
+}: {
+  src: string;
+  poster: string;
+  /** Qual vídeo é, para os eventos de analytics. */
+  name: "hero" | "howto";
+  description: string;
+  /** "framed": cartão com borda 16:9. "full": preenche o contêiner (object-cover). */
+  variant?: "framed" | "full";
+}) {
   const ref = useRef<HTMLVideoElement>(null);
+  const descId = useId();
   const userPaused = useRef(false);
   // Analytics: cada evento sai no máximo uma vez por visita à página.
   const userStarted = useRef(false);
@@ -83,7 +97,7 @@ export function HeroVideo() {
       tocar(v);
     } else {
       userPaused.current = true;
-      track("hero_video_pause", { at_s: Math.round(v.currentTime) });
+      track("video_pause", { video: name, at_s: Math.round(v.currentTime) });
       v.pause();
     }
   }
@@ -92,7 +106,10 @@ export function HeroVideo() {
     setPlaying(true);
     if (playTracked.current) return;
     playTracked.current = true;
-    track("hero_video_play", { trigger: userStarted.current ? "user" : "auto" });
+    track("video_play", {
+      video: name,
+      trigger: userStarted.current ? "user" : "auto",
+    });
   }
 
   // O vídeo é `loop`, então `ended` nunca dispara: o 100% é "chegou ao fim da
@@ -105,25 +122,33 @@ export function HeroVideo() {
       const alvo = m === 100 ? 97 : m;
       if (pct >= alvo && !marcos.current.has(m)) {
         marcos.current.add(m);
-        track("hero_video_progress", { pct: m });
+        track("video_progress", { video: name, pct: m });
       }
     }
   }
 
+  const full = variant === "full";
+
   return (
-    <figure className="m-0">
-      <div className="relative aspect-video overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_20px_60px_-24px_rgba(0,0,0,0.22)] dark:border-zinc-800">
+    <figure className={full ? "m-0 h-full w-full" : "m-0"}>
+      <div
+        className={
+          full
+            ? "relative h-full w-full overflow-hidden bg-white"
+            : "relative aspect-video overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_20px_60px_-24px_rgba(0,0,0,0.22)] dark:border-zinc-800"
+        }
+      >
         <video
           ref={ref}
-          className="h-full w-full"
-          src={SRC}
-          poster={POSTER}
+          className={full ? "h-full w-full object-cover" : "h-full w-full"}
+          src={src}
+          poster={poster}
           muted
           loop
           playsInline
           preload="none"
           disablePictureInPicture
-          aria-describedby="hero-video-desc"
+          aria-describedby={descId}
           onPlay={aoTocar}
           onTimeUpdate={aoAvancar}
           onPause={() => setPlaying(false)}
@@ -146,10 +171,8 @@ export function HeroVideo() {
           )}
         </button>
       </div>
-      <figcaption id="hero-video-desc" className="sr-only">
-        Vídeo de 20 segundos, sem áudio: você cola a vaga e o currículo, vê o score
-        ATS, os ajustes que mais pesam, o currículo no celular e as perguntas com
-        roteiro. A análise ATS é grátis e a preparação completa custa R$10.
+      <figcaption id={descId} className="sr-only">
+        {description}
       </figcaption>
     </figure>
   );
