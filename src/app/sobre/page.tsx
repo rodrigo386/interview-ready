@@ -80,7 +80,7 @@ export default function SobrePage() {
             </p>
             <p>
               A PrepaVaga compacta esse trabalho num fluxo de 60 segundos: você
-              cola o link da vaga (ou o texto) e seu CV. A gente devolve cinco
+              cola o texto da vaga (ou o link, com conta criada) e seu CV. A gente devolve cinco
               telas — visão geral da empresa, análise ATS, perguntas prováveis,
               perguntas de aprofundamento e perguntas estratégicas pra você
               fazer ao recrutador.
