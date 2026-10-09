@@ -10,6 +10,7 @@ Applied manually via Supabase Dashboard → SQL Editor after each merge to `main
 | 0005 | `0005_cvs.sql` | 2026-04-22 |
 | 0006 | `0006_company_intel.sql` | 2026-04-22 |
 | 0007 | `0007_cv_rewrite.sql` | pending |
+| 0025 | `0025_prep_application_status.sql` | pending (rodar ANTES de publicar o código do status) |
 
 ## 0005 deploy steps
 

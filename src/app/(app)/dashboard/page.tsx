@@ -8,6 +8,8 @@ import { claimAndSendWelcomeEmail } from "@/lib/email/welcome-email";
 import { Button } from "@/components/ui/Button";
 import { AtsScoreBadge } from "@/components/prep/AtsScoreBadge";
 import { DeletePrepButton } from "@/components/prep/DeletePrepButton";
+import { ApplicationStatusSelect } from "@/components/prep/ApplicationStatusSelect";
+import { toApplicationStatus } from "@/lib/prep/application-status";
 import { FreeTierBanner } from "@/components/billing/FreeTierBanner";
 import { NfseAddressPrompt } from "@/components/billing/NfseAddressPrompt";
 
@@ -19,6 +21,7 @@ type SessionRow = {
   created_at: string;
   ats_status: string | null;
   ats_score: string | null;
+  application_status: string | null;
 };
 
 const STATUS: Record<
@@ -76,7 +79,7 @@ export default async function DashboardPage({
   const { data: sessions } = await supabase
     .from("prep_sessions")
     .select(
-      "id, company_name, job_title, generation_status, created_at, ats_status, ats_score:ats_analysis->>score",
+      "id, company_name, job_title, generation_status, created_at, ats_status, application_status, ats_score:ats_analysis->>score",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
@@ -304,7 +307,12 @@ export default async function DashboardPage({
                     <AtsScoreBadge score={atsScoreFromRow(s) as number} />
                   )}
               </div>
-              <div className="pointer-events-auto relative z-[2] mt-4 flex justify-end">
+              <div className="pointer-events-auto relative z-[2] mt-4 flex items-start justify-between gap-3">
+                <ApplicationStatusSelect
+                  sessionId={s.id}
+                  companyName={s.company_name}
+                  initial={toApplicationStatus(s.application_status)}
+                />
                 <DeletePrepButton
                   sessionId={s.id}
                   companyName={s.company_name}
