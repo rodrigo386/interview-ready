@@ -9,6 +9,10 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     env:
+      # NÃO configure os secrets STAGING_* com credenciais de PRODUÇÃO. Foi o que
+      # aconteceu de abril a outubro/2026: cada execução do CI gravava page_views
+      # no banco real e a service-role de produção ficava no ambiente do CI. Só
+      # defina-os apontando pra um projeto Supabase SEPARADO (ver CLAUDE.md §11).
       # Use staging Supabase if secrets are set; otherwise placeholders so the
       # build doesn't fail Zod validation on env. The smoke E2E tolerates
       # placeholder values (auth call is wrapped in try/catch on the landing).

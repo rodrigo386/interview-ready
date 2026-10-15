@@ -36,7 +36,14 @@ export function PageViewTracker() {
     fetch("/api/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitorId, path }),
+      // `navigator.webdriver` é true em navegador controlado por automação
+      // (Playwright, Selenium) mesmo com user-agent de pessoa: é como o CI deixou
+      // de se passar por visitante quando o marcador do user-agent se perdeu.
+      body: JSON.stringify({
+        visitorId,
+        path,
+        automated: typeof navigator !== "undefined" && navigator.webdriver === true,
+      }),
       keepalive: true,
     }).catch(() => undefined);
   }, [pathname]);

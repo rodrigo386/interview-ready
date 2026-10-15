@@ -53,6 +53,14 @@ export async function trackPageView(opts: {
   visitorId: string;
   path: string;
   userAgent: string | null;
+  /**
+   * O navegador disse que é controlado por automação (`navigator.webdriver`).
+   * Playwright/Selenium ligam essa flag mesmo quando o user-agent é idêntico
+   * ao de uma pessoa, então ela pega o que o `isBot` não vê. Vira `is_bot`, em
+   * vez de a linha ser descartada: o dado fica pra diagnóstico e os painéis
+   * (que já filtram `is_bot`) deixam de contá-lo.
+   */
+  automated?: boolean;
 }): Promise<void> {
   try {
     const sb = createAdminClient();
@@ -60,7 +68,7 @@ export async function trackPageView(opts: {
       visitor_id: opts.visitorId,
       path: opts.path,
       user_agent: opts.userAgent?.slice(0, 500) ?? null,
-      is_bot: isBot(opts.userAgent),
+      is_bot: opts.automated === true || isBot(opts.userAgent),
     });
     if (error) {
       console.warn(

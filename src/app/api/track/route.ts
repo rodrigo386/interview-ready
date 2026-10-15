@@ -20,9 +20,9 @@ import { normalizeTrackedPath } from "@/lib/analytics/path";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  let body: { visitorId?: string; path?: string } | null = null;
+  let body: { visitorId?: string; path?: string; automated?: boolean } | null = null;
   try {
-    body = (await req.json()) as { visitorId?: string; path?: string };
+    body = (await req.json()) as { visitorId?: string; path?: string; automated?: boolean };
   } catch {
     return new NextResponse(null, { status: 204 });
   }
@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
     visitorId: body.visitorId,
     path,
     userAgent: req.headers.get("user-agent"),
+    automated: body.automated === true,
   }).catch(() => undefined);
 
   return new NextResponse(null, { status: 204 });
