@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       # NÃO configure os secrets STAGING_* com credenciais de PRODUÇÃO. Foi o que
       # aconteceu de abril a outubro/2026: cada execução do CI gravava page_views
