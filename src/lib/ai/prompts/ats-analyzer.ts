@@ -59,9 +59,14 @@ STEP 5 — top_fixes (0-7 items):
      invent a gap to fill the list — an empty top_fixes is a valid, expected
      result for a CV that already covers the JD.
    - Stop at 5 fixes by default; only add 6-7 if there are >5 missing critical+high keywords.
-   - For each: gap=keyword, jd_language=exact phrase from JD, original_cv_language=closest phrase in CV (or empty string if absent), suggested_rewrite=a single CV bullet (≥20 chars) that incorporates the JD phrase using specifics from the CV (company name, year, metric).
+   - For each: gap=keyword, jd_language=exact phrase from JD, original_cv_language=closest phrase in CV (or empty string if absent), suggested_rewrite=a single CV bullet (≥20 chars) that incorporates the JD phrase.
+   - GROUNDING (non-negotiable): the bullet may only restate work the CV already describes, using company names, tools and facts that appear in the CV. NEVER invent a project, a tool, a metric, a year or an employer, and never claim experience with the JD phrase when the CV shows nothing related to it.
+   - When the CV shows related work, set original_cv_language to the closest CV phrase and rewrite that work using the JD phrase.
+   - When the CV shows NOTHING related, leave original_cv_language as "" and write suggested_rewrite as a conditional template that starts with "Se você tem essa experiência: " followed by a bullet with [colchetes] where the candidate must fill in real details. The candidate decides whether it is true.
 
-STEP 6 — overall_assessment: 2-3 sentences in PT-BR describing where the CV stands vs the JD: how many critical keywords were found out of total, biggest gap area, and whether title alignment is strong/weak.
+STEP 6 — overall_assessment: 2-3 sentences in PT-BR describing where the CV stands vs the JD: how many keywords were found out of the TOTAL across all tiers (count every tier, not only critical; if there are no critical keywords, do not mention critical), biggest gap area, and whether title alignment is strong/weak.
+   - The tone MUST match the score. Below 40 is a low match: say so plainly, never "moderado" or "bom alinhamento". 40-69 is partial, 70+ is strong.
+   - The numbers you cite must equal the counts in your own keyword_analysis. Recount before writing.
 
 STEP 7 — jd_context (descriptive only, NEVER used in any score):
    - jd_context.role = the job title EXACTLY as written in the JOB DESCRIPTION text.
