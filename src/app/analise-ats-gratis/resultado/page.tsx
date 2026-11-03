@@ -11,6 +11,7 @@ import { LockedFix } from "@/components/anon-ats/LockedFix";
 import { palavrasFaltando, projetarScore } from "@/lib/ai/ats-keywords";
 import { DossiePitch } from "@/components/anon-ats/DossiePitch";
 import { AnonAtsCompletedTracker } from "@/components/anon-ats/AnonAtsCompletedTracker";
+import { ShareScore } from "@/components/anon-ats/ShareScore";
 import {
   ANON_COOKIE,
   getAnonAnalysisByToken,
@@ -122,6 +123,8 @@ export default async function ResultadoPage() {
             cargo={row.job_title}
             empresa={row.company_name}
           />
+
+          <ShareScore score={analysis.score} />
         </div>
       </main>
       <LandingFooter />

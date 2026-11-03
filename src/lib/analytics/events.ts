@@ -81,6 +81,11 @@ export type FunnelEventMap = {
     model_used?: string;
   };
   anon_ats_claimed: { method: "email" | "google" };
+  // Botão "compartilhar meu score" da tela de resultado anônima. Mede o canal
+  // e a nota compartilhada; a ponta de volta aparece como `landing_view` com
+  // `utm_source=share` (o link aponta pra home justamente por isso: é lá que
+  // os UTMs são capturados). Nada do CV ou da vaga sai nesse evento.
+  score_share: { channel: "whatsapp" | "copiar"; score: number };
   subscription_started: {
     plan: "pro_promo_30" | "pro_full_50" | "other";
     amount_cents: number;
