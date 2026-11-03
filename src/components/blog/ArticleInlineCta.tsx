@@ -68,6 +68,27 @@ const COPY = {
     cta: "Analisar meu currículo grátis",
     href: "/analise-ats-gratis",
   },
+  // Leitor de "quanto tempo esperar" / "RH não responde": está ansioso com o
+  // silêncio. A ponte é que parte do silêncio é a triagem automática, e isso
+  // ele consegue checar agora. Sem prometer que o currículo É o motivo.
+  espera: {
+    kicker: "Enquanto você espera",
+    heading: (
+      <>
+        E se o silêncio for o <em>filtro</em>, e não a empresa?
+      </>
+    ),
+    body: (
+      <>
+        Parte das candidaturas fica sem resposta porque o currículo não passou
+        na triagem automática. Cole a vaga + seu CV e veja o score ATS e o
+        ajuste que mais pesa.{" "}
+        <strong>Na hora, sem cadastro e sem cartão.</strong>
+      </>
+    ),
+    cta: "Ver se meu currículo passou no filtro",
+    href: "/analise-ats-gratis",
+  },
 } as const;
 
 export type ArticleCtaVariant = keyof typeof COPY;

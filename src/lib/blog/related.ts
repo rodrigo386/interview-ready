@@ -26,6 +26,20 @@ export function isResumeTopicPost(post: {
   );
 }
 
+/**
+ * isWaitingTopicPost — "o leitor está esperando uma resposta?" Quem chega por
+ * "quanto tempo a empresa demora" ou "RH não responde" está ansioso com o
+ * silêncio, não revisando o currículo; o CTA fala com isso (variante `espera`).
+ * Vem ANTES do `isResumeTopicPost`: `por-que-rh-nao-chamou-de-volta` carrega a
+ * tag "currículo" mas a dor do leitor é a espera. Slug, não tag: as tags desses
+ * artigos são genéricas ("processo seletivo") e pegariam artigo de entrevista.
+ */
+const WAITING_SLUG = /(quanto-tempo|nao-respondeu|nao-chamou|nao-me-responde|cobrar-retorno)/;
+
+export function isWaitingTopicPost(post: { slug: string }): boolean {
+  return WAITING_SLUG.test(post.slug);
+}
+
 export function isAtsClusterPost(post: {
   slug: string;
   tags?: string[];
