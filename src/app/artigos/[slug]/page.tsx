@@ -20,6 +20,7 @@ import {
   extractH2Headings,
   pickRelatedPosts,
   isResumeTopicPost,
+  isWaitingTopicPost,
 } from "@/lib/blog/related";
 
 const SITE_URL =
@@ -144,9 +145,12 @@ export default async function ArticlePage({
   // ATS/currículo cluster gets a CV-analysis CTA instead of the generic
   // interview one — the reader is thinking about their resume, not the
   // interview yet. Message match converts better than a stronger verb.
-  const ctaVariant: ArticleCtaVariant = isResumeTopicPost(post)
-    ? "ats"
-    : "default";
+  // Quem espera resposta vem antes: a dor é o silêncio, não o currículo.
+  const ctaVariant: ArticleCtaVariant = isWaitingTopicPost(post)
+    ? "espera"
+    : isResumeTopicPost(post)
+      ? "ats"
+      : "default";
 
   const allPosts = await getAllPosts();
   const related = pickRelatedPosts(post, allPosts, 3);
@@ -231,7 +235,7 @@ export default async function ArticlePage({
             </p>
           </header>
 
-          <ArticleTopCta />
+          <ArticleTopCta variant={ctaVariant === "espera" ? "espera" : "default"} />
 
           <div className="prose prose-neutral mt-10 max-w-none prose-headings:tracking-tight prose-headings:text-ink prose-h2:mt-12 prose-h2:text-2xl prose-h2:font-extrabold prose-h3:mt-8 prose-h3:text-lg prose-h3:font-bold prose-p:text-ink-2 prose-p:leading-[1.7] prose-strong:text-ink prose-a:text-orange-700 prose-a:underline-offset-4 hover:prose-a:underline prose-blockquote:border-orange-500 prose-blockquote:text-ink-2 prose-blockquote:font-normal prose-li:text-ink-2 prose-li:my-1 prose-hr:border-line dark:prose-invert">
             <ArticleBodyWithCta content={post.content} ctaVariant={ctaVariant} />
@@ -262,10 +266,14 @@ export default async function ArticlePage({
             <h2 className="text-lg font-bold text-ink">
               {ctaVariant === "ats"
                 ? "Será que o seu currículo passa no ATS?"
-                : "Antes de se candidatar na próxima: seu CV passa no filtro?"}
+                : ctaVariant === "espera"
+                  ? "E se o silêncio for o filtro, e não a empresa?"
+                  : "Antes de se candidatar na próxima: seu CV passa no filtro?"}
             </h2>
             <p className="mt-2 text-sm text-ink-2">
-              {ctaVariant === "ats"
+              {ctaVariant === "espera"
+                ? "Parte das candidaturas fica sem resposta porque o currículo não passou na triagem automática. Cole a vaga e o seu CV: a PrepaVaga mostra na hora o score ATS e o ajuste que mais pesa. Sem cadastro e sem cartão."
+                : ctaVariant === "ats"
                 ? "A PrepaVaga compara seu currículo com a vaga real que você quer e mostra na hora o score ATS e o ajuste que mais está te barrando. Sem cadastro e sem cartão."
                 : "Boa parte das respostas que não vêm morre no ATS, antes de um humano ler. Cole a descrição de uma vaga e o seu CV: a PrepaVaga devolve o score e o ajuste que mais está te barrando, na hora e sem cadastro. A preparação completa, com pesquisa da empresa e perguntas prováveis, custa R$10."}
             </p>
@@ -280,7 +288,9 @@ export default async function ArticlePage({
               >
                 {ctaVariant === "ats"
                   ? "Analisar meu currículo grátis →"
-                  : "Testar meu currículo grátis →"}
+                  : ctaVariant === "espera"
+                    ? "Ver se meu currículo passou no filtro →"
+                    : "Testar meu currículo grátis →"}
               </Link>
               <Link
                 href="/exemplo"

@@ -3,6 +3,7 @@ import {
   pickRelatedPosts,
   isAtsClusterPost,
   isResumeTopicPost,
+  isWaitingTopicPost,
 } from "./related";
 import type { PostSummary } from "./posts";
 
@@ -127,5 +128,27 @@ describe("pickRelatedPosts", () => {
 
     expect(related).toHaveLength(3);
     expect(related.every((p) => !isAtsClusterPost(p))).toBe(true);
+  });
+});
+
+describe("isWaitingTopicPost", () => {
+  it("pega os artigos de quem espera resposta", () => {
+    for (const slug of [
+      "quanto-tempo-demora-processo-seletivo",
+      "recrutador-nao-respondeu-o-que-fazer",
+      "por-que-rh-nao-chamou-de-volta",
+    ]) {
+      expect(isWaitingTopicPost({ slug })).toBe(true);
+    }
+  });
+
+  it("não pega artigo de currículo nem de entrevista", () => {
+    for (const slug of [
+      "como-saber-se-curriculo-passa-no-ats",
+      "como-responder-me-fale-sobre-voce",
+      "curriculo-de-estagio-ats",
+    ]) {
+      expect(isWaitingTopicPost({ slug })).toBe(false);
+    }
   });
 });

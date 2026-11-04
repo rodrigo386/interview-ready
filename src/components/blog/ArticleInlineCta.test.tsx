@@ -22,7 +22,7 @@ describe("ArticleInlineCta", () => {
   });
 
   it("as duas variantes prometem ausência de cadastro — o destino não pede", () => {
-    for (const v of ["default", "ats"] as const) {
+    for (const v of ["default", "ats", "espera"] as const) {
       const { unmount } = render(<ArticleInlineCta variant={v} />);
       expect(screen.getByText(/sem cadastro/i)).toBeInTheDocument();
       unmount();

@@ -10,4 +10,12 @@ describe("ArticleTopCta", () => {
     expect(link).toHaveAttribute("data-analytics-cta", "article_top");
     expect(screen.getByText(/sem cadastro/i)).toBeInTheDocument();
   });
+
+  it("a variante espera fala com o silêncio, mas mantém destino e marcação", () => {
+    render(<ArticleTopCta variant="espera" />);
+    expect(screen.getByText(/sem resposta da empresa/i)).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /analisar grátis/i });
+    expect(link).toHaveAttribute("href", "/analise-ats-gratis");
+    expect(link).toHaveAttribute("data-analytics-cta", "article_top");
+  });
 });
