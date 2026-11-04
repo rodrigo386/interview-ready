@@ -166,6 +166,48 @@ export function calcularTitleMatch(cvTitle: string, jdTitle: string): number {
   return Math.round((inter / (a.size + b.size - inter)) * 100);
 }
 
+/** "a", "a e b", "a, b e c". */
+function listar(itens: string[]): string {
+  if (itens.length <= 1) return itens.join("");
+  return `${itens.slice(0, -1).join(", ")} e ${itens[itens.length - 1]}`;
+}
+
+/**
+ * Avaliação geral escrita em código a partir dos mesmos números que a tela
+ * mostra. Antes era texto livre da IA e já saiu contradizendo o score (nota
+ * baixa descrita como "alinhamento moderado", contagens que não batiam com a
+ * lista): instrução de prompt reduz o erro, mas não o elimina, e esta frase é
+ * a primeira coisa que a pessoa lê. Sem palavras-chave não há o que contar —
+ * nesse caso devolve null e vale o texto da IA.
+ */
+export function montarAvaliacao(
+  kw: AtsAnalysis["keyword_analysis"],
+  score: number,
+  titleMatch: AtsAnalysis["title_match"],
+): string | null {
+  const todas = [...kw.critical, ...kw.high, ...kw.medium];
+  if (todas.length === 0) return null;
+  const achadas = todas.filter((k) => k.found).length;
+  const nivel = score < 40 ? "baixo" : score < 70 ? "parcial" : "bom";
+
+  const frases = [
+    `Seu currículo tem ${nivel} alinhamento com esta vaga: encontramos ${achadas} de ${todas.length} palavras-chave.`,
+  ];
+  const faltando = [...kw.critical, ...kw.high].filter((k) => !k.found).map((k) => k.keyword);
+  frases.push(
+    faltando.length > 0
+      ? `As lacunas mais pesadas são ${listar(faltando.slice(0, 3))}.`
+      : "Nenhuma palavra crítica ou importante ficou de fora.",
+  );
+  if (titleMatch.jd_title.trim()) {
+    const t = titleMatch.match_score;
+    frases.push(
+      `O título do currículo está ${t >= 60 ? "bem alinhado" : t >= 30 ? "parcialmente alinhado" : "pouco alinhado"} ao cargo da vaga.`,
+    );
+  }
+  return frases.join(" ");
+}
+
 /** Mesma fórmula que o prompt descrevia, agora executada de verdade. */
 export function calcularScore(
   kw: AtsAnalysis["keyword_analysis"],
@@ -183,8 +225,8 @@ export function calcularScore(
 /**
  * Aplica a régua fixa sobre a resposta da IA.
  *
- * A IA continua responsável pelo que é interpretação — alinhamento de título,
- * sugestões de reescrita, avaliação geral. O que é regra mecânica (quais
+ * A IA continua responsável pelo que é interpretação — leitura do título e
+ * sugestões de reescrita. O que é regra mecânica (quais
  * palavras, se estão no CV, qual a nota) passa a ser decidido aqui e
  * sobrescreve o que a IA tiver devolvido.
  */
@@ -220,12 +262,15 @@ export function aplicarReguaFixa(
     ),
   };
 
+  const score = calcularScore(keyword_analysis, title_match.match_score);
   return {
     ...analysis,
     title_match,
     keyword_analysis,
     top_fixes,
-    score: calcularScore(keyword_analysis, title_match.match_score),
+    score,
+    overall_assessment:
+      montarAvaliacao(keyword_analysis, score, title_match) ?? analysis.overall_assessment,
     jd_keywords: keywords,
   };
 }

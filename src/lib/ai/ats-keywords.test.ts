@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   aplicarReguaFixa,
+  montarAvaliacao,
   buscarNoCv,
   calcularScore,
   calcularTitleMatch,
@@ -257,5 +258,48 @@ describe("palavrasFaltando e projetarScore", () => {
     });
     expect(palavrasFaltando(completa)).toEqual([]);
     expect(projetarScore(completa)).toBe(completa.score);
+  });
+});
+
+describe("avaliação geral calculada", () => {
+  const kw = (found: boolean[], tier: "critical" | "high" | "medium" = "critical") => ({
+    critical: [] as AtsAnalysis["keyword_analysis"]["critical"],
+    high: [] as AtsAnalysis["keyword_analysis"]["high"],
+    medium: [] as AtsAnalysis["keyword_analysis"]["medium"],
+    [tier]: found.map((f, i) => ({ keyword: `k${i}`, found: f })),
+  });
+  const titulo = { cv_title: "a", jd_title: "b", match_score: 0 };
+
+  it("nota baixa nunca vira 'moderado' e as contagens batem com a lista", () => {
+    const t = montarAvaliacao(kw([true, false, false, false, false]), 20, titulo)!;
+    expect(t).toMatch(/baixo alinhamento/);
+    expect(t).toMatch(/1 de 5 palavras-chave/);
+    expect(t).toMatch(/k1, k2 e k3/);
+    expect(t).not.toMatch(/moderado/i);
+  });
+
+  it("conta todas as faixas, não só as críticas", () => {
+    const m = { ...kw([true, true], "medium"), critical: [{ keyword: "c", found: false }] };
+    expect(montarAvaliacao(m, 50, titulo)).toMatch(/2 de 3 palavras-chave/);
+  });
+
+  it("nota alta e nada faltando: não aponta lacuna", () => {
+    const t = montarAvaliacao(kw([true, true]), 90, titulo)!;
+    expect(t).toMatch(/bom alinhamento/);
+    expect(t).toMatch(/Nenhuma palavra crítica/);
+  });
+
+  it("sem palavras-chave devolve null (vale o texto da IA)", () => {
+    expect(montarAvaliacao(kw([]), 0, titulo)).toBeNull();
+  });
+
+  it("aplicarReguaFixa sobrescreve a avaliação contraditória da IA", () => {
+    const r = aplicarReguaFixa(
+      respostaIa({ overall_assessment: "Alinhamento moderado com 9 de 10 palavras críticas encontradas." }),
+      REGUA,
+      CV_V1,
+    );
+    expect(r.overall_assessment).not.toMatch(/moderado|9 de 10/);
+    expect(r.overall_assessment).toMatch(/palavras-chave/);
   });
 });
